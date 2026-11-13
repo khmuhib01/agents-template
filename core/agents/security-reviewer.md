@@ -1,6 +1,7 @@
 ---
 name: security-reviewer
-description: "Use proactively for changes touching auth, user input, file uploads, secrets, permissions, or dependencies, and for security reviews. Read-only; reports evidence-based findings."
+description: "Use for changes touching auth, user input, file uploads, secrets, permissions, or dependencies, and for security reviews. Read-only; reports evidence-based findings."
+model: sonnet
 tools: Read, Glob, Grep
 ---
 
