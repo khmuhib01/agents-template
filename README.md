@@ -35,6 +35,23 @@ Requires Node 18+. No dependencies.
 - `forbid: [oldprojectname]` → init fails if that word appears anywhere in generated files.
 - `notes` is where project-specific rules go; they are written into AGENTS.md, `.claude/CLAUDE.md` and ARCHITECTURE.md.
 
+## Credit / token savers (all configurable)
+
+| Key | Default | Effect |
+|---|---|---|
+| `protect_secrets` | true | `settings.json` denies Read on `.env` and every `local_only` path (dumps never enter context) |
+| `deny_heavy` | true | also denies Read on `vendor/`, `node_modules/`, `dist/`, `build/`, logs, `*.min.js`, `*.map` (stack-aware) |
+| `allow_safe_commands` | true | `git status/diff/log` and the project test command run without a permission prompt (fewer turns) |
+| `skills_mode` | all | `focused` installs only skills routed for this type/stack (init never deletes skills already installed) |
+| `model` | sonnet | default model written to `settings.json` if none is set |
+
+Also: always-loaded text is kept short (git procedures live in skills, loaded only when used), `git-manager` runs on `haiku`, and `.claude/CLAUDE.md` carries short context-hygiene rules. `settings.json` is merged, never replaced.
+
+## Versioning and tests
+
+- `VERSION` is stamped into `.claude/.template-version` and the manifest; init prints `old → new` when a project is upgraded.
+- `node test.mjs` runs init against sample configs (Laravel+Docker, mobile, focused skills, forbid, invalid) and checks files, settings, placeholders and idempotency. CI runs it on every push.
+
 ## Improving the template
 
 - Generic skill/agent/rule → edit under `core/`, then re-run init in each project.

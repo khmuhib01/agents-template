@@ -18,6 +18,7 @@ if (has('--help') || has('-h')) {
   process.exit(0);
 }
 
+const TEMPLATE_VERSION = fs.readFileSync(path.join(HERE, 'VERSION'), 'utf8').trim();
 const TARGET = path.resolve(opt('--target', process.cwd()));
 const CONFIG = path.resolve(opt('--config', path.join(TARGET, 'project.config.yml')));
 const DRY = has('--dry-run');
@@ -249,17 +250,56 @@ function buildContext(c) {
   return d;
 }
 
+// Read-deny rules: secrets, local-only paths (dumps) and heavy generated folders are never opened (also saves tokens).
+function denyRules(cfg, ctx) {
+  const rules = [];
+  if (cfg.protect_secrets !== false) {
+    rules.push('Read(./.env)', 'Read(./**/.env)', 'Read(./**/.env.local)', 'Read(./**/.env.production)');
+    for (const raw of toArr(cfg.local_only)) {
+      const e = String(raw).trim().replace(/^\.?\//, '');
+      if (!e || e === '.env') continue;
+      if (e.endsWith('/')) rules.push(`Read(./${e}**)`);
+      else if (e.startsWith('*')) rules.push(`Read(./**/${e})`);
+      else rules.push(`Read(./${e})`);
+    }
+  }
+  if (cfg.deny_heavy !== false) {
+    const t = ctx.stack.map(norm).join(' ');
+    const has = (...ks) => ks.some((k) => t.includes(k));
+    const pm = String(cfg.package_manager || '');
+    rules.push('Read(./**/*.min.js)', 'Read(./**/*.map)');
+    if (has('laravel', 'php') || pm === 'composer') rules.push('Read(./**/vendor/**)', 'Read(./**/storage/logs/**)');
+    if (has('node', 'react', 'next', 'vue', 'nuxt', 'expo', 'nest', 'express', 'typescript') || ['npm', 'pnpm', 'yarn'].includes(pm)) rules.push('Read(./**/node_modules/**)', 'Read(./**/dist/**)', 'Read(./**/build/**)', 'Read(./**/.next/**)');
+    if (has('python', 'django', 'fastapi', 'flask') || ['pip', 'uv', 'poetry'].includes(pm)) rules.push('Read(./**/.venv/**)', 'Read(./**/__pycache__/**)');
+  }
+  return rules;
+}
+
+// Safe read-only commands (and the test command) run without a permission prompt: fewer turns, fewer tokens.
+function allowRules(ctx) {
+  const rules = ['Bash(git status:*)', 'Bash(git diff:*)', 'Bash(git log:*)', 'Bash(git remote -v)', 'Bash(git branch --show-current)'];
+  if (ctx.test_command) {
+    const prefix = ctx.exec_prefix ? ctx.exec_prefix.replace(/^cd .*? && /, '') + ' ' : '';
+    rules.push(`Bash(${prefix}${ctx.test_command}:*)`);
+  }
+  return rules;
+}
+
 function skillRouting(d) {
   const map = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));
   const installed = new Set([...fs.readdirSync(path.join(HERE, 'core', 'skills')), ...fs.readdirSync(path.join(HERE, 'templates', '.claude', 'skills'))]);
   const focus = new Set(toArr(map.types[d.type]));
+  d.unmatched_stack = [];
   for (const token of d.stack.map(norm)) {
+    let hit = false;
     for (const [key, skills] of Object.entries(map.stack)) {
-      if (token === key || (token.startsWith(key) && /^(\d*|js)$/.test(token.slice(key.length)))) skills.forEach((s) => focus.add(s));
+      if (token === key || (token.startsWith(key) && /^(\d*|js)$/.test(token.slice(key.length)))) { skills.forEach((s) => focus.add(s)); hit = true; }
     }
+    if (!hit) d.unmatched_stack.push(token);
   }
   const always = map.always.filter((s) => installed.has(s));
   const focusList = [...focus].filter((s) => installed.has(s) && !always.includes(s));
+  d.routed_set = new Set([...always, ...focusList]);
   const rest = [...installed].filter((s) => !focus.has(s) && !always.includes(s)).sort();
   const fmt = (a) => a.map((s) => `\`${s}\``).join(', ');
   return [
@@ -305,9 +345,17 @@ function main() {
   console.log(`${DRY ? '[dry-run] ' : ''}Generating for "${cfg.name}" → ${TARGET}`);
 
   // 1. core (generic, always overwritten from the template)
+  // skills_mode: all (default) installs every skill; focused installs only the ones routed for this type/stack.
+  const focused = cfg.skills_mode === 'focused';
+  const wanted = (rel) => !focused || ctx.routed_set.has(rel.split(path.sep)[0]);
+  if (ctx.unmatched_stack.length) console.warn(`⚠ stack token(s) matched no skill: ${ctx.unmatched_stack.join(', ')} (check spelling, or map them in core/skill-map.json)`);
   for (const sub of ['skills', 'agents', 'rules']) {
     const base = path.join(HERE, 'core', sub);
-    for (const f of walk(base)) put(path.join(TARGET, '.claude', sub, path.relative(base, f)), fs.readFileSync(f));
+    for (const f of walk(base)) {
+      const rel = path.relative(base, f);
+      if (sub === 'skills' && !wanted(rel)) continue;
+      put(path.join(TARGET, '.claude', sub, rel), fs.readFileSync(f));
+    }
   }
   // 2. templates (rendered with the config)
   const tbase = path.join(HERE, 'templates');
@@ -317,6 +365,36 @@ function main() {
     if (!ctx.branches.integration && needsIntegration.some((re) => re.test(rel))) continue;
     put(path.join(TARGET, rel), render(fs.readFileSync(f, 'utf8'), ctx), true);
   }
+  // 2b. manifest + settings (settings are merged, never replaced)
+  const noIntegration = ['merge-to-dev', 'merge-to-main', 'ship'];
+  const skillNames = [...new Set([
+    ...fs.readdirSync(path.join(HERE, 'core', 'skills')).filter((n) => wanted(n)),
+    ...fs.readdirSync(path.join(tbase, '.claude', 'skills')).filter((n) => ctx.branches.integration || !noIntegration.includes(n)),
+  ])].sort();
+  const agentNames = fs.readdirSync(path.join(HERE, 'core', 'agents')).map((f) => f.replace(/\.md$/i, '')).sort();
+  put(path.join(TARGET, '.claude', 'CONFIGURATION.MANIFEST.JSON'), JSON.stringify({
+    name: cfg.name, generatedBy: 'claude-template', templateVersion: TEMPLATE_VERSION, skillsMode: focused ? 'focused' : 'all', type: cfg.type, stack: ctx.stack, branches: ctx.branches,
+    runInDocker: Boolean(cfg.run_in_docker), testCommand: ctx.test_cmd_full, skills: skillNames, agents: agentNames,
+  }, null, 2) + '\n');
+
+  const stampPath = path.join(TARGET, '.claude', '.template-version');
+  const prevVersion = fs.existsSync(stampPath) ? fs.readFileSync(stampPath, 'utf8').trim() : '';
+  if (prevVersion && prevVersion !== TEMPLATE_VERSION) console.log(`Template version: ${prevVersion} → ${TEMPLATE_VERSION}`);
+  put(stampPath, TEMPLATE_VERSION + '\n');
+
+  const settingsPath = path.join(TARGET, '.claude', 'settings.json');
+  let settings = {}; let settingsOk = true;
+  if (fs.existsSync(settingsPath)) { try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch { settingsOk = false; console.warn('⚠ .claude/settings.json is not valid JSON; left untouched.'); } }
+  if (settingsOk) {
+    settings.$schema = settings.$schema || 'https://json.schemastore.org/claude-code-settings.json';
+    settings.model = settings.model || cfg.model || 'sonnet';
+    settings.permissions = settings.permissions || {};
+    const deny = denyRules(cfg, ctx);
+    if (deny.length) settings.permissions.deny = [...new Set([...(settings.permissions.deny || []), ...deny])];
+    if (cfg.allow_safe_commands !== false) settings.permissions.allow = [...new Set([...(settings.permissions.allow || []), ...allowRules(ctx)])];
+    put(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+  }
+
   // 3. optional .agents mirror
   const mirror = cfg.agents_mirror !== false; // default ON; set `agents_mirror: false` to disable
   if (mirror && !DRY) {

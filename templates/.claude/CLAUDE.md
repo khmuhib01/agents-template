@@ -18,11 +18,11 @@ All skills are installed; use the ones that fit the task.
 
 ## Token Efficiency
 
-- Read only the files needed; use `Grep` and line ranges.
-- Use `Edit` instead of `Write` for existing files; batch independent calls.
-- Do not re-read files already in context, or re-read after an edit.
-- Do not load skills or spawn agents for simple tasks.
-- Keep responses concise.
+- Read only the files needed; `Grep` first, then line ranges. Never open lockfiles, dumps or logs whole.
+- `Edit` instead of `Write` for existing files; batch independent calls; do not re-read after an edit.
+- No skills or subagents for simple tasks. Pipe long command output through `head`/`tail`.
+- Start a new task with `/clear`; for a big change, plan first and wait for approval.
+- Keep responses short.
 
 ## Session Start
 

@@ -1,6 +1,7 @@
 ---
 name: git-manager
 description: "Use for Git and code-hosting operations: status, commit, push, branches, sync, PRs, and /ship. Checks repository state first; never merges, force-pushes, or bypasses hooks."
+model: haiku
 tools: Bash, Read, Grep, Glob
 ---
 
