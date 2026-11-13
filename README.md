@@ -15,6 +15,23 @@ Re-run `init.mjs` any time: after editing the config, or after improving the tem
 
 Requires Node 18+. No dependencies.
 
+## Set up on a new PC (global slash commands)
+
+Two global commands let you work from the chat instead of the terminal: `/agent-setup-scaffold` (drafts `project.config.yml`) and `/agent-init` (generates the files). Their sources live in `global-skills/`.
+
+```bash
+git clone https://github.com/mohibbullahchefonline/claude-template.git <any-folder>/claude-template
+cd <any-folder>/claude-template
+node install-global.mjs                 # Claude Code  -> ~/.claude/skills/
+node install-global.mjs --antigravity   # Antigravity  -> ~/.gemini/antigravity/global_workflows/ (path not verified on every version)
+node install-global.mjs --all           # both
+```
+
+- Requires Node 18+. The script rewrites the template path inside the skills to wherever you cloned it, so the folder can be anywhere.
+- Restart Claude Code / Antigravity afterwards, then in any project: `/agent-setup-scaffold` → edit `project.config.yml` → `/agent-init`.
+- After `git pull` in the template (or editing `global-skills/`), run `install-global.mjs` again; installed copies are not updated automatically.
+- The clone must stay on the PC: the skills run `init.mjs` from it. `--dry-run` shows what would be written.
+
 ## What is where
 
 | Path | Purpose |
@@ -25,6 +42,8 @@ Requires Node 18+. No dependencies.
 | `core/rules/` | Generic rules not already in `~/.claude/rules` (global security/testing/code-quality/git rules are not duplicated) |
 | `core/skill-map.json` | Maps `type` / `stack` tokens to skills; drives the "Skill routing" section |
 | `templates/` | Files with `{{placeholders}}`: AGENTS.md, CLAUDE.md, project rules, git skills (commit, push, ship, ...) |
+| `global-skills/` | Sources of `/agent-setup-scaffold` and `/agent-init` |
+| `install-global.mjs` | Installs those global commands for Claude Code / Antigravity |
 | `init.mjs` | The generator |
 
 ## Config keys
