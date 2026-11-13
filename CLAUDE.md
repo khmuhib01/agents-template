@@ -1,0 +1,37 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this repo is
+
+A generator, not an app. `init.mjs` reads a target project's `project.config.yml` and writes that project's `AGENTS.md`, `CLAUDE.md` and `.claude/` (rules, skills, agents, `settings.json`). Note: `templates/CLAUDE.md` is the *template* for generated projects — this root file is for working on the generator itself.
+
+Plain Node 18+ ES modules, **zero dependencies** (keep it that way — e.g. `init.mjs` has its own minimal YAML-subset parser instead of a YAML library).
+
+## Commands
+
+```bash
+node test.mjs                                    # full smoke suite (what CI runs, Node 20)
+node init.mjs --target <dir> [--config FILE] [--dry-run]   # generate/update a project
+node init.mjs --scaffold --target <dir>          # draft project.config.yml from detected stack
+node install-global.mjs [--antigravity|--all] [--dry-run]  # install global-skills/ into ~/.claude/skills
+```
+
+There is no single-test runner: `test.mjs` is one script with named cases (`laravel-docker`, `mobile-no-docker`, `focused-skills`, a `forbid` case, an invalid-config case). To iterate on one, run `init.mjs --dry-run` against a temp dir with a config copied from that case.
+
+## Architecture
+
+`init.mjs` flow: parse config (YAML subset) → validate → `buildContext()` derives template variables → render `templates/*` with a tiny engine (`{{key}}`, `{{a.b}}`, `{{#if key}}…{{else}}…{{/if}}`, **no nested `if`**) → copy `core/` (skills, agents, rules) → merge (never replace) `settings.json` with `denyRules()` / `allowRules()` → back up changed files to `.claude/.init-backup/<timestamp>/` → write manifest + `.claude/.template-version` from `VERSION`.
+
+- `core/skill-map.json` maps `type`/`stack` tokens to skills; it drives the generated "Skill routing" section and `skills_mode: focused`. Adding a stack = new `core/skills/<name>/SKILL.md` + entry here.
+- Git workflow skills (commit, push, ship, merge-to-dev/main) are templates, not core; `/merge-to-*` and `/ship` are skipped when `branches.integration` is empty.
+- `forbid: [word]` makes init fail if the word appears in any generated file.
+- `install-global.mjs` rewrites the template path inside `global-skills/*` to the clone location, since those skills invoke `init.mjs` from it.
+
+## Invariants tests enforce
+
+- No `{{…}}` placeholders left in generated md/json (outside skills).
+- Re-running init is idempotent (`0 created, 0 updated`).
+- Invalid `type` and forbidden words exit non-zero.
+
+Bump `VERSION` when a change should show up as an upgrade (`old → new`) in existing projects. Update `README.md` and `project.config.example.yml` when adding config keys.

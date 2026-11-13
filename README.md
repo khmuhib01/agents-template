@@ -20,8 +20,8 @@ Requires Node 18+. No dependencies.
 Two global commands let you work from the chat instead of the terminal: `/agent-setup-scaffold` (drafts `project.config.yml`) and `/agent-init` (generates the files). Their sources live in `global-skills/`.
 
 ```bash
-git clone https://github.com/mohibbullahchefonline/claude-template.git <any-folder>/claude-template
-cd <any-folder>/claude-template
+git clone https://github.com/khmuhib01/agents-template.git <any-folder>/agents-template
+cd <any-folder>/agents-template
 node install-global.mjs                 # Claude Code  -> ~/.claude/skills/
 node install-global.mjs --antigravity   # Antigravity  -> ~/.gemini/antigravity/global_workflows/ (path not verified on every version)
 node install-global.mjs --all           # both

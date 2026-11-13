@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Agent setup: scaffold
 
-Template folder: `D:/Muhib/claude-template` (if it is missing, tell the user and offer `git clone https://github.com/mohibbullahchefonline/claude-template.git D:/Muhib/claude-template`; do not clone without a yes).
+Template folder: `D:/Muhib/claude-template` (if it is missing, tell the user and offer to clone `https://github.com/khmuhib01/agents-template.git`: ask which folder to clone into, then remind them to run `node install-global.mjs` from that folder; do not clone without a yes).
 
 1. Work in the current project root (the working directory). If `project.config.yml` already exists, stop and tell the user (do not overwrite).
 2. Run: `node D:/Muhib/claude-template/init.mjs --scaffold` and show its short output.
