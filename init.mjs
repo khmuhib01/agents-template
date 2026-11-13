@@ -203,6 +203,7 @@ notes:                                # TODO project-specific rules
 
 forbid: []
 agents_mirror: true
+codex_mirror: true
 `;
   if (DRY) { console.log(yml); return; }
   fs.writeFileSync(out, yml);
@@ -413,24 +414,26 @@ function main() {
     put(settingsPath, JSON.stringify(settings, null, 2) + '\n');
   }
 
-  // 3. optional .agents mirror
-  const mirror = cfg.agents_mirror !== false; // default ON; set `agents_mirror: false` to disable
-  if (mirror && !DRY) {
-    for (const n of ['rules', 'skills', 'agents']) {
-      const link = path.join(TARGET, '.agents', n);
+  // 3. mirrors for other agents: .agents/ (Antigravity/Gemini, Codex) and .codex/ (Codex), linked to .claude/
+  const mirrors = [];
+  if (cfg.agents_mirror !== false) mirrors.push('.agents'); // default ON
+  if (cfg.codex_mirror !== false) mirrors.push('.codex');   // default ON
+  if (!DRY) {
+    for (const dir of mirrors) for (const n of ['rules', 'skills', 'agents']) {
+      const link = path.join(TARGET, dir, n);
       if (fs.existsSync(link)) continue;
       fs.mkdirSync(path.dirname(link), { recursive: true });
       const real = path.join(TARGET, '.claude', n);
       try {
         fs.symlinkSync(process.platform === 'win32' ? real : path.join('..', '.claude', n), link, process.platform === 'win32' ? 'junction' : 'dir');
-      } catch (e) { console.warn(`⚠ could not create .agents/${n} link (${e.code}); set agents_mirror: false to skip it`); }
+      } catch (e) { console.warn(`⚠ could not create ${dir}/${n} link (${e.code}); set ${dir === '.codex' ? 'codex' : 'agents'}_mirror: false to skip it`); }
     }
   }
 
-  // 3b. keep derived/backup folders out of git (.agents is recreated by init from the committed config)
+  // 3b. keep derived/backup folders out of git (mirrors are recreated by init from the committed config)
   if (!DRY) {
     const want = ['/.claude/.init-backup/'];
-    if (mirror) want.push('/.agents/');
+    for (const dir of mirrors) want.push(`/${dir}/rules`, `/${dir}/skills`, `/${dir}/agents`);
     const gi = path.join(TARGET, '.gitignore');
     const cur = fs.existsSync(gi) ? fs.readFileSync(gi, 'utf8') : '';
     const add = want.filter((w) => !cur.split(/\r?\n/).some((l) => l.trim() === w));

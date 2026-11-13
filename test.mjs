@@ -25,7 +25,7 @@ docker: {dir: docker, service: app}
 test_command: "php artisan test"
 local_only: [".env", "db_backups/", "*.sql"]
 branches: {working: dev1, integration: develop, production: main}
-`, has: ['.claude/skills/ship/SKILL.md', '.agents/skills', '.claude/.template-version'],
+`, has: ['.claude/skills/ship/SKILL.md', '.agents/skills', '.codex/skills/ship/SKILL.md', '.claude/.template-version'],
     settings: (s) => s.permissions.deny.includes('Read(./**/vendor/**)') && s.permissions.deny.includes('Read(./**/*.sql)') && s.permissions.allow.some((a) => a.includes('docker compose exec app php artisan test')) },
   'mobile-no-docker': { yml: `name: Mobile
 type: mobile

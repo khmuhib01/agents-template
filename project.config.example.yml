@@ -56,4 +56,5 @@ allow_safe_commands: true       # true: git status/diff/log and the test command
 skills_mode: all                # all: install every skill (default) | focused: install only skills routed for this type/stack
 protect_secrets: true         # true: settings.json denies Read on .env and every local_only path (also keeps big dumps out of context)
 forbid: []                    # words that must NOT appear in generated files (e.g. another project's name)
-agents_mirror: true             # default true: .agents/{rules,skills,agents} link to .claude/ so Antigravity/Gemini/Codex use the same config; false disables
+agents_mirror: true             # default true: .agents/{rules,skills,agents} link to .claude/ (Antigravity/Gemini, Codex); false disables
+codex_mirror: true              # default true: .codex/{rules,skills,agents} link to .claude/ (Codex); false disables

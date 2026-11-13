@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Installs the global slash-skills (/agent-setup-scaffold, /agent-init) on this PC.
-// Usage: node install-global.mjs [--claude] [--antigravity] [--dry-run]   (default: --claude)
+// Usage: node install-global.mjs [--claude] [--codex] [--antigravity] [--all] [--dry-run]   (default: every agent found on this PC)
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -9,16 +9,26 @@ import { fileURLToPath } from 'node:url';
 const root = path.dirname(fileURLToPath(import.meta.url));
 const args = new Set(process.argv.slice(2));
 const dry = args.has('--dry-run');
-const wantAnti = args.has('--antigravity') || args.has('--all');
-const wantClaude = args.has('--claude') || args.has('--all') || !wantAnti;
+const home = os.homedir();
 
-// Skills hard-code the template path; rewrite it to where this clone actually lives.
+// Every supported agent reads the same SKILL.md format; only the global folder differs.
+const AGENTS = {
+  claude: { label: 'Claude Code', root: path.join(home, '.claude'), skills: path.join(home, '.claude', 'skills') },
+  codex: { label: 'Codex', root: path.join(home, '.codex'), skills: path.join(home, '.codex', 'skills') },
+  antigravity: { label: 'Antigravity (Gemini)', root: path.join(home, '.gemini'), skills: path.join(home, '.gemini', 'config', 'skills') },
+};
+// --claude / --codex / --antigravity pick targets; --all forces all three; default: every agent installed on this PC.
+let targets = Object.keys(AGENTS).filter((k) => args.has(`--${k}`));
+if (args.has('--all')) targets = Object.keys(AGENTS);
+if (!targets.length) targets = Object.keys(AGENTS).filter((k) => fs.existsSync(AGENTS[k].root));
+if (!targets.length) targets = ['claude'];
+
+// Skills hard-code a placeholder; rewrite it to where this clone actually lives.
 const templatePath = root.replace(/\\/g, '/');
 const fix = (text) => text.replaceAll('__TEMPLATE_DIR__', templatePath);
 
 const srcDir = path.join(root, 'global-skills');
 const names = fs.readdirSync(srcDir).filter((n) => fs.existsSync(path.join(srcDir, n, 'SKILL.md')));
-const home = os.homedir();
 
 function write(file, content) {
   console.log(`${dry ? '[dry-run] ' : ''}write ${file}`);
@@ -29,13 +39,6 @@ function write(file, content) {
 
 for (const name of names) {
   const raw = fix(fs.readFileSync(path.join(srcDir, name, 'SKILL.md'), 'utf8'));
-  if (wantClaude) write(path.join(home, '.claude', 'skills', name, 'SKILL.md'), raw);
-  if (wantAnti) {
-    // Antigravity slash commands are workflows: keep only `description` in the frontmatter.
-    const desc = (raw.match(/^description:\s*(.+)$/m) || [])[1] || name;
-    const body = raw.replace(/^---[\s\S]*?---\s*/, '');
-    write(path.join(home, '.gemini', 'antigravity', 'global_workflows', `${name}.md`),
-      `---\ndescription: ${desc}\n---\n\n${body}`);
-  }
+  for (const t of targets) write(path.join(AGENTS[t].skills, name, 'SKILL.md'), raw);
 }
-console.log(`Done. Template path used: ${templatePath}. Restart the tool to load the new commands.`);
+console.log(`Done for: ${targets.map((t) => AGENTS[t].label).join(', ')}. Template path used: ${templatePath}. Restart the tool(s) to load the new commands.`);

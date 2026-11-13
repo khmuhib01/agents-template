@@ -19,20 +19,39 @@ Works on Windows, macOS and Linux (CI tests all three). Requires Node 18+ and gi
 
 ## Set up on a new PC (global slash commands)
 
-Two global commands let you work from the chat instead of the terminal: `/agent-setup-scaffold` (drafts `project.config.yml`) and `/agent-init` (generates the files). Their sources live in `global-skills/`.
+Two global commands let you work from the chat instead of the terminal: `/agent-setup-scaffold` (drafts `project.config.yml`) and `/agent-init` (generates the files). Their sources live in `global-skills/`. They are installed for **Claude Code, Codex and Antigravity (Gemini)**.
+
+Needs git and Node 18+ (Windows: `winget install Git.Git OpenJS.NodeJS.LTS`, macOS: `brew install git node`).
 
 ```bash
 git clone https://github.com/khmuhib01/agents-template.git <any-folder>/agents-template
 cd <any-folder>/agents-template
-node install-global.mjs                 # Claude Code  -> ~/.claude/skills/
-node install-global.mjs --antigravity   # Antigravity  -> ~/.gemini/antigravity/global_workflows/ (path not verified on every version)
-node install-global.mjs --all           # both
+node install-global.mjs            # every agent found on this PC
+node install-global.mjs --codex    # or pick: --claude --codex --antigravity, or --all
 ```
 
-- Requires Node 18+. The script rewrites the template path inside the skills to wherever you cloned it, so the folder can be anywhere.
-- Restart Claude Code / Antigravity afterwards, then in any project: `/agent-setup-scaffold` → edit `project.config.yml` → `/agent-init`.
-- After `git pull` in the template (or editing `global-skills/`), run `install-global.mjs` again; installed copies are not updated automatically.
-- The clone must stay on the PC: the skills run `init.mjs` from it. `--dry-run` shows what would be written.
+| Agent | Global skills folder |
+|---|---|
+| Claude Code | `~/.claude/skills/` |
+| Codex | `~/.codex/skills/` |
+| Antigravity (Gemini) | `~/.gemini/config/skills/` |
+
+`~` is your home folder (`C:\Users\<you>` on Windows).
+
+- The script rewrites the template path inside the skills to wherever you cloned it, so the folder can be anywhere, but it must stay on the PC (the skills run `init.mjs` from it).
+- Restart the agent afterwards, then in any project: `/agent-setup-scaffold` → edit `project.config.yml` → `/agent-init`.
+- After `git pull` in the template (or editing `global-skills/`), run `install-global.mjs` again. `--dry-run` shows what would be written.
+
+## What init creates in a project
+
+| Path | For |
+|---|---|
+| `AGENTS.md` | Codex, Antigravity and other agents that read it |
+| `CLAUDE.md`, `.claude/` | Claude Code (the real files) |
+| `.agents/{rules,skills,agents}` | Links to `.claude/` for Antigravity/Gemini and Codex (`agents_mirror: false` disables) |
+| `.codex/{rules,skills,agents}` | Links to `.claude/` for Codex (`codex_mirror: false` disables) |
+
+The links are git-ignored and recreated by every init run (junctions on Windows, symlinks elsewhere).
 
 ## What is where
 
@@ -45,12 +64,12 @@ node install-global.mjs --all           # both
 | `core/skill-map.json` | Maps `type` / `stack` tokens to skills; drives the "Skill routing" section |
 | `templates/` | Files with `{{placeholders}}`: AGENTS.md, CLAUDE.md, project rules, git skills (commit, push, ship, ...) |
 | `global-skills/` | Sources of `/agent-setup-scaffold` and `/agent-init` |
-| `install-global.mjs` | Installs those global commands for Claude Code / Antigravity |
+| `install-global.mjs` | Installs those global commands for Claude Code / Codex / Antigravity |
 | `init.mjs` | The generator |
 
 ## Config keys
 
-`name`, `description`, `url`, `type` (web/api/mobile/fullstack/cli/library/other), `stack`, `package_manager`, `run_in_docker` + `docker.{dir,service}`, `test_command`, `branches.{working,integration,production}`, `deploy.{mode,scope,target,needs_approval}`, `commit_attribution`, `docs_language`, `docs_files`, `layout`, `local_only`, `notes`, `forbid`, `agents_mirror` (default on: creates `.agents/` links, git-ignored, recreated by every init run).
+`name`, `description`, `url`, `type` (web/api/mobile/fullstack/cli/library/other), `stack`, `package_manager`, `run_in_docker` + `docker.{dir,service}`, `test_command`, `branches.{working,integration,production}`, `deploy.{mode,scope,target,needs_approval}`, `commit_attribution`, `docs_language`, `docs_files`, `layout`, `local_only`, `notes`, `forbid`, `agents_mirror`, `codex_mirror` (both default on; see above).
 
 - Empty `branches.integration` → `/merge-to-dev`, `/merge-to-main`, `/ship` are not generated.
 - `forbid: [oldprojectname]` → init fails if that word appears anywhere in generated files.
