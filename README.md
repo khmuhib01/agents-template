@@ -59,7 +59,7 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 |---|---|
 | `project.config.example.yml` | Fully documented example of the one file you edit |
 | `core/skills/` | All skills (Laravel, React, Next.js, Vue, Node, Python, Go, Rust, Java/Kotlin, .NET, Ruby/Rails, Flutter, Swift, React Native/Expo, MySQL, Postgres, TypeScript, security, testing, ...). Always copied in full. |
-| `core/agents/` | architect, backend/frontend engineer, code-reviewer, qa, security-reviewer, git-manager |
+| `core/agents/` | planner, architect, backend/frontend/devops engineer, debugger, code-reviewer, qa, security-reviewer, git-manager |
 | `core/rules/` | Generic rules not already in `~/.claude/rules` (global security/testing/code-quality/git rules are not duplicated) |
 | `core/skill-map.json` | Maps `type` / `stack` tokens to skills; drives the "Skill routing" section |
 | `templates/` | Files with `{{placeholders}}`: AGENTS.md, CLAUDE.md, project rules, git skills (commit, push, ship, ...) |

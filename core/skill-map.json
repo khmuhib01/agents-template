@@ -1,6 +1,7 @@
 {
   "_comment": "Maps config values to skills. All skills are always copied; this only drives the 'Skill routing' section in the generated .claude/CLAUDE.md.",
   "always": [
+    "build",
     "commit",
     "commit-push",
     "push",
