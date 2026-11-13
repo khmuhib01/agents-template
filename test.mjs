@@ -79,6 +79,7 @@ const sc = spawnSync(process.execPath, [INIT, '--scaffold', '--target', go], { e
 const draft = fs.existsSync(path.join(go, 'project.config.yml')) ? fs.readFileSync(path.join(go, 'project.config.yml'), 'utf8') : '';
 check(sc.status === 0 && /stack: \[go\]/.test(draft) && /type: other/.test(draft) && /go test/.test(draft), 'scaffold detects go (type other, go test)');
 check(run(go).status === 0, 'init accepts the scaffolded go config');
+check(fs.existsSync(path.join(go, '.claude/skills/go-development/SKILL.md')) && /`go-development`/.test(fs.readFileSync(path.join(go, '.claude/CLAUDE.md'), 'utf8')), 'go project routes to go-development');
 
 console.log('\n[invalid config]');
 const inv = path.join(base, 'invalid');

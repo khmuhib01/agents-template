@@ -149,15 +149,48 @@
     "docker": [
       "devops-engineering"
     ],
-    "go": [],
-    "rust": [],
-    "ruby": [],
+    "go": [
+      "go-development"
+    ],
+    "rust": [
+      "rust-development"
+    ],
+    "ruby": [
+      "ruby-development"
+    ],
     "rails": [
+      "ruby-development",
       "database-engineering"
     ],
-    "java": [],
-    "kotlin": [],
-    "dotnet": [],
-    "flutter": []
+    "java": [
+      "jvm-development"
+    ],
+    "kotlin": [
+      "jvm-development"
+    ],
+    "dotnet": [
+      "dotnet-development"
+    ],
+    "flutter": [
+      "flutter-development"
+    ],
+    "golang": [
+      "go-development"
+    ],
+    "spring": [
+      "jvm-development"
+    ],
+    "csharp": [
+      "dotnet-development"
+    ],
+    "dart": [
+      "flutter-development"
+    ],
+    "swift": [
+      "swift-development"
+    ],
+    "ios": [
+      "swift-development"
+    ]
   }
 }

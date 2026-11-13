@@ -15,7 +15,7 @@ Re-run `init.mjs` any time: after editing the config, or after improving the tem
 
 Works on Windows, macOS and Linux (CI tests all three). Requires Node 18+ and git. No dependencies.
 
-`--scaffold` detects PHP/Laravel, Node (React, Next, Vue, Nuxt, Express, Nest…), Python, Go, Rust, Ruby/Rails, Java/Kotlin, .NET, Flutter and React Native/Expo. Any other project still works: set `stack` and `test_command` by hand.
+`--scaffold` detects PHP/Laravel, Node (React, Next, Vue, Nuxt, Express, Nest…), Python, Go, Rust, Ruby/Rails, Java/Kotlin, .NET, Flutter, Swift/iOS and React Native/Expo, each with its own skill. Any other project still works: set `stack` and `test_command` by hand.
 
 ## Set up on a new PC (global slash commands)
 
@@ -39,7 +39,7 @@ node install-global.mjs --all           # both
 | Path | Purpose |
 |---|---|
 | `project.config.example.yml` | Fully documented example of the one file you edit |
-| `core/skills/` | All skills (Laravel, React, Next.js, Vue, Node, Python, React Native/Expo, MySQL, Postgres, TypeScript, security, testing, ...). Always copied in full. |
+| `core/skills/` | All skills (Laravel, React, Next.js, Vue, Node, Python, Go, Rust, Java/Kotlin, .NET, Ruby/Rails, Flutter, Swift, React Native/Expo, MySQL, Postgres, TypeScript, security, testing, ...). Always copied in full. |
 | `core/agents/` | architect, backend/frontend engineer, code-reviewer, qa, security-reviewer, git-manager |
 | `core/rules/` | Generic rules not already in `~/.claude/rules` (global security/testing/code-quality/git rules are not duplicated) |
 | `core/skill-map.json` | Maps `type` / `stack` tokens to skills; drives the "Skill routing" section |
@@ -81,5 +81,5 @@ Also: always-loaded text is kept short (git procedures live in skills, loaded on
 
 ## Known gaps
 
-- Go, Rust, Ruby, Java/Kotlin, .NET and Flutter are detected but have no dedicated skill yet (generic skills still apply). Swift is not detected; add a folder in `core/skills/<name>/SKILL.md` and map it in `skill-map.json`.
+- Other languages (PHP without Laravel, Elixir, C/C++, …) get only the generic skills; add a folder in `core/skills/<name>/SKILL.md` and map it in `skill-map.json`.
 - `ARCHITECTURE.md` is generated from `layout` + `notes` only; for deep architecture rules, add them to `notes` or run `/project-intelligence` in the project.
