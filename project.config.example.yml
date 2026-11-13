@@ -1,0 +1,54 @@
+# project.config.yml — the ONLY file you edit per project.
+# Copy this to the root of your project as `project.config.yml`, fill it in, then run:
+#   node D:/Muhib/claude-template/init.mjs
+# Supported YAML subset: `key: value`, nested maps (2-space indent), `- item` lists,
+# inline [a, b] lists, inline {a: b} maps, "quoted strings". No multi-line block scalars.
+
+name: ARTA Blog
+description: "Blog for the Asian Restaurant and Takeaway Awards (ARTA)."
+url: https://www.artauk.com/blog
+type: web                       # web | api | mobile | fullstack
+stack: [laravel8, blade, mysql] # free tokens; matched against core/skill-map.json
+package_manager: composer       # composer | npm | pnpm | yarn | pip | uv ... (optional)
+
+run_in_docker: true             # true: commands run inside a container
+docker:
+  dir: docker                   # folder that holds docker-compose.yml
+  service: app                  # service name to exec into
+  workdir_note: "src/ is mounted at /var/www/html"   # optional
+
+test_command: "php artisan test"   # leave empty if the project has no tests
+
+branches:
+  working: muhib                # your day-to-day branch (or feature/*)
+  integration: develop          # leave empty "" if you merge straight to production
+  production: main              # protected branch
+
+deploy:
+  mode: manual                  # manual | ci
+  scope: "httpdocs/blog/"       # optional: the only server path that may be touched
+  target: ""                    # optional: e.g. production URL for ci mode
+  needs_approval: true
+
+commit_attribution: false       # false: never add Co-Authored-By / Generated-with lines
+docs_language: English
+docs_files: [README.md]         # tracked docs that /doc-sync is allowed to update
+
+layout:                         # shown in AGENTS.md and .claude/CLAUDE.md
+  - "src/: Laravel 8 application"
+  - "docker/: local Docker stack"
+  - "db_backups/: local DB dumps (git-ignored)"
+
+local_only:                     # git-ignored paths that must never be committed
+  - docs/credentials/
+  - docs/scripts/
+  - "*.sql"
+
+notes:                          # project-specific rules in plain words
+  - "Brand is ARTA (not Artauk)."
+  - "Keep the current blog design; branding changes only unless asked."
+  - "Keep /blog/{slug} URLs stable (migrated WordPress slugs)."
+  - "Images are not in git."
+
+forbid: []                      # words that must NOT appear in generated files (e.g. another project's name)
+agents_mirror: true             # default true: .agents/{rules,skills,agents} link to .claude/ so Antigravity/Gemini/Codex use the same config; false disables
