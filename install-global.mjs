@@ -14,7 +14,7 @@ const wantClaude = args.has('--claude') || args.has('--all') || !wantAnti;
 
 // Skills hard-code the template path; rewrite it to where this clone actually lives.
 const templatePath = root.replace(/\\/g, '/');
-const fix = (text) => text.replaceAll('D:/Muhib/claude-template', templatePath);
+const fix = (text) => text.replaceAll('__TEMPLATE_DIR__', templatePath);
 
 const srcDir = path.join(root, 'global-skills');
 const names = fs.readdirSync(srcDir).filter((n) => fs.existsSync(path.join(srcDir, n, 'SKILL.md')));

@@ -71,6 +71,15 @@ fs.mkdirSync(bad, { recursive: true });
 fs.writeFileSync(path.join(bad, 'project.config.yml'), 'name: Bad\ntype: web\nstack: [laravel]\nbranches: {working: a, integration: develop, production: main}\nnotes:\n  - "copied from oldproject"\nforbid: [oldproject]\n');
 check(run(bad).status === 1, 'forbidden term makes init fail');
 
+// scaffold detects a non-JS/PHP stack and the draft config generates cleanly
+console.log('\n[scaffold-go]');
+const go = path.join(base, 'go-cli'); fs.mkdirSync(go);
+fs.writeFileSync(path.join(go, 'go.mod'), 'module example.com/x\n');
+const sc = spawnSync(process.execPath, [INIT, '--scaffold', '--target', go], { encoding: 'utf8' });
+const draft = fs.existsSync(path.join(go, 'project.config.yml')) ? fs.readFileSync(path.join(go, 'project.config.yml'), 'utf8') : '';
+check(sc.status === 0 && /stack: \[go\]/.test(draft) && /type: other/.test(draft) && /go test/.test(draft), 'scaffold detects go (type other, go test)');
+check(run(go).status === 0, 'init accepts the scaffolded go config');
+
 console.log('\n[invalid config]');
 const inv = path.join(base, 'invalid');
 fs.mkdirSync(inv, { recursive: true });

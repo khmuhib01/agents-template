@@ -1,45 +1,163 @@
 {
   "_comment": "Maps config values to skills. All skills are always copied; this only drives the 'Skill routing' section in the generated .claude/CLAUDE.md.",
   "always": [
-    "commit", "commit-push", "push", "pr", "status", "sync",
-    "review", "code-review", "test", "test-engineering", "testing-best-practices",
-    "bug-investigation", "safe-refactoring", "security-audit", "audit",
-    "project-intelligence", "technical-documentation", "technical-debt",
-    "dependency-management", "system-design", "performance-engineering"
+    "commit",
+    "commit-push",
+    "push",
+    "pr",
+    "status",
+    "sync",
+    "review",
+    "code-review",
+    "test",
+    "test-engineering",
+    "testing-best-practices",
+    "bug-investigation",
+    "safe-refactoring",
+    "security-audit",
+    "audit",
+    "project-intelligence",
+    "technical-documentation",
+    "technical-debt",
+    "dependency-management",
+    "system-design",
+    "performance-engineering"
   ],
   "types": {
-    "web": ["frontend-engineering", "ui-ux-engineering", "api-engineering", "devops-engineering"],
-    "api": ["api-engineering", "database-engineering", "devops-engineering"],
-    "mobile": ["ui-ux-engineering", "api-engineering"],
-    "fullstack": ["frontend-engineering", "ui-ux-engineering", "api-engineering", "database-engineering", "devops-engineering"]
+    "web": [
+      "frontend-engineering",
+      "ui-ux-engineering",
+      "api-engineering",
+      "devops-engineering"
+    ],
+    "api": [
+      "api-engineering",
+      "database-engineering",
+      "devops-engineering"
+    ],
+    "mobile": [
+      "ui-ux-engineering",
+      "api-engineering"
+    ],
+    "fullstack": [
+      "frontend-engineering",
+      "ui-ux-engineering",
+      "api-engineering",
+      "database-engineering",
+      "devops-engineering"
+    ],
+    "cli": [
+      "devops-engineering"
+    ],
+    "library": [],
+    "other": [
+      "devops-engineering"
+    ]
   },
   "stack": {
-    "laravel": ["laravel-best-practices", "infer-conventions", "database-engineering"],
-    "blade": ["frontend-engineering"],
-    "livewire": ["frontend-engineering"],
-    "inertia": ["frontend-engineering"],
-    "tailwind": ["tailwindcss-development"],
-    "react": ["react-development", "typescript-development"],
-    "nextjs": ["nextjs-development", "react-development", "typescript-development"],
-    "vue": ["vue-development"],
-    "nuxt": ["vue-development"],
-    "typescript": ["typescript-development"],
-    "node": ["nodejs-development", "typescript-development"],
-    "express": ["nodejs-development"],
-    "nest": ["nodejs-development", "typescript-development"],
-    "fastify": ["nodejs-development"],
-    "python": ["python-development"],
-    "django": ["python-development"],
-    "fastapi": ["python-development"],
-    "flask": ["python-development"],
-    "reactnative": ["react-native-development", "typescript-development"],
-    "expo": ["react-native-development", "typescript-development"],
-    "mysql": ["mysql-engineering", "database-engineering"],
-    "mariadb": ["mysql-engineering", "database-engineering"],
-    "postgres": ["postgresql-engineering", "database-engineering"],
-    "postgresql": ["postgresql-engineering", "database-engineering"],
-    "sqlite": ["database-engineering"],
-    "mongodb": ["database-engineering"],
-    "docker": ["devops-engineering"]
+    "laravel": [
+      "laravel-best-practices",
+      "infer-conventions",
+      "database-engineering"
+    ],
+    "blade": [
+      "frontend-engineering"
+    ],
+    "livewire": [
+      "frontend-engineering"
+    ],
+    "inertia": [
+      "frontend-engineering"
+    ],
+    "tailwind": [
+      "tailwindcss-development"
+    ],
+    "react": [
+      "react-development",
+      "typescript-development"
+    ],
+    "nextjs": [
+      "nextjs-development",
+      "react-development",
+      "typescript-development"
+    ],
+    "vue": [
+      "vue-development"
+    ],
+    "nuxt": [
+      "vue-development"
+    ],
+    "typescript": [
+      "typescript-development"
+    ],
+    "node": [
+      "nodejs-development",
+      "typescript-development"
+    ],
+    "express": [
+      "nodejs-development"
+    ],
+    "nest": [
+      "nodejs-development",
+      "typescript-development"
+    ],
+    "fastify": [
+      "nodejs-development"
+    ],
+    "python": [
+      "python-development"
+    ],
+    "django": [
+      "python-development"
+    ],
+    "fastapi": [
+      "python-development"
+    ],
+    "flask": [
+      "python-development"
+    ],
+    "reactnative": [
+      "react-native-development",
+      "typescript-development"
+    ],
+    "expo": [
+      "react-native-development",
+      "typescript-development"
+    ],
+    "mysql": [
+      "mysql-engineering",
+      "database-engineering"
+    ],
+    "mariadb": [
+      "mysql-engineering",
+      "database-engineering"
+    ],
+    "postgres": [
+      "postgresql-engineering",
+      "database-engineering"
+    ],
+    "postgresql": [
+      "postgresql-engineering",
+      "database-engineering"
+    ],
+    "sqlite": [
+      "database-engineering"
+    ],
+    "mongodb": [
+      "database-engineering"
+    ],
+    "docker": [
+      "devops-engineering"
+    ],
+    "go": [],
+    "rust": [],
+    "ruby": [],
+    "rails": [
+      "database-engineering"
+    ],
+    "java": [],
+    "kotlin": [],
+    "dotnet": [],
+    "flutter": []
   }
 }

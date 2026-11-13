@@ -26,7 +26,7 @@ There is no single-test runner: `test.mjs` is one script with named cases (`lara
 - `core/skill-map.json` maps `type`/`stack` tokens to skills; it drives the generated "Skill routing" section and `skills_mode: focused`. Adding a stack = new `core/skills/<name>/SKILL.md` + entry here.
 - Git workflow skills (commit, push, ship, merge-to-dev/main) are templates, not core; `/merge-to-*` and `/ship` are skipped when `branches.integration` is empty.
 - `forbid: [word]` makes init fail if the word appears in any generated file.
-- `install-global.mjs` rewrites the template path inside `global-skills/*` to the clone location, since those skills invoke `init.mjs` from it.
+- `global-skills/*` use the placeholder `__TEMPLATE_DIR__`; `install-global.mjs` replaces it with the clone location, since those skills invoke `init.mjs` from it.
 
 ## Invariants tests enforce
 

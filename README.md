@@ -6,14 +6,16 @@ One config file per project → generates `AGENTS.md`, `CLAUDE.md` and `.claude/
 
 ```bash
 cd <your-project>
-node D:/Muhib/claude-template/init.mjs --scaffold   # writes a draft project.config.yml from the detected stack
+node <path-to>/agents-template/init.mjs --scaffold   # writes a draft project.config.yml from the detected stack
 # edit project.config.yml (the only file you touch), then:
-node D:/Muhib/claude-template/init.mjs              # generate
+node <path-to>/agents-template/init.mjs              # generate
 ```
 
 Re-run `init.mjs` any time: after editing the config, or after improving the template (it refreshes the generic parts in every project). Files it changes are first backed up to `.claude/.init-backup/<timestamp>/` (add that folder to `.gitignore`). `--dry-run` shows what would change.
 
-Requires Node 18+. No dependencies.
+Works on Windows, macOS and Linux (CI tests all three). Requires Node 18+ and git. No dependencies.
+
+`--scaffold` detects PHP/Laravel, Node (React, Next, Vue, Nuxt, Express, Nest…), Python, Go, Rust, Ruby/Rails, Java/Kotlin, .NET, Flutter and React Native/Expo. Any other project still works: set `stack` and `test_command` by hand.
 
 ## Set up on a new PC (global slash commands)
 
@@ -48,7 +50,7 @@ node install-global.mjs --all           # both
 
 ## Config keys
 
-`name`, `description`, `url`, `type` (web/api/mobile/fullstack), `stack`, `package_manager`, `run_in_docker` + `docker.{dir,service}`, `test_command`, `branches.{working,integration,production}`, `deploy.{mode,scope,target,needs_approval}`, `commit_attribution`, `docs_language`, `docs_files`, `layout`, `local_only`, `notes`, `forbid`, `agents_mirror` (default on: creates `.agents/` links, git-ignored, recreated by every init run).
+`name`, `description`, `url`, `type` (web/api/mobile/fullstack/cli/library/other), `stack`, `package_manager`, `run_in_docker` + `docker.{dir,service}`, `test_command`, `branches.{working,integration,production}`, `deploy.{mode,scope,target,needs_approval}`, `commit_attribution`, `docs_language`, `docs_files`, `layout`, `local_only`, `notes`, `forbid`, `agents_mirror` (default on: creates `.agents/` links, git-ignored, recreated by every init run).
 
 - Empty `branches.integration` → `/merge-to-dev`, `/merge-to-main`, `/ship` are not generated.
 - `forbid: [oldprojectname]` → init fails if that word appears anywhere in generated files.
@@ -79,5 +81,5 @@ Also: always-loaded text is kept short (git procedures live in skills, loaded on
 
 ## Known gaps
 
-- No Flutter/Kotlin/Swift skill yet; add a folder in `core/skills/<name>/SKILL.md` and map it in `skill-map.json`.
+- Go, Rust, Ruby, Java/Kotlin, .NET and Flutter are detected but have no dedicated skill yet (generic skills still apply). Swift is not detected; add a folder in `core/skills/<name>/SKILL.md` and map it in `skill-map.json`.
 - `ARCHITECTURE.md` is generated from `layout` + `notes` only; for deep architecture rules, add them to `notes` or run `/project-intelligence` in the project.
