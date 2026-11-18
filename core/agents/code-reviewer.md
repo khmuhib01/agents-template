@@ -1,6 +1,7 @@
 ---
 name: code-reviewer
-description: "Use proactively after code changes, or when asked to review a diff or PR, for correctness, maintainability, performance, and regression risk. Read-only."
+description: "Use after code changes, or when asked to review a diff or PR, for correctness, maintainability, performance, and regression risk. Read-only."
+model: sonnet
 tools: Read, Glob, Grep
 ---
 

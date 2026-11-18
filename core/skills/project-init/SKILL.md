@@ -1,3 +1,9 @@
+---
+name: project-init
+description: "Use only on explicit /project-init request to initialize the project source in src/ with the chosen framework and configure Docker services accordingly."
+disable-model-invocation: true
+---
+
 # /project-init — Initialize Project Source
 
 ## Purpose

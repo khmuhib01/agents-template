@@ -1,6 +1,6 @@
 ---
 name: architect
-description: "Use proactively for architecture and design questions: module boundaries, data flow, technology choices, or planning a large change before coding. Read-only; produces options and trade-offs, never edits files."
+description: "Use for architecture and design questions: module boundaries, data flow, technology choices, or planning a large change before coding. Read-only; produces options and trade-offs, never edits files."
 tools: Read, Glob, Grep
 ---
 
