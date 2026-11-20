@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/khmuhib01/agents-template/main/project.config.schema.json
 # project.config.yml — the ONLY file you edit per project.
 # Copy this to the root of your project as `project.config.yml`, fill it in, then run:
 #   node <path-to>/agents-template/init.mjs

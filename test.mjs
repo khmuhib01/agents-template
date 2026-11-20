@@ -305,6 +305,77 @@ console.log('\n[cost optimizer]');
   check(run(mk('cost-badprofile', 'model_profile: turbo\n')).status === 1, 'unknown model_profile is rejected');
 }
 
+console.log('\n[safe upgrades]');
+{
+  const schema = JSON.parse(fs.readFileSync(path.join(HERE, 'project.config.schema.json'), 'utf8'));
+  const props = Object.keys(schema.properties);
+  const example = fs.readFileSync(path.join(HERE, 'project.config.example.yml'), 'utf8');
+  const exampleKeys = [...example.matchAll(/^([a-z_]+):/gm)].map((m) => m[1]);
+  const notInSchema = exampleKeys.filter((k) => !props.includes(k));
+  const notInExample = props.filter((k) => !exampleKeys.includes(k));
+  check(notInSchema.length === 0 && notInExample.length === 0, `schema and project.config.example.yml list the same keys${notInSchema.length ? ' (not in schema: ' + notInSchema + ')' : ''}${notInExample.length ? ' (not in example: ' + notInExample + ')' : ''}`);
+  const types = Object.keys(JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8')).types);
+  check(JSON.stringify(schema.properties.type.enum) === JSON.stringify(types), 'schema "type" enum matches skill-map.json types');
+  check(/yaml-language-server: \$schema=/.test(example.split('\n')[0]), 'example config points editors at the schema');
+
+  const mk = (name, extra = '') => {
+    const d = path.join(base, name); fs.mkdirSync(d, { recursive: true });
+    fs.writeFileSync(path.join(d, 'project.config.yml'), `name: S\ntype: web\nstack: [laravel]\nrun_in_docker: false\nbranches: {working: a, integration: "", production: main}\n${extra}`);
+    return d;
+  };
+  const cfgPath = (d) => path.join(d, 'project.config.yml');
+  const rd = (d, f) => fs.readFileSync(path.join(d, f), 'utf8');
+
+  // unknown keys
+  const typo = run(mk('safe-typo', 'skils_mode: focused\n'));
+  check(typo.status === 0 && /unknown config key "skils_mode" is ignored \(did you mean "skills_mode"\?\)/.test(typo.stderr), 'a mistyped config key warns with a suggestion (and still generates)');
+
+  // --check
+  const c = mk('safe-check');
+  const pre = run(c, ['--check']);
+  check(pre.status === 1 && /out of date/.test(pre.stderr) && !fs.existsSync(path.join(c, '.claude')), '--check fails on an un-initialized project and writes nothing');
+  check(run(c).status === 0, 'init succeeds');
+  const post = run(c, ['--check']);
+  check(post.status === 0 && /in sync/.test(post.stdout), '--check passes right after init');
+  fs.appendFileSync(cfgPath(c), 'notes:\n  - "new rule"\n');
+  check(run(c, ['--check']).status === 1, '--check fails after the config changes');
+  check(run(c).status === 0 && run(c, ['--check']).status === 0, '--check passes again after re-running init');
+
+  // hand-edit protection
+  const e = mk('safe-edit');
+  run(e);
+  check(fs.existsSync(path.join(e, '.claude/.template-hashes.json')), 'init records generated-file hashes');
+  const hashes = JSON.parse(rd(e, '.claude/.template-hashes.json'));
+  check(hashes['AGENTS.md'] && !hashes['.claude/settings.json'], 'hash file tracks generated docs but not the merged settings.json');
+  fs.appendFileSync(path.join(e, 'AGENTS.md'), '\nMY HAND EDIT\n');
+  fs.appendFileSync(cfgPath(e), 'notes:\n  - "brand new note"\n');
+  const kr = run(e);
+  check(kr.status === 0 && /Kept 1 file\(s\) you edited by hand/.test(kr.stdout) && /AGENTS\.md/.test(kr.stdout), 'a hand-edited generated file is kept and reported');
+  check(/MY HAND EDIT/.test(rd(e, 'AGENTS.md')) && !/brand new note/.test(rd(e, 'AGENTS.md')), 'kept file still has the hand edit and none of the new config');
+  check(/brand new note/.test(rd(e, '.claude/CLAUDE.md')), 'untouched generated files still update');
+  const tmpl = walk(path.join(e, '.claude/.init-backup')).filter((f) => f.endsWith('AGENTS.md.template'));
+  check(tmpl.length === 1 && /brand new note/.test(fs.readFileSync(tmpl[0], 'utf8')), 'the new template version is saved as <file>.template for merging');
+  check(run(e, ['--check']).status === 0, '--check does not fail because of an intentionally edited file');
+  const fr = run(e, ['--force']);
+  check(fr.status === 0 && /brand new note/.test(rd(e, 'AGENTS.md')) && !/MY HAND EDIT/.test(rd(e, 'AGENTS.md')), '--force overwrites the hand-edited file');
+  check(walk(path.join(e, '.claude/.init-backup')).some((f) => f.endsWith('AGENTS.md') && /MY HAND EDIT/.test(fs.readFileSync(f, 'utf8'))), '--force keeps a backup of the hand edit');
+  check(/0 created, 0 updated/.test(run(e).stdout), 'safe upgrades: re-run after --force changes nothing');
+
+  // CRLF working-tree conversion (git autocrlf) is not an edit
+  const crlf = path.join(e, 'AGENTS.md');
+  fs.writeFileSync(crlf, rd(e, 'AGENTS.md').replace(/\n/g, '\r\n'));
+  const cr = run(e);
+  check(/0 created, 0 updated/.test(cr.stdout) && !/Kept/.test(cr.stdout) && /\r\n/.test(rd(e, 'AGENTS.md')), 'CRLF line endings are not treated as an edit and are left alone');
+
+  // projects initialized before hash tracking: behave as before (overwrite with backup)
+  const l = mk('safe-legacy');
+  run(l);
+  fs.unlinkSync(path.join(l, '.claude/.template-hashes.json'));
+  fs.appendFileSync(path.join(l, 'AGENTS.md'), '\nLEGACY EDIT\n');
+  const lr = run(l);
+  check(lr.status === 0 && !/Kept/.test(lr.stdout) && !/LEGACY EDIT/.test(rd(l, 'AGENTS.md')) && fs.existsSync(path.join(l, '.claude/.template-hashes.json')), 'without a hash file (older projects) init overwrites with a backup, then starts tracking');
+}
+
 console.log('\n[forbid]');
 const bad = path.join(base, 'forbid');
 fs.mkdirSync(bad, { recursive: true });
