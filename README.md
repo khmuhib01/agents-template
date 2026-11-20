@@ -13,7 +13,7 @@ node <path-to>/agents-template/init.mjs              # generate
 
 Re-run `init.mjs` any time: after editing the config, or after improving the template (it refreshes the generic parts in every project). Files it changes are first backed up to `.claude/.init-backup/<timestamp>/` (add that folder to `.gitignore`). `--dry-run` shows what would change.
 
-**`@` picker and agents.** The `@` picker in the VS Code extension is a file search that obeys `.gitignore`, and it only mentions files; it does not list agents. To run an agent, ask for it by name in chat or use `/agents`. If your `.gitignore` ignores `.claude/`, the agent files will not show up in the picker either, so `init.mjs` warns about it and, when `.vscode/` is itself git-ignored, merges `search.useIgnoreFiles: false` and `search.useParentIgnoreFiles: false` into `.vscode/settings.json` (existing settings are kept; a non-plain-JSON file is left alone). Reload the window afterwards.
+**`@` picker and agents.** The `@` picker in the VS Code extension is a file search that obeys `.gitignore`, and it only mentions files; it does not list agents. To run an agent, name it in chat or use `/agents`. The generated folders are git-ignored, so the picker would not find them. `init.mjs` therefore adds `search.useIgnoreFiles: false`, `search.useParentIgnoreFiles: false` and a `search.exclude` entry for `**/.claude/.init-backup` to `<project>/.vscode/settings.json` (Reload Window once). Only missing keys are added (your values, comments and line endings are kept), a second run changes nothing, and it is written only when `.vscode/` is git-ignored, otherwise init warns and skips so teammates' editors are not affected. Set `vscode_settings: false` to opt out. User-level VS Code settings are never touched.
 
 Works on Windows, macOS and Linux (CI tests all three). Requires Node 18+ and git. No dependencies.
 
@@ -118,6 +118,7 @@ Add a `packages:` map (see `project.config.example.yml`; each folder must alread
 
 | Key | Effect |
 |---|---|
+| `vscode_settings: false` | Skip writing `.vscode/settings.json` (default is on, only when `.vscode/` is git-ignored): `search.useIgnoreFiles=false` etc. so the `@` picker can find git-ignored generated files |
 | `statusline: true` | Status line: `[Model] folder branch \| ctx 42% \| $0.35` (context turns yellow at 60%, red at 80%). Never replaces a `statusLine` you configured yourself |
 | `session_context: true` | `SessionStart` hook that hands Claude the git branch, status and last 3 commits, saving a first `git status` call; costs a few hundred tokens per session |
 | `mcp_allow: [github]` | Only these `.mcp.json` servers are enabled (`enabledMcpjsonServers`, `enableAllProjectMcpServers: false`). Servers from your user settings or claude.ai connectors are not controlled by this |

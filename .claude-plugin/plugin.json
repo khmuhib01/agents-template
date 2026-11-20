@@ -1,7 +1,7 @@
 {
   "name": "agents-template",
   "description": "Generate AGENTS.md, CLAUDE.md and .claude/ (rules, skills, agents, hooks) for any project from one project.config.yml. Adds /agents-template:agent-setup-scaffold and /agents-template:agent-init.",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "author": {
     "name": "khmuhib01"
   },
