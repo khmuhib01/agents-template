@@ -18,5 +18,15 @@ Detect first: React version (18 vs 19), build tool, TS or JS, styling approach, 
 - Semantic HTML, keyboard access, visible focus. Never pass untrusted content to `dangerouslySetInnerHTML`.
 - React 19 only if installed: `ref` as a regular prop, `use`, `useActionState`, `useOptimistic`, form actions. Do not use them on React 18.
 
+## Common pitfalls (check these before blaming the library)
+- Stale closure: a handler or effect reads old state. Use a functional update (`setN((n) => n + 1)`) or list the dependency; never silence `exhaustive-deps`.
+- Re-render loop ("Too many re-renders", "Maximum update depth"): state set during render, or an effect that sets state it also depends on. Inline object/array/function in a dependency list re-runs the effect every render.
+- Mutating state in place (`push`, `sort`, `obj.x = 1`) does not re-render. Copy first (spread, `toSorted`).
+- Input flips between uncontrolled and controlled when `value` starts `undefined`; initialize to `''`.
+- `key` controls identity: a changing or index key loses focus and state; a deliberate `key` change resets a subtree.
+- StrictMode runs effects twice in development (mount, unmount, mount). Make the effect idempotent with cleanup; do not remove StrictMode.
+- Async in effects: define the async function inside, and ignore stale results with a flag or `AbortController` (race conditions).
+- SSR hydration mismatch: no `Date.now()`, `Math.random()`, locale formatting or `window` reads during render; move them to an effect.
+
 ## Verify
 Run typecheck, lint, and tests. Prefer Testing Library queries by role/label over implementation details.
