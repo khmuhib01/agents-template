@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Offline skill-trigger eval: node evals/run.mjs [--verbose]
+// Offline skill-trigger eval: node evals/run.mjs [--verbose] [--report]
 // For each prompt in cases.json, ranks every core skill by IDF-weighted word overlap between the prompt and the
 // skill's name + description, and requires an expected skill in the top 3. This is a cheap regression guard for
 // description quality (vague or overlapping descriptions fail), NOT a measurement of how a real model triggers skills.
@@ -47,16 +47,40 @@ function rank(prompt) {
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
 }
 
-const cases = JSON.parse(fs.readFileSync(path.join(HERE, 'cases.json'), 'utf8'));
+// Case files: cases.json (legacy, positive only) plus evals/triggers/*.json (schema v2). Fields per case:
+//   prompt   string (required)
+//   expect   [skill] at least one must rank in the top 3 (omit for a pure negative case)
+//   expect_all [skill] every one must rank in the top 5 (multi-skill scenarios)
+//   not      [skill] none of these may rank in the top 3 (negative / hard-negative cases)
+//   tags     [string] free labels, e.g. "version", "regression", "negative", "multi"
+const caseFiles = [path.join(HERE, 'cases.json')];
+const tdir = path.join(HERE, 'triggers');
+if (fs.existsSync(tdir)) for (const f of fs.readdirSync(tdir).sort()) if (f.endsWith('.json')) caseFiles.push(path.join(tdir, f));
+const cases = caseFiles.flatMap((f) => JSON.parse(fs.readFileSync(f, 'utf8')).map((c) => ({ ...c, file: path.basename(f) })));
 const known = new Set(skills.map((s) => s.name));
+const stat = new Map(); // per skill: tp (expected and found), fn (expected, missed), fp (forbidden but found)
+const bump = (n, k) => { const o = stat.get(n) || { tp: 0, fn: 0, fp: 0 }; o[k]++; stat.set(n, o); };
 let failed = 0;
 for (const c of cases) {
-  const bad = c.expect.filter((e) => !known.has(e));
-  if (bad.length) { failed++; console.error(`  ✖ case "${c.prompt}" expects unknown skill(s): ${bad.join(', ')}`); continue; }
-  const top = rank(c.prompt).slice(0, TOP).map((r) => r.name);
-  const ok = c.expect.some((e) => top.includes(e));
+  const exp = c.expect || [], all = c.expect_all || [], not = c.not || [];
+  const bad = [...exp, ...all, ...not].filter((e) => !known.has(e));
+  if (bad.length || (!exp.length && !all.length && !not.length)) { failed++; console.error(`  ✖ case "${c.prompt}" (${c.file}) ${bad.length ? 'references unknown skill(s): ' + bad.join(', ') : 'has no expectation'}`); continue; }
+  const ranked = rank(c.prompt).map((r) => r.name);
+  const top = ranked.slice(0, TOP), top5 = ranked.slice(0, 5);
+  const okExp = !exp.length || exp.some((e) => top.includes(e));
+  const okAll = all.every((e) => top5.includes(e));
+  const hitNot = not.filter((e) => top.includes(e));
+  const ok = okExp && okAll && !hitNot.length;
+  if (exp.length) bump(exp.find((e) => top.includes(e)) || exp[0], okExp ? 'tp' : 'fn');
+  for (const e of all) bump(e, top5.includes(e) ? 'tp' : 'fn');
+  for (const e of hitNot) bump(e, 'fp');
   if (!ok) failed++;
-  if (!ok || VERBOSE) console.log(`  ${ok ? '✔' : '✖'} "${c.prompt}" → [${top.join(', ')}] (expected one of: ${c.expect.join(', ')})`);
+  if (!ok || VERBOSE) console.log(`  ${ok ? '✔' : '✖'} "${c.prompt}" → [${top.join(', ')}]${exp.length ? ` (expected one of: ${exp.join(', ')})` : ''}${all.length ? ` (expected all of: ${all.join(', ')} in top 5)` : ''}${not.length ? ` (must not include: ${not.join(', ')})` : ''}`);
 }
-console.log(`${cases.length - failed}/${cases.length} prompts rank an expected skill in the top ${TOP}.`);
+console.log(`${cases.length - failed}/${cases.length} cases pass (top ${TOP} for expect/not, top 5 for expect_all).`);
+if (process.argv.includes('--report')) {
+  console.log('\nper skill (recall = tp/(tp+fn), false positives = forbidden skill ranked in top 3):');
+  for (const [n, o] of [...stat].sort((a, b) => a[0].localeCompare(b[0]))) console.log(`  ${n.padEnd(28)} tp ${o.tp}  fn ${o.fn}  fp ${o.fp}  recall ${(o.tp + o.fn ? (100 * o.tp / (o.tp + o.fn)).toFixed(0) : '-')}%`);
+  console.log('Offline lexical ranking only: a description-quality guard, not a measurement of a real model.');
+}
 process.exit(failed ? 1 : 0);

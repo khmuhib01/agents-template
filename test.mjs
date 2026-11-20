@@ -616,6 +616,55 @@ if (on('bench')) {
   check(rows.length === 3 && rows.every((r) => r.saved > 0 && r.optimized > 0), 'generated always-loaded context is smaller than the unoptimized setup for every sample');
 }
 
+if (on('routing lib')) {
+console.log('\n[routing lib]');
+{
+  const { focusSkills, expandDeps, shipsWithSkill, claimViolations } = await import(pathToFileURL(path.join(HERE, 'lib', 'routing.mjs')).href);
+  const map = { types: { mobile: ['ui'] }, stack: { flutter: ['flutter-dev'] }, deps: { 'flutter-dev': ['m-arch', 'm-sec'], 'm-arch': ['m-sec', 'flutter-dev'] }, domains: { seo: ['seo-tech'] } };
+  const installed = new Set(['ui', 'flutter-dev', 'm-arch', 'm-sec', 'seo-tech']);
+  const r = focusSkills(map, installed, 'mobile', ['Flutter3'], ['SEO', 'bogus']);
+  check(['ui', 'flutter-dev', 'm-arch', 'm-sec', 'seo-tech'].every((x) => r.focus.has(x)), 'deps expand transitively and domains add skills');
+  check(r.unmatchedDomains.join() === 'bogus' && r.unmatched.length === 0, 'unknown domain is reported, version-suffixed stack token still matches');
+  check(expandDeps(map.deps, ['m-arch']).size === 3, 'dependency cycles terminate');
+  check(!focusSkills(map, new Set(['ui']), 'mobile', ['flutter']).focus.has('flutter-dev'), 'skills that are not installed are filtered out');
+  check(focusSkills({ types: { web: [] }, stack: {} }, new Set(), 'web', []).focus.size === 0, 'map without deps/domains keys still works');
+  check(shipsWithSkill('x/SKILL.md') && shipsWithSkill('x/references/a.md') && !shipsWithSkill('x/evals/a.json') && !shipsWithSkill('x\\examples\\a.md'), 'evals/ and examples/ inside a skill are not installed');
+  check(claimViolations('We guarantee first page rankings').length === 1 && claimViolations('Never promise or guarantee rankings').length === 0, 'SEO overclaim detector flags promises, allows negations');
+}
+
+}
+
+if (on('skill lint')) {
+console.log('\n[skill lint]');
+{
+  const root = path.join(HERE, 'core', 'skills');
+  const problems = [];
+  for (const s of fs.readdirSync(root)) {
+    const dir = path.join(root, s);
+    const text = fs.readFileSync(path.join(dir, 'SKILL.md'), 'utf8');
+    if (text.split(/\r?\n/).length > 150) problems.push(`${s}: SKILL.md over 150 lines (move depth into references/)`);
+    for (const m of text.matchAll(/\]\(((?!https?:|#|mailto:)[^)\s]+)\)/g)) if (!fs.existsSync(path.join(dir, m[1].split('#')[0]))) problems.push(`${s}: broken link ${m[1]}`);
+    for (const f of walk(dir).filter((x) => /[\\/](references|rules|checklists)[\\/]/.test(x) && x.endsWith('.md'))) {
+      const b = path.basename(f);
+      if (b !== 'SOURCES.md' && !text.includes(b)) problems.push(`${s}: ${path.relative(dir, f)} is not mentioned in SKILL.md`);
+    }
+    const src = path.join(dir, 'references', 'SOURCES.md');
+    if (fs.existsSync(src) && !/\|\s*Source\s*\|\s*Publisher\s*\|\s*URL\s*\|\s*Version\s*\|\s*Verified\s*\|/i.test(fs.readFileSync(src, 'utf8'))) problems.push(`${s}: references/SOURCES.md lacks the Source|Publisher|URL|Version|Verified table header`);
+    if (/^seo-/.test(s)) { const { claimViolations } = await import(pathToFileURL(path.join(HERE, 'lib', 'routing.mjs')).href); for (const f of walk(dir).filter((x) => x.endsWith('.md'))) for (const l of claimViolations(fs.readFileSync(f, 'utf8'))) problems.push(`${s}: overclaim in ${path.basename(f)}: ${l.trim()}`); }
+  }
+  check(problems.length === 0, `core skills: size cap, links resolve, references are indexed, SOURCES.md format${problems.length ? '\n    ' + problems.join('\n    ') : ''}`);
+  const map = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));
+  const known = new Set([...fs.readdirSync(root), ...fs.readdirSync(path.join(HERE, 'templates', '.claude', 'skills'))]);
+  const refs = [...Object.entries(map.deps || {}).flat(2), ...Object.values(map.domains || {}).flat()];
+  check(refs.every((x) => known.has(x)), 'skill-map deps/domains reference only existing skills');
+  fs.mkdirSync(path.join(base, 'domains-warn'), { recursive: true });
+  fs.writeFileSync(path.join(base, 'domains-warn', 'project.config.yml'), 'name: D\ntype: web\nstack: [react]\ndomains: [nonexistent]\nbranches: {working: a, production: main}\n');
+  const w = spawnSync(process.execPath, [INIT, '--target', path.join(base, 'domains-warn'), '--dry-run'], { encoding: 'utf8' });
+  check(w.status === 0 && /domain\(s\) matched no skill: nonexistent/.test(w.stderr), 'unknown domains warn but do not fail');
+}
+
+}
+
 if (on('invalid config')) {
 console.log('\n[invalid config]');
 const inv = path.join(base, 'invalid');

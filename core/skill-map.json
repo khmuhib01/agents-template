@@ -1,5 +1,5 @@
 {
-  "_comment": "Maps config values to skills. All skills are always copied; this only drives the 'Skill routing' section in the generated .claude/CLAUDE.md.",
+  "_comment": "Maps config values to skills. In focused mode only routed skills are installed (all mode installs everything); this also drives the 'Skill routing' section in the generated .claude/CLAUDE.md. 'deps' (skill -> skills it needs) is expanded transitively; 'domains' maps the optional config key `domains` (concerns such as seo or product, not tech stacks) to skills.",
   "always": [
     "build",
     "commit",
@@ -196,5 +196,7 @@
     "ios": [
       "swift-development"
     ]
-  }
+  },
+  "deps": {},
+  "domains": {}
 }
