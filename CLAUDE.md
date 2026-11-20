@@ -15,6 +15,7 @@ node test.mjs                                    # full smoke suite (what CI run
 node init.mjs --target <dir> [--config FILE] [--dry-run]   # generate/update a project
 node init.mjs --scaffold --target <dir>          # draft project.config.yml from detected stack
 node bench.mjs                                    # static-context benchmark (generated vs unoptimized)
+node bench-cost.mjs                              # real-cost A/B with `claude -p` (SPENDS MONEY; set CLAUDE_BIN if claude is not on PATH)
 node evals/run.mjs                               # offline skill-routing eval (70 prompts)
 node install-global.mjs [--antigravity|--all] [--dry-run]  # install global-skills/ into ~/.claude/skills
 ```
