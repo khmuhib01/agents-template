@@ -50,6 +50,7 @@ node install-global.mjs --codex    # or pick: --claude --codex --antigravity, or
 | `CLAUDE.md`, `.claude/` | Claude Code (the real files) |
 | `.agents/{rules,skills,agents}` | Links to `.claude/` for Antigravity/Gemini and Codex (`agents_mirror: false` disables) |
 | `.codex/{rules,skills,agents}` | Links to `.claude/` for Codex (`codex_mirror: false` disables) |
+| `.claude/hooks/` | Enforcing hooks for Claude Code (see Hooks below; `hooks: false` disables) |
 
 The links are git-ignored and recreated by every init run (junctions on Windows, symlinks elsewhere).
 
@@ -69,7 +70,7 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 
 ## Config keys
 
-`name`, `description`, `url`, `type` (web/api/mobile/fullstack/cli/library/other), `stack`, `package_manager`, `run_in_docker` + `docker.{dir,service}`, `test_command`, `branches.{working,integration,production}`, `deploy.{mode,scope,target,needs_approval}`, `commit_attribution`, `docs_language`, `docs_files`, `layout`, `local_only`, `notes`, `forbid`, `agents_mirror`, `codex_mirror` (both default on; see above).
+`name`, `description`, `url`, `type` (web/api/mobile/fullstack/cli/library/other), `stack`, `package_manager`, `run_in_docker` + `docker.{dir,service}`, `test_command`, `branches.{working,integration,production}`, `deploy.{mode,scope,target,needs_approval}`, `commit_attribution`, `docs_language`, `docs_files`, `layout`, `local_only`, `notes`, `forbid`, `agents_mirror`, `codex_mirror` (both default on; see above), `hooks` (default true), `format_command`.
 
 - Empty `branches.integration` → `/merge-to-dev`, `/merge-to-main`, `/ship` are not generated.
 - `forbid: [oldprojectname]` → init fails if that word appears anywhere in generated files.
@@ -86,6 +87,18 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 | `model` | sonnet | default model written to `settings.json` if none is set |
 
 Also: always-loaded text is kept short (git procedures live in skills, loaded only when used), `git-manager` runs on `haiku`, and `.claude/CLAUDE.md` carries short context-hygiene rules. `settings.json` is merged, never replaced.
+
+## Hooks (Claude Code)
+
+Rules in markdown can be forgotten; hooks are run by Claude Code itself. init copies Node scripts to `.claude/hooks/` (project values in `.claude/hooks/config.json`) and registers them in `settings.json` (your own hooks are kept).
+
+| Hook | Runs on | Does |
+|---|---|---|
+| `guard-bash` | Bash | **Blocks**: commit or push on `branches.production`/`integration`, force-push, `--no-verify`, and `Co-Authored-By`/"Generated with" lines when `commit_attribution` is false. **Asks**: `git reset --hard`, `git branch -D` |
+| `guard-secrets` | Write/Edit | **Blocks** writes to `.env*` and `local_only` paths, and content with obvious secrets (AWS/GitHub/Slack/Google keys, private keys, `sk-…`). Needs `protect_secrets` (default true) |
+| `format` | after Write/Edit | Runs `format_command "<file>"`. Only installed when `format_command` is set |
+
+Config: `hooks: false` installs none (and removes ours from `settings.json`); `format_command` e.g. `npx prettier --write` or `vendor/bin/pint`. A hook that crashes reports the error (non-blocking) instead of failing silently.
 
 ## Versioning and tests
 

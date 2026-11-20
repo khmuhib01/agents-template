@@ -65,6 +65,77 @@ for (const [name, c] of Object.entries(cases)) {
   check(r2.status === 0 && /0 created, 0 updated/.test(r2.stdout), 'second run changes nothing (idempotent)');
 }
 
+console.log('\n[hooks]');
+{
+  const hp = path.join(base, 'hooks'); fs.mkdirSync(hp, { recursive: true });
+  const cfgYml = (extra = '') => `name: Hooks
+type: web
+stack: [laravel, mysql]
+package_manager: composer
+run_in_docker: false
+test_command: "php artisan test"
+local_only: ["db_backups/", "*.sql"]
+branches: {working: dev1, integration: develop, production: main}
+${extra}`;
+  fs.writeFileSync(path.join(hp, 'project.config.yml'), cfgYml('format_command: "node fmt.mjs"\n'));
+  fs.writeFileSync(path.join(hp, 'fmt.mjs'), "import fs from 'node:fs'; fs.appendFileSync(process.argv[2], '// formatted\\n');\n");
+  spawnSync('git', ['init', '-q'], { cwd: hp });
+  const setBranch = (b) => spawnSync('git', ['symbolic-ref', 'HEAD', `refs/heads/${b}`], { cwd: hp });
+  check(run(hp).status === 0, 'init with hooks exits 0');
+  const hs = JSON.parse(fs.readFileSync(path.join(hp, '.claude', 'settings.json'), 'utf8'));
+  const cmds = (ev) => (hs.hooks[ev] || []).flatMap((g) => g.hooks.map((h) => h.command)).join('\n');
+  check(/guard-bash\.mjs/.test(cmds('PreToolUse')) && /guard-secrets\.mjs/.test(cmds('PreToolUse')) && /format\.mjs/.test(cmds('PostToolUse')), 'settings.json registers guard-bash, guard-secrets and format');
+  check(['lib', 'guard-bash', 'guard-secrets', 'format'].every((n) => fs.existsSync(path.join(hp, '.claude', 'hooks', `${n}.mjs`))) && fs.existsSync(path.join(hp, '.claude', 'hooks', 'config.json')), 'hook scripts and config.json copied');
+  const r2 = run(hp);
+  check(/0 created, 0 updated/.test(r2.stdout), 'hooks: second run changes nothing (idempotent)');
+
+  const hook = (name, input) => spawnSync(process.execPath, [path.join(hp, '.claude', 'hooks', `${name}.mjs`)], { input: JSON.stringify({ cwd: hp, ...input }), encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: hp } });
+  const bash = (command) => hook('guard-bash', { tool_name: 'Bash', tool_input: { command } });
+  const write = (file_path, content = 'ok') => hook('guard-secrets', { tool_name: 'Write', tool_input: { file_path, content } });
+
+  setBranch('dev1');
+  check(bash('git status').status === 0 && bash('ls -la').status === 0, 'guard-bash: harmless commands allowed');
+  check(bash('git commit -m "x"').status === 0, 'guard-bash: commit on working branch allowed');
+  check(bash('git push origin dev1').status === 0 && bash('git push -u origin HEAD').status === 0, 'guard-bash: push of working branch allowed');
+  check(bash('git push --force origin dev1').status === 2 && bash('git push -f').status === 2 && bash('git push origin +dev1').status === 2, 'guard-bash: force-push blocked');
+  check(bash('git commit -m x --no-verify').status === 2 && bash('git push --no-verify').status === 2, 'guard-bash: --no-verify blocked');
+  check(bash('git push origin main').status === 2 && bash('git push origin HEAD:main').status === 2 && bash('cd sub && git push origin develop').status === 2, 'guard-bash: push to protected branch blocked');
+  check(bash('git commit -m "a\n\nCo-Authored-By: X <x@y.z>"').status === 2, 'guard-bash: attribution line blocked when commit_attribution is false');
+  check(bash('git status && echo "git push --force"').status === 0, 'guard-bash: quoted text is not parsed as a command');
+  const rh = bash('git reset --hard HEAD~1');
+  check(rh.status === 0 && /"permissionDecision":"ask"/.test(rh.stdout), 'guard-bash: reset --hard asks the user');
+  check(/"permissionDecision":"ask"/.test(bash('git branch -D old').stdout), 'guard-bash: branch -D asks the user');
+  setBranch('main');
+  check(bash('git commit -m x').status === 2 && bash('git push').status === 2, 'guard-bash: commit/push on protected branch blocked');
+  setBranch('develop');
+  check(bash('git -C . commit -m x').status === 2, 'guard-bash: integration branch is protected too');
+  setBranch('dev1');
+
+  const fake = ['AK', 'IA', 'ABCDEFGHIJKLMNOP'].join('');
+  check(write(path.join(hp, '.env')).status === 2 && write('.env.production').status === 2, 'guard-secrets: .env writes blocked');
+  check(write('.env.example').status === 0 && write('src/app.php').status === 0, 'guard-secrets: .env.example and normal files allowed');
+  check(write('db_backups/dump.txt').status === 2 && write('x/y.sql').status === 2, 'guard-secrets: local_only paths blocked');
+  check(write('src/config.php', `key = ${fake}`).status === 2, 'guard-secrets: secret-looking content blocked');
+  check(hook('guard-secrets', { tool_name: 'Edit', tool_input: { file_path: 'a.php', new_string: `-----BEGIN RSA PRIVATE KEY-----` } }).status === 2, 'guard-secrets: Edit new_string checked');
+
+  const target = path.join(hp, 'a.txt'); fs.writeFileSync(target, 'hi\n');
+  const fr = hook('format', { tool_name: 'Write', tool_input: { file_path: target } });
+  check(fr.status === 0 && /formatted/.test(fs.readFileSync(target, 'utf8')), 'format: runs format_command on the edited file');
+
+  check(spawnSync(process.execPath, [path.join(hp, '.claude', 'hooks', 'guard-bash.mjs')], { input: 'not json', encoding: 'utf8' }).status === 1, 'hooks: invalid input reports an error (exit 1) instead of passing silently');
+
+  // hooks: false removes ours and keeps foreign hooks
+  const sp = path.join(hp, '.claude', 'settings.json');
+  const cur = JSON.parse(fs.readFileSync(sp, 'utf8'));
+  cur.hooks.PreToolUse.push({ matcher: 'Bash', hooks: [{ type: 'command', command: 'echo mine' }] });
+  fs.writeFileSync(sp, JSON.stringify(cur, null, 2));
+  fs.writeFileSync(path.join(hp, 'project.config.yml'), cfgYml('hooks: false\n'));
+  check(run(hp).status === 0, 'init with hooks: false exits 0');
+  const off = JSON.parse(fs.readFileSync(sp, 'utf8'));
+  const offCmds = JSON.stringify(off.hooks || {});
+  check(!/\.claude\/hooks\//.test(offCmds) && /echo mine/.test(offCmds), 'hooks: false removes ours but keeps foreign hooks');
+}
+
 console.log('\n[forbid]');
 const bad = path.join(base, 'forbid');
 fs.mkdirSync(bad, { recursive: true });
