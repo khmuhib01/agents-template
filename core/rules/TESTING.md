@@ -1,6 +1,10 @@
 ---
-description: Testing standards
-always_on: true
+description: Testing standards (loaded only when working on test files)
+paths:
+  - "**/*.{test,spec}.*"
+  - "**/*_test.*"
+  - "**/test_*.py"
+  - "**/{test,tests,__tests__,spec}/**"
 ---
 
 # Testing Standards

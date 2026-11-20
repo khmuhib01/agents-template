@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const INIT = path.join(HERE, 'init.mjs');
@@ -191,10 +191,10 @@ console.log('\n[catalog]');
     const f = path.join(HERE, 'core', 'skills', s, 'SKILL.md');
     const o = fs.existsSync(f) ? fm(f) : {};
     if (o.name !== s || !o.description || !/^Use /.test(o.description)) badSkills.push(s);
-    if ((o.description || '').length > 320) longDesc.push(s);
+    if ((o.description || '').length > 260) longDesc.push(s);
   }
   check(badSkills.length === 0, `every core skill has frontmatter name == folder and a "Use ..." description${badSkills.length ? ': ' + badSkills.join(', ') : ''}`);
-  check(longDesc.length === 0, `skill descriptions stay <= 320 chars (loaded every session)${longDesc.length ? ': ' + longDesc.join(', ') : ''}`);
+  check(longDesc.length === 0, `skill descriptions stay <= 260 chars (loaded every session)${longDesc.length ? ': ' + longDesc.join(', ') : ''}`);
   const badAgents = fs.readdirSync(path.join(HERE, 'core', 'agents')).filter((f) => { const o = fm(path.join(HERE, 'core', 'agents', f)); return o.name !== f.replace(/\.md$/, '') || !o.description; });
   check(badAgents.length === 0, `every agent has frontmatter name == file and a description${badAgents.length ? ': ' + badAgents.join(', ') : ''}`);
   const orphans = coreSkills.filter((s) => !referenced.has(s));
@@ -312,7 +312,7 @@ console.log('\n[safe upgrades]');
   const example = fs.readFileSync(path.join(HERE, 'project.config.example.yml'), 'utf8');
   const exampleKeys = [...example.matchAll(/^([a-z_]+):/gm)].map((m) => m[1]);
   const notInSchema = exampleKeys.filter((k) => !props.includes(k));
-  const notInExample = props.filter((k) => !exampleKeys.includes(k));
+  const notInExample = props.filter((k) => !exampleKeys.includes(k) && !new RegExp(`^# ${k}:`, 'm').test(example)); // a commented example block counts
   check(notInSchema.length === 0 && notInExample.length === 0, `schema and project.config.example.yml list the same keys${notInSchema.length ? ' (not in schema: ' + notInSchema + ')' : ''}${notInExample.length ? ' (not in example: ' + notInExample + ')' : ''}`);
   const types = Object.keys(JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8')).types);
   check(JSON.stringify(schema.properties.type.enum) === JSON.stringify(types), 'schema "type" enum matches skill-map.json types');
@@ -374,6 +374,118 @@ console.log('\n[safe upgrades]');
   fs.appendFileSync(path.join(l, 'AGENTS.md'), '\nLEGACY EDIT\n');
   const lr = run(l);
   check(lr.status === 0 && !/Kept/.test(lr.stdout) && !/LEGACY EDIT/.test(rd(l, 'AGENTS.md')) && fs.existsSync(path.join(l, '.claude/.template-hashes.json')), 'without a hash file (older projects) init overwrites with a backup, then starts tracking');
+}
+
+console.log('\n[monorepo]');
+{
+  const d = path.join(base, 'mono'); fs.mkdirSync(path.join(d, 'apps/web'), { recursive: true }); fs.mkdirSync(path.join(d, 'services/api'), { recursive: true });
+  const cfg = (pk) => `name: Mono\ntype: fullstack\nstack: [typescript]\nskills_mode: focused\nrun_in_docker: false\nbranches: {working: a, integration: "", production: main}\npackages:\n${pk}`;
+  const good = `  web:\n    path: apps/web\n    stack: [react, nextjs]\n    test_command: "pnpm --filter web test"\n    notes:\n      - "Use the design tokens"\n  api:\n    path: services/api/\n    type: api\n    stack: [python, fastapi]\n  ghost:\n    path: nope\n    stack: [go]\n`;
+  fs.writeFileSync(path.join(d, 'project.config.yml'), cfg(good));
+  const r = run(d);
+  check(r.status === 0 && !/unknown config key/.test(r.stderr), `monorepo config generates without unknown-key warnings${r.status ? '\n' + r.stderr : ''}`);
+  const web = fs.existsSync(path.join(d, 'apps/web/CLAUDE.md')) ? fs.readFileSync(path.join(d, 'apps/web/CLAUDE.md'), 'utf8') : '';
+  check(/Tests: `pnpm --filter web test`/.test(web) && /react-development/.test(web) && /nextjs-development/.test(web) && /Use the design tokens/.test(web), 'package CLAUDE.md has stack, tests, package skills and notes');
+  check(!/frontend-engineering/.test(web), 'package CLAUDE.md lists stack-specific skills only (no type-wide noise)');
+  const api = fs.existsSync(path.join(d, 'services/api/CLAUDE.md')) ? fs.readFileSync(path.join(d, 'services/api/CLAUDE.md'), 'utf8') : '';
+  check(/python-development/.test(api) && /Type api/.test(api), 'package type override and trailing slash in path work');
+  check(/folder "nope" does not exist; package ignored/.test(r.stderr) && !fs.existsSync(path.join(d, 'nope')), 'missing package folder is ignored with a warning (never created)');
+  check(!fs.existsSync(path.join(d, '.claude/skills/go-development')), 'an ignored package does not route its skills');
+  const sk = (n) => fs.existsSync(path.join(d, '.claude/skills', n, 'SKILL.md'));
+  check(sk('react-development') && sk('nextjs-development') && sk('python-development') && sk('typescript-development'), 'skills are routed for the union of root and package stacks');
+  const root = fs.readFileSync(path.join(d, '.claude/CLAUDE.md'), 'utf8');
+  check(/- `apps\/web\/` \(react, nextjs\), tests: `pnpm --filter web test`/.test(root) && !/- - /.test(root), 'root .claude/CLAUDE.md lists the packages');
+  check(/0 created, 0 updated/.test(run(d).stdout) && run(d, ['--check']).status === 0, 'monorepo: re-run is idempotent and --check passes');
+  for (const [name, p] of Object.entries({ 'path traversal': '  x:\n    path: ../outside\n', 'absolute path': '  x:\n    path: /etc\n', 'inside .claude': '  x:\n    path: .claude/skills\n', 'missing path': '  x:\n    stack: [go]\n', 'bad type': '  x:\n    path: apps/web\n    type: banana\n' })) {
+    const bd = path.join(base, 'mono-bad'); fs.mkdirSync(path.join(bd, 'apps/web'), { recursive: true });
+    fs.writeFileSync(path.join(bd, 'project.config.yml'), cfg(p));
+    check(run(bd).status === 1, `packages: ${name} is rejected`);
+  }
+}
+
+console.log('\n[opt-in hooks, mcp, path rules]');
+{
+  const d = path.join(base, 'optin'); fs.mkdirSync(d, { recursive: true });
+  const body = (extra) => `name: O\ntype: web\nstack: [laravel]\nrun_in_docker: false\nbranches: {working: a, integration: "", production: main}\n${extra}`;
+  const cfgp = path.join(d, 'project.config.yml');
+  const settings = () => JSON.parse(fs.readFileSync(path.join(d, '.claude/settings.json'), 'utf8'));
+
+  // defaults: nothing opt-in is installed
+  fs.writeFileSync(cfgp, body(''));
+  const r0 = run(d);
+  check(r0.status === 0 && !settings().statusLine && !/session-context/.test(JSON.stringify(settings().hooks)) && !fs.existsSync(path.join(d, '.claude/hooks/statusline.mjs')), 'statusline and session_context are off by default');
+
+  // on
+  fs.writeFileSync(cfgp, body('statusline: true\nsession_context: true\nmcp_allow: [github, postgres]\nmcp_deny: [slack]\n'));
+  const r1 = run(d);
+  const st = settings();
+  check(r1.status === 0 && st.statusLine && st.statusLine.type === 'command' && /statusline\.mjs/.test(st.statusLine.command) && fs.existsSync(path.join(d, '.claude/hooks/statusline.mjs')), 'statusline: true registers statusLine and copies the script');
+  check((st.hooks.SessionStart || []).some((g) => g.matcher === 'startup|clear' && /session-context\.mjs/.test(g.hooks[0].command)), 'session_context: true registers the SessionStart hook');
+  check(JSON.stringify(st.enabledMcpjsonServers) === JSON.stringify(['github', 'postgres']) && st.enableAllProjectMcpServers === false && st.permissions.deny.includes('mcp__slack'), 'mcp_allow / mcp_deny write enabledMcpjsonServers and a deny rule');
+  check(/0 created, 0 updated/.test(run(d).stdout), 'opt-in settings: second run changes nothing (idempotent)');
+  check(run(Object.assign(d, {}), ['--check']).status === 0, 'opt-in settings: --check passes');
+
+  // a status line the user set themselves is never replaced
+  const s2 = settings(); s2.statusLine = { type: 'command', command: 'my-own-line' }; fs.writeFileSync(path.join(d, '.claude/settings.json'), JSON.stringify(s2, null, 2));
+  const r2 = run(d);
+  check(settings().statusLine.command === 'my-own-line' && /different statusLine; left unchanged/.test(r2.stderr), 'an existing custom statusLine is left alone with a warning');
+  const s3 = settings(); delete s3.statusLine; fs.writeFileSync(path.join(d, '.claude/settings.json'), JSON.stringify(s3, null, 2));
+  run(d);
+  fs.writeFileSync(cfgp, body('statusline: false\n'));
+  run(d);
+  check(!settings().statusLine, 'statusline: false removes our status line');
+
+  // bad MCP name
+  fs.writeFileSync(cfgp, body('mcp_deny: ["bad name!"]\n'));
+  check(run(d).status === 1, 'an invalid MCP server name is rejected');
+
+  // statusline script
+  const sl = (input) => spawnSync(process.execPath, [path.join(d, '.claude/hooks/statusline.mjs')], { input: typeof input === 'string' ? input : JSON.stringify(input), encoding: 'utf8' });
+  fs.writeFileSync(cfgp, body('statusline: true\nsession_context: true\n')); run(d);
+  const so = sl({ model: { display_name: 'Sonnet' }, cwd: d, context_window: { used_percentage: 42.4 }, cost: { total_cost_usd: 0.3456 } });
+  check(so.status === 0 && /\[Sonnet\]/.test(so.stdout) && /ctx .*42%/.test(so.stdout) && /\$0\.35/.test(so.stdout), 'statusline script prints model, context % and cost');
+  check(sl('not json').status === 0 && sl({}).status === 0 && /\[Claude\]/.test(sl({}).stdout), 'statusline script never fails on bad or empty input');
+
+  // session-context script
+  spawnSync('git', ['init', '-q'], { cwd: d }); spawnSync('git', ['symbolic-ref', 'HEAD', 'refs/heads/dev1'], { cwd: d });
+  const sc = spawnSync(process.execPath, [path.join(d, '.claude/hooks/session-context.mjs')], { input: JSON.stringify({ cwd: d }), encoding: 'utf8' });
+  let ctxText = ''; try { ctxText = JSON.parse(sc.stdout).hookSpecificOutput.additionalContext; } catch { /* no output */ }
+  check(sc.status === 0 && /dev1/.test(ctxText), 'session-context injects the branch and status as additionalContext');
+  const nogit = path.join(base, 'optin-nogit'); fs.mkdirSync(nogit, { recursive: true });
+  const sn = spawnSync(process.execPath, [path.join(d, '.claude/hooks/session-context.mjs')], { input: JSON.stringify({ cwd: nogit }), encoding: 'utf8' });
+  check(sn.status === 0 && sn.stdout === '', 'session-context is silent outside a git repository');
+
+  // path-scoped rule: installed, but not counted as always-loaded
+  const tr = fs.readFileSync(path.join(d, '.claude/rules/TESTING.md'), 'utf8');
+  check(/^paths:/m.test(tr) && !/always_on/.test(tr), 'TESTING.md is path-scoped (loads only when test files are touched)');
+  const all = run(d);
+  const rulesTok = Number((all.stdout.match(/rules ~(\d+)/) || [])[1]);
+  const rulesBytes = fs.readdirSync(path.join(d, '.claude/rules')).reduce((n, f) => n + fs.statSync(path.join(d, '.claude/rules', f)).size, 0);
+  check(rulesTok > 0 && rulesTok < Math.round(rulesBytes / 4), `path-scoped rules are excluded from the always-loaded estimate (${rulesTok} < ${Math.round(rulesBytes / 4)} tokens)`);
+}
+
+console.log('\n[plugin + live eval]');
+{
+  const b = spawnSync(process.execPath, [path.join(HERE, 'build-plugin.mjs'), '--check'], { encoding: 'utf8' });
+  check(b.status === 0, `plugin files (skills/, .claude-plugin/) are in sync with global-skills and VERSION${b.status ? '\n' + b.stderr : ''}`);
+  const pj = JSON.parse(fs.readFileSync(path.join(HERE, '.claude-plugin/plugin.json'), 'utf8'));
+  const mj = JSON.parse(fs.readFileSync(path.join(HERE, '.claude-plugin/marketplace.json'), 'utf8'));
+  check(pj.name === 'agents-template' && pj.version === fs.readFileSync(path.join(HERE, 'VERSION'), 'utf8').trim(), 'plugin.json has a name and the current VERSION');
+  check(mj.name && mj.owner && mj.owner.name && mj.plugins.length === 1 && mj.plugins[0].name === pj.name && mj.plugins[0].source === './', 'marketplace.json lists the plugin with the repo root as its source');
+  const skillText = fs.readFileSync(path.join(HERE, 'skills/agent-init/SKILL.md'), 'utf8');
+  check(/\$\{CLAUDE_PLUGIN_ROOT\}\/init\.mjs/.test(skillText) && !/__TEMPLATE_DIR__/.test(skillText), 'plugin skills call init.mjs through ${CLAUDE_PLUGIN_ROOT}');
+
+  const live = await import(pathToFileURL(path.join(HERE, 'evals/live.mjs')).href);
+  const skills = live.loadInvocableSkills();
+  check(skills.some((s) => s.name === 'bug-investigation') && !skills.some((s) => s.name === 'commit'), 'live eval lists model-invocable skills only');
+  const sys = live.buildSystem(skills);
+  check(/bug-investigation:/.test(sys) && /ONLY JSON/.test(sys), 'live eval builds the skill-list system prompt');
+  const known = new Set(['a', 'b']);
+  check(JSON.stringify(live.parseAnswer('```json\n{"skills": ["a", "zzz"]}\n```', known)) === '["a"]' && live.parseAnswer('no json', known).length === 0 && live.parseAnswer('{"skills": "a"}', known).length === 0, 'live eval parses fenced JSON and ignores unknown names or garbage');
+  const dry = spawnSync(process.execPath, [path.join(HERE, 'evals/live.mjs'), '--dry-run', '--limit', '1'], { encoding: 'utf8', env: { ...process.env, ANTHROPIC_API_KEY: '' } });
+  check(dry.status === 0 && /system \(/.test(dry.stdout), 'live eval --dry-run makes no API call');
+  const nokey = spawnSync(process.execPath, [path.join(HERE, 'evals/live.mjs'), '--limit', '1'], { encoding: 'utf8', env: { ...process.env, ANTHROPIC_API_KEY: '' } });
+  check(nokey.status === 2 && /ANTHROPIC_API_KEY/.test(nokey.stderr), 'live eval refuses to run without an API key');
 }
 
 console.log('\n[forbid]');
