@@ -1,0 +1,22 @@
+name: guard-main
+# Pull requests into main are only accepted from the dev branch of this repository (not from feature branches or forks).
+# Made a required status check on main in the branch protection settings.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, edited]
+jobs:
+  source-must-be-dev:
+    name: source-must-be-dev
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only dev may be merged into main
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          if [ "$HEAD_REF" != "dev" ] || [ "$HEAD_REPO" != "$GITHUB_REPOSITORY" ]; then
+            echo "::error::PRs into main must come from the dev branch of $GITHUB_REPOSITORY (got $HEAD_REPO:$HEAD_REF). Open the PR against dev instead."
+            exit 1
+          fi
+          echo "OK: dev -> main"
