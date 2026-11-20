@@ -13,9 +13,9 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SAMPLES = {
-  'laravel (full skills)': 'name: Laravel App\ntype: web\nstack: [laravel8, blade, mysql]\npackage_manager: composer\ntest_command: "php artisan test"\nbranches: {working: dev1, integration: develop, production: main}\n',
-  'expo mobile (full skills)': 'name: Mobile\ntype: mobile\nstack: [expo, typescript]\npackage_manager: pnpm\ntest_command: "pnpm test"\nbranches: {working: feature/x, integration: "", production: main}\n',
-  'python api (focused skills)': 'name: Api\ntype: api\nstack: [python, fastapi, postgres]\npackage_manager: uv\ntest_command: pytest\nskills_mode: focused\nbranches: {working: x, integration: develop, production: main}\n',
+  'laravel (focused, default)': 'name: Laravel App\ntype: web\nstack: [laravel8, blade, mysql]\npackage_manager: composer\ntest_command: "php artisan test"\nbranches: {working: dev1, integration: develop, production: main}\n',
+  'expo mobile (focused, default)': 'name: Mobile\ntype: mobile\nstack: [expo, typescript]\npackage_manager: pnpm\ntest_command: "pnpm test"\nbranches: {working: feature/x, integration: "", production: main}\n',
+  'python api (skills_mode: all)': 'name: Api\ntype: api\nstack: [python, fastapi, postgres]\npackage_manager: uv\ntest_command: pytest\nskills_mode: all\nbranches: {working: x, integration: develop, production: main}\n',
 };
 const fm = (f) => { const m = fs.readFileSync(f, 'utf8').match(/^---\r?\n([\s\S]*?)\r?\n---/); return m ? m[1] : ''; };
 const desc = (f) => (fm(f).match(/^description:\s*(.*)$/m) || [, ''])[1];

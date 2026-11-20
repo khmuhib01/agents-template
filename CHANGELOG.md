@@ -2,6 +2,13 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.11.0 - 2026-11-20
+
+- perf: leaner always-loaded context (4.7K -> 3.2K tokens for a node api): skills_mode defaults to focused, layout/notes no longer duplicated in ARCHITECTURE.md, merged duplicate rules, shorter CLAUDE.md files
+- fix: skill routing no longer lists skills that are not installed in focused mode
+- bench-cost.mjs reports cache write/read tokens separately; measured cost gap vs no template +57% -> +37%
+- note: existing projects keep already-installed skills (init never deletes them); set skills_mode: all to restore the old default
+
 ## 1.10.0 - 2026-11-20
 
 - bench.mjs: reproducible static-context benchmark (generated vs unoptimized setup)

@@ -74,7 +74,7 @@ for (let r = 0; r < RUNS; r++) {
       const j = runClaude(arms[arm], prompt);
       if (j.error || j.is_error) { console.error(`  ${arm} task ${ti + 1} run ${r + 1}: FAILED ${j.error || j.result}`); continue; }
       const u = j.usage || {};
-      const row = { task: ti + 1, cost: j.total_cost_usd ?? 0, turns: j.num_turns ?? 0, input: (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0), output: u.output_tokens || 0 };
+      const row = { task: ti + 1, cost: j.total_cost_usd ?? 0, turns: j.num_turns ?? 0, input: (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0), fresh: u.input_tokens || 0, cacheWrite: u.cache_creation_input_tokens || 0, cacheRead: u.cache_read_input_tokens || 0, output: u.output_tokens || 0 };
       results[arm].push(row);
       console.log(`  ${arm.padEnd(8)} task ${ti + 1} run ${r + 1}: $${row.cost.toFixed(4)}  ${row.turns} turns  in ${row.input}  out ${row.output}`);
     }
@@ -93,7 +93,7 @@ for (let i = 1; i <= TASKS.length; i++) {
 const sum = (a, k) => a.reduce((n, x) => n + x[k], 0);
 const avg = (a, k) => (a.length ? sum(a, k) / a.length : 0);
 console.log('\nper-run average          baseline   template     change');
-for (const [label, k, f] of [['cost (USD)', 'cost', (v) => v.toFixed(4)], ['turns', 'turns', (v) => v.toFixed(1)], ['input tokens (all)', 'input', (v) => Math.round(v)], ['output tokens', 'output', (v) => Math.round(v)]]) {
+for (const [label, k, f] of [['cost (USD)', 'cost', (v) => v.toFixed(4)], ['turns', 'turns', (v) => v.toFixed(1)], ['input tokens (all)', 'input', (v) => Math.round(v)], ['  fresh (full price)', 'fresh', (v) => Math.round(v)], ['  cache write (1.25x)', 'cacheWrite', (v) => Math.round(v)], ['  cache read (0.1x)', 'cacheRead', (v) => Math.round(v)], ['output tokens', 'output', (v) => Math.round(v)]]) {
   const b = avg(results.baseline, k), t = avg(results.template, k);
   console.log(`${label.padEnd(22)}${String(f(b)).padStart(10)}${String(f(t)).padStart(11)}${(b ? `${(((t - b) / b) * 100).toFixed(0)}%` : 'n/a').padStart(11)}`);
 }
