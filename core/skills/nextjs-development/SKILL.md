@@ -30,3 +30,11 @@ Detect first: `next` and `react` versions, App Router (`app/`) vs Pages Router (
 
 ## Verify
 `next build` (types, lint, static/dynamic route report), then project tests. Do not deploy or change hosting config without approval.
+
+## Read when
+| Concern | File |
+|---|---|
+| Static vs dynamic vs ISR, revalidation, data fetching, streaming, runtimes | [references/rendering-caching.md](references/rendering-caching.md) |
+| Server Action and handler security, auth layers, headers, testing | [references/security-auth-testing.md](references/security-auth-testing.md) |
+
+SEO for Next.js sites: `seo-technical` (frameworks/nextjs.md) when the seo domain is installed.

@@ -1,6 +1,6 @@
 ---
 name: flutter-development
-description: "Use for Flutter and Dart code: widgets, state management (Provider, Riverpod, Bloc, GetX), navigation, platform channels, pub packages, null safety, and flutter test. Detects Flutter/Dart version and architecture first."
+description: "Use for Flutter and Dart code: widgets, state (Riverpod, Bloc, Provider), navigation, offline data, platform channels, pub packages, flutter test, builds. Detects Flutter/Dart version and architecture first. Not for native Android/iOS projects."
 ---
 
 # Flutter / Dart development
@@ -18,3 +18,14 @@ Detect first: Flutter and Dart SDK constraints (`pubspec.yaml`, `.fvmrc` / FVM),
 
 ## Verify
 `dart format .`, `flutter analyze`, then `flutter test test/path_test.dart` (narrowest first), then `flutter test`.
+
+## Read when
+| Concern | File |
+|---|---|
+| Architecture, state-management choice, DI, navigation | [references/architecture-state.md](references/architecture-state.md) |
+| REST/GraphQL, local DB, offline sync, WebSockets, Firebase | [references/data-offline.md](references/data-offline.md) |
+| Platform channels, FFI, isolates, push, deep links, flavors | [references/platform-native.md](references/platform-native.md) |
+| Performance, accessibility, localization, testing | [references/quality-a11y.md](references/quality-a11y.md) |
+| Secure storage, obfuscation, release builds, crash reporting | [references/security-release.md](references/security-release.md) |
+
+Shared policy and checklists: `mobile-architecture`, `mobile-security`, `mobile-release`. Verify package versions and maintenance status in the project's `pubspec.lock` and the package's official docs before using an API.

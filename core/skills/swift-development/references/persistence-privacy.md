@@ -1,0 +1,10 @@
+# Persistence, Keychain, privacy
+
+- **SwiftData vs Core Data:** SwiftData requires newer OS versions than Core Data and is younger; choose by deployment target and project history. Follow what exists. Both need a migration plan: Core Data lightweight/staged migrations with versioned models; SwiftData schema versioning/migration plans per the installed SDK docs. CloudKit sync adds constraints (optional attributes, no unique constraints in Core Data+CloudKit models); read the current docs before enabling.
+- **Concurrency with data:** Core Data contexts per queue/actor (`perform`), never pass managed objects across contexts (pass `NSManagedObjectID`); SwiftData `ModelContext` is not thread-safe, use `@ModelActor` or main-context patterns per docs.
+- **Offline/sync design:** `mobile-architecture` (offline-sync.md).
+- **Keychain:** tokens and secrets in Keychain (`kSecClassGenericPassword`), choose accessibility class deliberately (`kSecAttrAccessibleWhenUnlockedThisDeviceOnly` for most secrets), access groups only when sharing, handle `errSecItemNotFound` and updates, wrap in a small typed API. `UserDefaults` is not secure storage. Keychain items can survive app reinstall: define behavior.
+- **Biometrics:** `LocalAuthentication` with Keychain access control (`.biometryCurrentSet` etc.) to bind keys, not just a UI gate.
+- **Privacy:** usage description strings for every protected resource (camera, photos, location, etc.), requested in context; App Tracking Transparency only if tracking; **privacy manifest (`PrivacyInfo.xcprivacy`) and required-reason API declarations for the app and third-party SDKs: verify current Apple requirements**; App Privacy "nutrition label" must match actual data collection; data deletion/account deletion flows where required.
+- **Data protection:** file protection classes for sensitive files, exclude from backup when appropriate, clear on logout, hide content in app-switcher snapshot if sensitive.
+- **Logging:** `Logger`/os_log with privacy annotations (`.private`), no PII in logs or crash reports.

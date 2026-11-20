@@ -15,4 +15,6 @@ Input: the user's description of what they want. Keep every step proportionate; 
 5. **Review:** `code-reviewer` on the diff. Add `security-reviewer` only if auth, user input, uploads, secrets, permissions or dependencies changed.
 6. **Report** per `.claude/rules/COMPLETION-REPORT.md`. Do not commit or push unless asked; offer `/commit`.
 
+**Full lifecycle (only when the user starts from an idea rather than a defined change, and only for skills that are installed, e.g. `domains: [product]`):** `product-discovery` → `prd-requirements` → `product-delivery` → steps 1-6 above → `production-readiness`. Each stage ends with a written artifact and waits for the user's approval; never skip an approval, and never deploy or change production without explicit approval.
+
 Use subagents only when they isolate noisy or independent work; do small edits directly to save tokens.

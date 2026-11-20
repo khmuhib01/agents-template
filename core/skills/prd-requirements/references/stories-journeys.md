@@ -1,0 +1,10 @@
+# Stories, acceptance criteria and journeys
+
+- **User story:** "As a <role>, I want <capability>, so that <outcome>." Keep outcome real. Split stories so each is deliverable and testable on its own (vertical slices, not layers).
+- **Acceptance criteria (Given/When/Then):** `Given <context/state>, When <action>, Then <observable result>`; one behavior per scenario; cover happy path, validation errors, permission denied, empty state, concurrency/duplicate submit, failure of a dependency, large inputs, accessibility interactions (keyboard, screen reader) where relevant. Criteria are written so a test can be derived directly.
+- **Edge-case checklist:** empty/maximum/minimum values, special characters and Unicode, time zones and DST, currency/locale, offline/slow network, interrupted flow (refresh, back button, session expiry), concurrent edits, bulk operations, undo/cancel, deletion and retention, role changes mid-flow.
+- **User journeys:** for each primary persona/role, map: trigger, steps (user action, system response), decision points, error paths, emotions/pain if known (from evidence), and the outcome. Include entry points (email link, notification, direct URL) and exits. Present as a numbered list or simple table; diagrams optional.
+- **Definition of ready:** story has acceptance criteria, designs or UX notes if UI, dependencies identified, open questions answered, sized small enough.
+- **Definition of done (per project):** code reviewed, tests written and passing, accessibility and security checks done as required, instrumentation added, docs updated, feature flag/rollout plan.
+- **PRD review checklist:** Are goals measurable? Is each requirement testable and unambiguous? Are non-goals stated? Are roles and permissions covered? Are errors and empty states defined? Are NFRs quantified? Are analytics defined? Are open questions owned? Any invented facts or unsourced claims? Does anything contradict existing behavior?
+- **Traceability starter:** table with columns Requirement ID, Story/Task, Test(s) (name or path), Status; kept current by `product-delivery` and verified before release in `production-readiness`.

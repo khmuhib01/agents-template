@@ -1,0 +1,113 @@
+{
+  "kind": "scenarios",
+  "date": "2026-11-20",
+  "model": "sonnet",
+  "runsPerCell": 1,
+  "budgetPerRunUsd": 1,
+  "runs": [
+    {
+      "scenario": "seo-noindex-regression",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.0935104,
+      "turns": 8,
+      "graders": [
+        {
+          "id": "prod-build-indexable",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "staging-still-blocked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "regression-test-exists",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-catches-original-bug",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "seo-noindex-regression",
+      "arm": "skills",
+      "run": 1,
+      "pass": true,
+      "cost": 0.22380339999999999,
+      "turns": 9,
+      "graders": [
+        {
+          "id": "prod-build-indexable",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "staging-still-blocked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "regression-test-exists",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-catches-original-bug",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    }
+  ]
+}

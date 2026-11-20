@@ -2,6 +2,41 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.17.0 - 2026-11-21
+
+- full-stack and product skills (phase P6), all opt-in through `domains`, no change for existing projects: `saas-multitenancy`, `payments-billing`, `realtime-systems`, `event-driven-architecture`, `search-engineering`, `product-discovery`, `prd-requirements`, `product-delivery`, `production-readiness` (each with references and SOURCES.md; payments never uses live credentials, product stages wait for approval)
+- `build` mentions an optional full lifecycle (discovery -> PRD -> delivery plan -> build -> readiness) with approval at every stage
+- offline trigger eval now models focused mode: opt-in domain skills only compete in cases that name the domain (`domains` field) or one of their skills; 14 more cases (149 total)
+- `audit` description reworded (the "Not for" clause had made it rank for diff reviews)
+
+## 1.16.0 - 2026-11-21
+
+- live evaluation tooling (phase P5), no results recorded yet: `evals/live.mjs` runs v2 cases with repeats, per-skill recall/precision, `--type/--stack/--domains` realism, `--max-calls` cap and `--out`; `evals/scenarios.mjs` runs 5 task scenarios (SEO regression, Product JSON-LD, Expo token storage, WordPress plugin security, React 18 version gate) with deterministic graders; `evals/report.mjs` builds `evals/REPORT.md`
+- `node evals/scenarios.mjs --check` (free, in test.mjs) proves each scenario's graders fail on the bare fixture and pass on a reference solution
+- first scenario pilot recorded in evals/REPORT.md (5 scenarios x 2 arms x 1 run, sonnet, about $1.1 total): all passed in both arms, skills arm cost more; scenarios are too easy to separate the arms
+- `live_expect_all` / `live_not` on trigger cases carry expectations that lexical ranking cannot check
+
+## 1.15.0 - 2026-11-21
+
+- SEO (phase P4): `seo-on-page-content`, `seo-web-vitals`, `seo-international-ecommerce` complete the six-skill `domains: [seo]` set
+- reworked with references (existing rules and approval gates kept): `security-audit` (severity rubric, web checklist, authn/authz/tenancy, supply chain), `api-engineering`, `database-engineering` (migration safety, scaling), `devops-engineering`, `performance-engineering`, `nextjs-development` (rendering/caching, security/testing)
+- "Not for ..." clauses on overlapping skills (audit, technical-debt, test-engineering, ui-ux-engineering, security-audit, devops-engineering, performance-engineering)
+- token cost of the longer descriptions on always-installed skills: laravel sample 3321 -> 3436, expo 3370 -> 3467, python (all) 5119 -> 5447 always-loaded tokens
+- evals: 18 more trigger cases; 135/135 offline. Three cases are marked `live-only` where lexical ranking cannot show a second expected skill
+
+## 1.14.0 - 2026-11-21
+
+- SEO (phase P3): new `domains: [seo]` set with skills `seo-technical` (with Next.js, React SPA, Laravel, WordPress references), `seo-structured-data`, `seo-migration-monitoring`; recommendations are labelled Requirement/Guideline/Practice and never promise rankings or rich results (lint-enforced)
+- new skills `php-development`, `wordpress-development` (tokens `php`, `wordpress`, `woocommerce`) and `mobile-quality` (now a dependency of the mobile framework skills; expo sample 3307 -> 3370 always-loaded tokens, python skills_mode all 4697 -> 5119, laravel unchanged)
+- evals: 19 more trigger cases; tests for seo/wordpress routing; every new skill ships `references/SOURCES.md` with no verified sources yet
+
+## 1.13.0 - 2026-11-21
+
+- mobile (phase P2): new skills `android-kotlin-development`, `mobile-architecture`, `mobile-security`, `mobile-release`, each with `references/`; flutter, react-native and swift skills gain reference files (architecture, data/offline, native, performance/a11y, security, release)
+- routing: tokens `android`, `compose`, `jetpack`, `swiftui`; mobile framework skills depend on the three shared mobile skills; `type: mobile` adds mobile-architecture and mobile-security (expo sample: +219 always-loaded tokens, 3088 -> 3307)
+- evals: 23 mobile trigger cases (positive, negative, multi-skill); every skill has `references/SOURCES.md` with no verified sources yet, listing documentation names to verify
+- jvm-development description points Android projects to the new skill
+
 ## 1.12.0 - 2026-11-21
 
 - foundation for the skills expansion (no new skills yet; see docs/SKILLS-BLUEPRINT.md): `deps` in skill-map.json (transitive), optional `domains` config key, `lib/routing.mjs`

@@ -117,7 +117,7 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 | `protect_secrets` | true | `settings.json` denies Read on `.env` and every `local_only` path (dumps never enter context) |
 | `deny_heavy` | true | also denies Read on `vendor/`, `node_modules/`, `dist/`, `build/`, logs, `*.min.js`, `*.map` (stack-aware) |
 | `allow_safe_commands` | true | `git status/diff/log` and the project test command run without a permission prompt (fewer turns) |
-| `domains` | `[]` | Optional concerns (not tech stacks) that add skills on top of `type` and `stack`, e.g. an SEO or product set once those skills exist. Unknown names warn. Skills can also declare dependencies in `core/skill-map.json` (`deps`), which are expanded automatically |
+| `domains` | `[]` | Optional concerns (not tech stacks) that add skills on top of `type` and `stack`, `seo` (six SEO skills), `saas`, `payments`, `realtime`, `events`, `search`, `product` (discovery, PRD, delivery planning, production readiness). Names come from `domains` in `core/skill-map.json`. Unknown names warn. Skills can also declare dependencies in `core/skill-map.json` (`deps`), which are expanded automatically |
 | `skills_mode` | focused | `focused` installs only skills routed for this type/stack (init never deletes skills already installed). Every run prints the skill-description token overhead and what `focused` would save |
 | `model` | sonnet | default model written to `settings.json` if none is set (overrides `model_profile`) |
 | `model_profile` | balanced | `economy`: sonnet for every agent, haiku for `git-manager`. `quality`: opus for architect/planner/debugger/security-reviewer and the main model. `balanced` keeps the agent files as written |
@@ -171,7 +171,7 @@ You get `/agents-template:agent-setup-scaffold` and `/agents-template:agent-init
 
 ## Live skill-trigger eval (costs money)
 
-`node evals/live.mjs --dry-run --limit 3` previews the request. With `ANTHROPIC_API_KEY` set, `node evals/live.mjs [--limit N] [--model ID]` shows a real model the list of model-invocable skills (name + description) and checks that it picks an expected skill for each prompt in `evals/cases.json`. It is an approximation of how Claude Code triggers skills, not Claude Code itself, and is never run by `test.mjs` or CI.
+`node evals/live.mjs --dry-run --limit 3` previews the request. With `ANTHROPIC_API_KEY` set, `node evals/live.mjs [--suite legacy|triggers|all] [--repeats N] [--limit N] [--model ID] [--type T --stack a,b --domains x] [--max-calls N] [--out FILE]` shows a real model the list of model-invocable skills (name + description) and scores the cases: expected skills chosen, forbidden skills not chosen, per-skill recall/precision. `--suite legacy` (default) is the original `evals/cases.json`; `all` adds `evals/triggers/*.json` (negative, multi-skill and `live-only` cases). It is an approximation of how Claude Code triggers skills, not Claude Code itself, and is never run by `test.mjs` or CI. `evals/scenarios.mjs` runs task scenarios (a fixture repo + prompt + deterministic graders for correctness, test quality, security, version compatibility and fabricated docs) with `claude -p` in a baseline arm and a skills arm; `node evals/scenarios.mjs --check` is free and verifies the graders against reference solutions. `node evals/report.mjs` writes `evals/REPORT.md` from recorded `evals/results/*.json`. One pilot is recorded in `evals/REPORT.md` (5 scenarios, 1 run per arm, Sonnet): every scenario passed in both arms, so these scenarios do not yet discriminate between the skills and no benefit is shown; the skills arm cost more per run. Trigger accuracy against a live model has not been measured.
 
 ## Safe upgrades
 
@@ -183,7 +183,7 @@ You get `/agents-template:agent-setup-scaffold` and `/agents-template:agent-init
 
 - `VERSION` is stamped into `.claude/.template-version` and the manifest; init prints `old → new` when a project is upgraded.
 - `node test.mjs` runs init against sample configs (Laravel+Docker, mobile, focused skills, forbid, invalid), every stack token in `skill-map.json` (right skills installed, other stacks' skills absent), YAML parser error cases, catalog consistency (skill/agent frontmatter, `skill-map.json` references, description length) and idempotency. CI runs it on every push.
-- `node evals/run.mjs [--verbose]` is an offline skill-trigger eval: it ranks skills by word overlap between each prompt in `evals/cases.json` and the skill descriptions, and requires an expected skill in the top 3. It guards description quality; it does not measure real model triggering. Add a case when you add or reword a skill.
+- `node evals/run.mjs [--verbose] [--report]` is an offline skill-trigger eval: it ranks skills by word overlap between each prompt in `evals/cases.json` and `evals/triggers/*.json` and the skill descriptions, and requires an expected skill in the top 3 (and forbidden skills out of it). It guards description quality; it does not measure real model triggering. Add a case when you add or reword a skill.
 
 ## Improving the template
 

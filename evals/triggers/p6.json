@@ -1,0 +1,16 @@
+[
+  { "prompt": "Design tenant isolation for our multi-tenant SaaS, row-level security and tests that prove one tenant cannot read another's data", "expect": ["saas-multitenancy"], "domains": ["saas"], "tags": ["positive"] },
+  { "prompt": "Handle subscription billing webhooks idempotently and keep entitlements in sync", "expect": ["payments-billing"], "domains": ["payments"], "tags": ["positive"] },
+  { "prompt": "Add live updates with WebSockets, reconnect and resume, and presence", "expect": ["realtime-systems"], "domains": ["realtime"], "tags": ["positive"] },
+  { "prompt": "Publish domain events with a transactional outbox and make the consumers idempotent with a dead letter queue", "expect": ["event-driven-architecture"], "domains": ["events"], "tags": ["positive"] },
+  { "prompt": "Add typo tolerant search with facets and reindex without downtime", "expect": ["search-engineering"], "domains": ["search"], "tags": ["positive"] },
+  { "prompt": "I have an idea for an app, help me clarify the problem, users and success metrics", "expect": ["product-discovery"], "domains": ["product"], "tags": ["positive"] },
+  { "prompt": "Write the PRD with user stories, acceptance criteria and requirement IDs", "expect": ["prd-requirements"], "domains": ["product"], "tags": ["positive"] },
+  { "prompt": "Turn the approved PRD into a technical plan: data model, API contract, test strategy and release plan", "expect": ["product-delivery"], "domains": ["product"], "tags": ["positive"] },
+  { "prompt": "Do a go or no-go production readiness review before we launch", "expect": ["production-readiness"], "domains": ["product"], "tags": ["positive"] },
+  { "prompt": "Charge customers monthly per seat and isolate each tenant's invoices", "expect_all": ["payments-billing", "saas-multitenancy"], "domains": ["payments", "saas"], "tags": ["multi"] },
+  { "prompt": "Index documents for search from queue events with tenant filtering", "expect_all": ["search-engineering", "event-driven-architecture"], "domains": ["search", "events"], "tags": ["multi"] },
+  { "prompt": "Fix the slow query in the reports page", "not": ["search-engineering", "saas-multitenancy", "payments-billing"], "domains": ["search", "saas", "payments"], "tags": ["negative"] },
+  { "prompt": "Add a Stripe-free simple contact form to the static site", "not": ["payments-billing", "event-driven-architecture", "realtime-systems"], "domains": ["payments", "events", "realtime"], "tags": ["negative"] },
+  { "prompt": "Write unit tests for the date formatting helper", "not": ["product-discovery", "prd-requirements", "production-readiness"], "domains": ["product"], "tags": ["negative"] }
+]

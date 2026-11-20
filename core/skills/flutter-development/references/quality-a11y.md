@@ -1,0 +1,8 @@
+# Flutter performance, accessibility, localization, testing
+
+- **Performance:** profile in profile mode on a real device with DevTools (Performance, CPU, Memory, Widget rebuild stats); never judge in debug mode. Narrow rebuilds (split widgets, `const`, selectors/`select`), `ListView.builder`/slivers for lists, stable keys, avoid `Opacity`/`saveLayer` heavy trees, cache and size images (`cacheWidth`), move heavy work off the UI isolate, dispose controllers/streams. Shader jank mitigation depends on the rendering engine in the installed Flutter version; check docs.
+- **Memory:** leaked listeners/controllers/streams, retained BuildContext after await (`mounted`), large image caches.
+- **Accessibility:** `Semantics`, labels for icon buttons, `ExcludeSemantics` for decoration, minimum tap targets, text scaling up to large factors without overflow, contrast, focus order; verify with TalkBack/VoiceOver and the accessibility guideline test helpers (`meetsGuideline`).
+- **Localization:** `flutter_localizations` + `intl` with ARB files and generated `AppLocalizations`; plurals/gender via ICU messages; RTL via `Directionality`; no concatenated sentences; locale-aware formatting.
+- **Testing:** unit tests for logic; widget tests with `pumpWidget`, `pump`/`pumpAndSettle` (avoid infinite animations), finders by key/semantics, provider/bloc overrides; golden tests for stable visual components (pin fonts, tolerate platform differences or run goldens on one OS in CI, update intentionally); integration tests (`integration_test`) for critical flows on device/emulator; mock HTTP at the client boundary. Narrowest first: `flutter test test/path_test.dart`.
+- **Static quality:** `flutter analyze` clean, lints from `analysis_options.yaml`, `dart format`.

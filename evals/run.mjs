@@ -39,9 +39,10 @@ const df = new Map();
 for (const s of skills) for (const w of s.words) df.set(w, (df.get(w) || 0) + 1);
 const idf = (w) => Math.log(1 + skills.length / (df.get(w) || 1));
 
-function rank(prompt) {
+function rank(prompt, allowed) {
   const pw = new Set(tokens(prompt));
   return skills
+    .filter((s) => !allowed || allowed.has(s.name))
     .map((s) => ({ name: s.name, score: [...pw].filter((w) => s.words.has(w)).reduce((n, w) => n + idf(w), 0) }))
     .filter((r) => r.score > 0)
     .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
@@ -53,11 +54,20 @@ function rank(prompt) {
 //   expect_all [skill] every one must rank in the top 5 (multi-skill scenarios)
 //   not      [skill] none of these may rank in the top 3 (negative / hard-negative cases)
 //   tags     [string] free labels, e.g. "version", "regression", "negative", "multi"
-const caseFiles = [path.join(HERE, 'cases.json')];
-const tdir = path.join(HERE, 'triggers');
-if (fs.existsSync(tdir)) for (const f of fs.readdirSync(tdir).sort()) if (f.endsWith('.json')) caseFiles.push(path.join(tdir, f));
-const cases = caseFiles.flatMap((f) => JSON.parse(fs.readFileSync(f, 'utf8')).map((c) => ({ ...c, file: path.basename(f) })));
+import { loadCases } from './lib.mjs';
+const cases = loadCases('all', HERE);
 const known = new Set(skills.map((s) => s.name));
+// Opt-in skills (only reachable through `domains` in skill-map.json) are not in a project's skill list unless the domain is enabled,
+// so they only compete in a case when the case names the domain (`domains: [...]`) or names one of their skills in expect/expect_all/not.
+const MAP = JSON.parse(fs.readFileSync(path.join(ROOT, 'core', 'skill-map.json'), 'utf8'));
+const routed = new Set([...MAP.always, ...Object.values(MAP.types).flat(), ...Object.values(MAP.stack).flat()]);
+const domainsOf = new Map();
+for (const [dom, list] of Object.entries(MAP.domains || {})) for (const sk of list) if (!routed.has(sk)) domainsOf.set(sk, [...(domainsOf.get(sk) || []), dom]);
+function candidates(c) {
+  const on = new Set(c.domains || []);
+  for (const n of [...(c.expect || []), ...(c.expect_all || []), ...(c.not || [])]) for (const d of domainsOf.get(n) || []) on.add(d);
+  return new Set(skills.map((s) => s.name).filter((n) => !domainsOf.has(n) || domainsOf.get(n).some((d) => on.has(d))));
+}
 const stat = new Map(); // per skill: tp (expected and found), fn (expected, missed), fp (forbidden but found)
 const bump = (n, k) => { const o = stat.get(n) || { tp: 0, fn: 0, fp: 0 }; o[k]++; stat.set(n, o); };
 let failed = 0;
@@ -65,7 +75,7 @@ for (const c of cases) {
   const exp = c.expect || [], all = c.expect_all || [], not = c.not || [];
   const bad = [...exp, ...all, ...not].filter((e) => !known.has(e));
   if (bad.length || (!exp.length && !all.length && !not.length)) { failed++; console.error(`  ✖ case "${c.prompt}" (${c.file}) ${bad.length ? 'references unknown skill(s): ' + bad.join(', ') : 'has no expectation'}`); continue; }
-  const ranked = rank(c.prompt).map((r) => r.name);
+  const ranked = rank(c.prompt, candidates(c)).map((r) => r.name);
   const top = ranked.slice(0, TOP), top5 = ranked.slice(0, 5);
   const okExp = !exp.length || exp.some((e) => top.includes(e));
   const okAll = all.every((e) => top5.includes(e));
