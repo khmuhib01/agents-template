@@ -2,6 +2,13 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.12.0 - 2026-11-21
+
+- foundation for the skills expansion (no new skills yet; see docs/SKILLS-BLUEPRINT.md): `deps` in skill-map.json (transitive), optional `domains` config key, `lib/routing.mjs`
+- init no longer installs `evals/` or `examples/` folders found inside a skill
+- tests: routing unit tests and skill lint (size cap, link integrity, indexed references, SOURCES.md format, SEO overclaim check)
+- evals: schema v2 in evals/triggers/*.json (negative, expect_all, tags) and `evals/run.mjs --report`; cases.json unchanged
+
 ## 1.11.0 - 2026-11-20
 
 - perf: leaner always-loaded context (4.7K -> 3.2K tokens for a node api): skills_mode defaults to focused, layout/notes no longer duplicated in ARCHITECTURE.md, merged duplicate rules, shorter CLAUDE.md files

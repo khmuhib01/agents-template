@@ -1,0 +1,7 @@
+[
+  { "prompt": "Review my pull request diff for bugs and regression risk", "not": ["technical-debt", "audit"], "tags": ["negative"] },
+  { "prompt": "Fix the flaky test that fails randomly on CI", "not": ["code-review"], "tags": ["negative"] },
+  { "prompt": "Do a security review of the login and file upload code", "expect_all": ["security-audit"], "tags": ["positive"] },
+  { "prompt": "Add a Laravel migration for the orders table with a foreign key", "expect_all": ["laravel-best-practices"], "not": ["flutter-development"], "tags": ["hard-negative"] },
+  { "prompt": "Write Flutter widget tests for the login screen", "expect_all": ["flutter-development"], "not": ["laravel-best-practices", "react-development"], "tags": ["negative"] }
+]

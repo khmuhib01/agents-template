@@ -31,6 +31,7 @@ const DRY = has('--dry-run') || CHECK;
 import { parseYaml } from './lib/yaml.mjs';
 import { render, missing, truthy } from './lib/render.mjs';
 import { scaffold } from './lib/scaffold.mjs';
+import { focusSkills, shipsWithSkill } from './lib/routing.mjs';
 
 // ---------------------------------------------------------------- context
 const toArr = (v) => (Array.isArray(v) ? v.filter((x) => x !== '') : v === '' || v === undefined ? [] : [v]);
@@ -77,6 +78,7 @@ function buildContext(c) {
   d.url = c.url || '';
   d.description = c.description || '';
   d.package_manager = c.package_manager || '';
+  d.domains = toArr(c.domains).map(String);
   d.skill_routing = skillRouting(d, c.skills_mode !== 'all');
   return d;
 }
@@ -212,26 +214,14 @@ function warnUnknownKeys(cfg) {
   }
 }
 
-// Skills routed for a type + stack tokens (shared by the project-level routing and per-package CLAUDE.md files).
-function focusSkills(map, installed, type, stack) {
-  const focus = new Set(toArr(map.types[type]));
-  const unmatched = [];
-  for (const token of stack.map(norm)) {
-    let hit = false;
-    for (const [key, skills] of Object.entries(map.stack)) {
-      if (token === key || (token.startsWith(key) && /^(\d*|js)$/.test(token.slice(key.length)))) { skills.forEach((x) => focus.add(x)); hit = true; }
-    }
-    if (!hit) unmatched.push(token);
-  }
-  return { focus: new Set([...focus].filter((x) => installed.has(x))), unmatched };
-}
 const installedSkills = () => new Set([...fs.readdirSync(path.join(HERE, 'core', 'skills')), ...fs.readdirSync(path.join(HERE, 'templates', '.claude', 'skills'))]);
 
 function skillRouting(d, focused) {
   const map = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));
   const installed = new Set([...fs.readdirSync(path.join(HERE, 'core', 'skills')), ...fs.readdirSync(path.join(HERE, 'templates', '.claude', 'skills'))]);
-  const { focus, unmatched } = focusSkills(map, installed, d.type, d.stack);
+  const { focus, unmatched, unmatchedDomains } = focusSkills(map, installed, d.type, d.stack, d.domains);
   d.unmatched_stack = unmatched;
+  d.unmatched_domains = unmatchedDomains;
   const always = map.always.filter((s) => installed.has(s));
   const focusList = [...focus].filter((s) => installed.has(s) && !always.includes(s));
   d.routed_set = new Set([...always, ...focusList]);
@@ -322,11 +312,12 @@ function main() {
   const profile = String(cfg.model_profile || 'balanced');
   const wanted = (rel) => !focused || ctx.routed_set.has(rel.split(path.sep)[0]);
   if (ctx.unmatched_stack.length) console.warn(`⚠ stack token(s) matched no skill: ${ctx.unmatched_stack.join(', ')} (check spelling, or map them in core/skill-map.json)`);
+  if (ctx.unmatched_domains.length) console.warn(`⚠ domain(s) matched no skill: ${ctx.unmatched_domains.join(', ')} (see "domains" in core/skill-map.json)`);
   for (const sub of ['skills', 'agents', 'rules']) {
     const base = path.join(HERE, 'core', sub);
     for (const f of walk(base)) {
       const rel = path.relative(base, f);
-      if (sub === 'skills' && !wanted(rel)) continue;
+      if (sub === 'skills' && (!wanted(rel) || !shipsWithSkill(rel))) continue; // maintainer-only folders (evals/, examples/) are never installed
       const buf = sub === 'agents' ? Buffer.from(applyModelProfile(rel.replace(/.md$/i, ''), fs.readFileSync(f, 'utf8'), profile)) : fs.readFileSync(f);
       put(path.join(TARGET, '.claude', sub, rel), buf);
     }
