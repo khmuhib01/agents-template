@@ -1,0 +1,16 @@
+{
+  "title": "Product JSON-LD generated from real data, safely embedded",
+  "type": "web",
+  "stack": ["node"],
+  "domains": ["seo"],
+  "tags": ["seo", "structured-data"],
+  "prompt": "Add schema.org Product structured data (JSON-LD) to the product page rendered by renderProductPage in render.mjs, generated from the product data, with tests (node --test). Only describe what the product data actually contains.",
+  "graders": [
+    { "id": "jsonld-valid-and-matches-data", "category": "correctness", "type": "command", "cmd": ["node", "check-jsonld.mjs"] },
+    { "id": "no-fabricated-reviews", "category": "docs", "type": "command", "cmd": ["node", "check-no-fabrication.mjs"] },
+    { "id": "script-breakout-escaped", "category": "security", "type": "command", "cmd": ["node", "check-escape.mjs"] },
+    { "id": "tests-exist", "category": "test_quality", "type": "exists", "path": "test" },
+    { "id": "tests-pass", "category": "test_quality", "type": "command", "cmd": ["node", "--test"] },
+    { "id": "no-invented-urls", "category": "docs", "type": "no_new_urls", "allow": "^https?://(example\\.com|schema\\.org)" }
+  ]
+}

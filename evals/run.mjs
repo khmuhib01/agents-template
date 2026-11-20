@@ -53,10 +53,8 @@ function rank(prompt) {
 //   expect_all [skill] every one must rank in the top 5 (multi-skill scenarios)
 //   not      [skill] none of these may rank in the top 3 (negative / hard-negative cases)
 //   tags     [string] free labels, e.g. "version", "regression", "negative", "multi"
-const caseFiles = [path.join(HERE, 'cases.json')];
-const tdir = path.join(HERE, 'triggers');
-if (fs.existsSync(tdir)) for (const f of fs.readdirSync(tdir).sort()) if (f.endsWith('.json')) caseFiles.push(path.join(tdir, f));
-const cases = caseFiles.flatMap((f) => JSON.parse(fs.readFileSync(f, 'utf8')).map((c) => ({ ...c, file: path.basename(f) })));
+import { loadCases } from './lib.mjs';
+const cases = loadCases('all', HERE);
 const known = new Set(skills.map((s) => s.name));
 const stat = new Map(); // per skill: tp (expected and found), fn (expected, missed), fp (forbidden but found)
 const bump = (n, k) => { const o = stat.get(n) || { tp: 0, fn: 0, fp: 0 }; o[k]++; stat.set(n, o); };

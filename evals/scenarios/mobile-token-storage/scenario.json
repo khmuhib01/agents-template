@@ -1,0 +1,17 @@
+{
+  "title": "Move auth tokens from AsyncStorage to secure storage (Expo)",
+  "type": "mobile",
+  "stack": ["expo", "typescript"],
+  "tags": ["mobile", "security"],
+  "prompt": "Our Expo app keeps the access and refresh tokens in AsyncStorage (src/auth/tokenStore.ts). Move them to secure storage while keeping the exported functions and their signatures. Existing installs have tokens in AsyncStorage, so migrate them on first read and remove the old copies. Don't log tokens and don't add dependencies.",
+  "graders": [
+    { "id": "uses-secure-store", "category": "security", "type": "contains", "path": "src/auth", "pattern": "from ['\"]expo-secure-store['\"]" },
+    { "id": "writes-secure", "category": "security", "type": "contains", "path": "src/auth", "pattern": "SecureStore\\.setItemAsync" },
+    { "id": "no-new-asyncstorage-writes", "category": "security", "type": "not_contains", "path": "src", "pattern": "AsyncStorage\\.(setItem|multiSet)" },
+    { "id": "old-copies-removed", "category": "correctness", "type": "contains", "path": "src/auth", "pattern": "AsyncStorage\\.(removeItem|multiRemove)" },
+    { "id": "migrates-on-read", "category": "correctness", "type": "contains", "path": "src/auth", "pattern": "AsyncStorage\\.(getItem|multiGet)" },
+    { "id": "api-preserved", "category": "correctness", "type": "contains", "path": "src/auth/tokenStore.ts", "pattern": "export (async )?function getAccessToken[\\s\\S]*export (async )?function saveTokens[\\s\\S]*export (async )?function clearTokens" },
+    { "id": "no-token-logging", "category": "security", "type": "not_contains", "path": "src", "pattern": "console\\.\\w+\\([^)]*(oken)" },
+    { "id": "no-new-dependencies", "category": "docs", "type": "unchanged", "path": "package.json" }
+  ]
+}

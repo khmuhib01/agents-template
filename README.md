@@ -171,7 +171,7 @@ You get `/agents-template:agent-setup-scaffold` and `/agents-template:agent-init
 
 ## Live skill-trigger eval (costs money)
 
-`node evals/live.mjs --dry-run --limit 3` previews the request. With `ANTHROPIC_API_KEY` set, `node evals/live.mjs [--limit N] [--model ID]` shows a real model the list of model-invocable skills (name + description) and checks that it picks an expected skill for each prompt in `evals/cases.json`. It is an approximation of how Claude Code triggers skills, not Claude Code itself, and is never run by `test.mjs` or CI.
+`node evals/live.mjs --dry-run --limit 3` previews the request. With `ANTHROPIC_API_KEY` set, `node evals/live.mjs [--suite legacy|triggers|all] [--repeats N] [--limit N] [--model ID] [--type T --stack a,b --domains x] [--max-calls N] [--out FILE]` shows a real model the list of model-invocable skills (name + description) and scores the cases: expected skills chosen, forbidden skills not chosen, per-skill recall/precision. `--suite legacy` (default) is the original `evals/cases.json`; `all` adds `evals/triggers/*.json` (negative, multi-skill and `live-only` cases). It is an approximation of how Claude Code triggers skills, not Claude Code itself, and is never run by `test.mjs` or CI. `evals/scenarios.mjs` runs task scenarios (a fixture repo + prompt + deterministic graders for correctness, test quality, security, version compatibility and fabricated docs) with `claude -p` in a baseline arm and a skills arm; `node evals/scenarios.mjs --check` is free and verifies the graders against reference solutions. `node evals/report.mjs` writes `evals/REPORT.md` from recorded `evals/results/*.json`. As of v1.16.0 no live results have been recorded, so the skills are unevaluated.
 
 ## Safe upgrades
 
@@ -183,7 +183,7 @@ You get `/agents-template:agent-setup-scaffold` and `/agents-template:agent-init
 
 - `VERSION` is stamped into `.claude/.template-version` and the manifest; init prints `old → new` when a project is upgraded.
 - `node test.mjs` runs init against sample configs (Laravel+Docker, mobile, focused skills, forbid, invalid), every stack token in `skill-map.json` (right skills installed, other stacks' skills absent), YAML parser error cases, catalog consistency (skill/agent frontmatter, `skill-map.json` references, description length) and idempotency. CI runs it on every push.
-- `node evals/run.mjs [--verbose]` is an offline skill-trigger eval: it ranks skills by word overlap between each prompt in `evals/cases.json` and the skill descriptions, and requires an expected skill in the top 3. It guards description quality; it does not measure real model triggering. Add a case when you add or reword a skill.
+- `node evals/run.mjs [--verbose] [--report]` is an offline skill-trigger eval: it ranks skills by word overlap between each prompt in `evals/cases.json` and `evals/triggers/*.json` and the skill descriptions, and requires an expected skill in the top 3 (and forbidden skills out of it). It guards description quality; it does not measure real model triggering. Add a case when you add or reword a skill.
 
 ## Improving the template
 

@@ -1,0 +1,18 @@
+{
+  "title": "Fix security flaws in a small WordPress plugin without changing features",
+  "type": "web",
+  "stack": ["wordpress", "mysql"],
+  "tags": ["wordpress", "security"],
+  "prompt": "Review wp-content/plugins/contact-list/contact-list.php for security problems and fix them without changing what the plugin does. Do not install other plugins or touch anything else.",
+  "graders": [
+    { "id": "output-escaped", "category": "security", "type": "contains", "path": "wp-content/plugins/contact-list", "pattern": "esc_html\\(" },
+    { "id": "sql-prepared", "category": "security", "type": "contains", "path": "wp-content/plugins/contact-list", "pattern": "\\$wpdb->prepare\\(" },
+    { "id": "no-interpolated-sql", "category": "security", "type": "not_contains", "path": "wp-content/plugins/contact-list", "pattern": "\\$wpdb->(get_results|get_var|query)\\(\\s*[\"'][^\"']*\\$" },
+    { "id": "nonce-checked", "category": "security", "type": "contains", "path": "wp-content/plugins/contact-list", "pattern": "check_admin_referer|wp_verify_nonce" },
+    { "id": "capability-checked", "category": "security", "type": "contains", "path": "wp-content/plugins/contact-list", "pattern": "current_user_can\\(" },
+    { "id": "rest-permission-real", "category": "security", "type": "not_contains", "path": "wp-content/plugins/contact-list", "pattern": "__return_true" },
+    { "id": "ids-cast", "category": "correctness", "type": "contains", "path": "wp-content/plugins/contact-list", "pattern": "absint\\(|\\(int\\)" },
+    { "id": "php-lint", "category": "correctness", "type": "command", "cmd": ["php", "-l", "wp-content/plugins/contact-list/contact-list.php"], "optional_binary": "php" },
+    { "id": "no-invented-urls", "category": "docs", "type": "no_new_urls", "allow": "^$" }
+  ]
+}

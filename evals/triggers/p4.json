@@ -1,20 +1,186 @@
 [
-  { "prompt": "Rewrite the title tags and meta descriptions per template and map each page to one search intent", "expect": ["seo-on-page-content"], "tags": ["positive"] },
-  { "prompt": "Find keyword cannibalization and plan a content audit with merges and redirects", "expect": ["seo-on-page-content"], "tags": ["positive"] },
-  { "prompt": "LCP is poor on mobile, the hero image loads late and INP is high", "expect": ["seo-web-vitals"], "tags": ["positive"] },
-  { "prompt": "Fix cumulative layout shift caused by fonts and ad slots", "expect": ["seo-web-vitals"], "tags": ["positive"] },
-  { "prompt": "Set up hreflang for our English, German and French sites and check reciprocal links", "expect": ["seo-international-ecommerce"], "tags": ["positive"] },
-  { "prompt": "Faceted category pages and product variants create duplicate URLs, decide what to index", "expect": ["seo-international-ecommerce", "seo-technical"], "tags": ["positive"] },
-  { "prompt": "Generate thousands of city landing pages programmatically without thin content", "expect": ["seo-international-ecommerce"], "tags": ["positive"] },
-  { "prompt": "Review the REST API contract: error format, pagination, idempotency keys and versioning", "expect": ["api-engineering"], "tags": ["positive"] },
-  { "prompt": "Check for broken object-level authorization and tenant isolation in the API", "expect": ["security-audit"], "tags": ["positive"] },
-  { "prompt": "Plan a zero-downtime migration to add a column on a huge table with a backfill", "expect": ["database-engineering", "mysql-engineering", "postgresql-engineering"], "tags": ["positive"] },
-  { "prompt": "Write a GitHub Actions pipeline that builds a Docker image and promotes it to staging", "expect": ["devops-engineering"], "tags": ["positive"] },
-  { "prompt": "The API endpoint is slow at p95, profile it and fix the bottleneck", "expect": ["performance-engineering"], "tags": ["positive"] },
-  { "prompt": "Next.js page shows stale data after a server action, fix revalidation", "expect": ["nextjs-development"], "tags": ["positive"] },
-  { "prompt": "Improve Core Web Vitals on the Next.js storefront without hurting SEO", "expect": ["seo-web-vitals"], "tags": ["multi", "live-only: should also load nextjs-development; lexical ranking does not place it in the top 5"] },
-  { "prompt": "Set up hreflang and product indexing for the WooCommerce store", "expect": ["seo-international-ecommerce"], "tags": ["multi", "live-only: should also load wordpress-development"] },
-  { "prompt": "Tune a slow SQL query with a missing index", "not": ["seo-web-vitals", "seo-on-page-content"], "tags": ["negative"] },
-  { "prompt": "Add a Rust function that parses a config file", "not": ["seo-international-ecommerce", "devops-engineering", "api-engineering"], "tags": ["negative"] },
-  { "prompt": "Check the codebase for dependency vulnerabilities and leaked secrets", "expect": ["security-audit", "dependency-management"], "not": ["seo-technical"], "tags": ["hard-negative"] }
+  {
+    "prompt": "Rewrite the title tags and meta descriptions per template and map each page to one search intent",
+    "expect": [
+      "seo-on-page-content"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Find keyword cannibalization and plan a content audit with merges and redirects",
+    "expect": [
+      "seo-on-page-content"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "LCP is poor on mobile, the hero image loads late and INP is high",
+    "expect": [
+      "seo-web-vitals"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Fix cumulative layout shift caused by fonts and ad slots",
+    "expect": [
+      "seo-web-vitals"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Set up hreflang for our English, German and French sites and check reciprocal links",
+    "expect": [
+      "seo-international-ecommerce"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Faceted category pages and product variants create duplicate URLs, decide what to index",
+    "expect": [
+      "seo-international-ecommerce",
+      "seo-technical"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Generate thousands of city landing pages programmatically without thin content",
+    "expect": [
+      "seo-international-ecommerce"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Review the REST API contract: error format, pagination, idempotency keys and versioning",
+    "expect": [
+      "api-engineering"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Check for broken object-level authorization and tenant isolation in the API",
+    "expect": [
+      "security-audit"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Plan a zero-downtime migration to add a column on a huge table with a backfill",
+    "expect": [
+      "database-engineering",
+      "mysql-engineering",
+      "postgresql-engineering"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Write a GitHub Actions pipeline that builds a Docker image and promotes it to staging",
+    "expect": [
+      "devops-engineering"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "The API endpoint is slow at p95, profile it and fix the bottleneck",
+    "expect": [
+      "performance-engineering"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Next.js page shows stale data after a server action, fix revalidation",
+    "expect": [
+      "nextjs-development"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Improve Core Web Vitals on the Next.js storefront without hurting SEO",
+    "expect": [
+      "seo-web-vitals"
+    ],
+    "tags": [
+      "multi",
+      "live-only"
+    ],
+    "live_expect_all": [
+      "seo-web-vitals",
+      "nextjs-development"
+    ],
+    "note": "lexical ranking does not show the second skill; checked live only"
+  },
+  {
+    "prompt": "Set up hreflang and product indexing for the WooCommerce store",
+    "expect": [
+      "seo-international-ecommerce"
+    ],
+    "tags": [
+      "multi",
+      "live-only"
+    ],
+    "live_expect_all": [
+      "seo-international-ecommerce",
+      "wordpress-development"
+    ],
+    "note": "lexical ranking does not show the second skill; checked live only"
+  },
+  {
+    "prompt": "Tune a slow SQL query with a missing index",
+    "not": [
+      "seo-web-vitals",
+      "seo-on-page-content"
+    ],
+    "tags": [
+      "negative"
+    ]
+  },
+  {
+    "prompt": "Add a Rust function that parses a config file",
+    "not": [
+      "seo-international-ecommerce",
+      "devops-engineering",
+      "api-engineering"
+    ],
+    "tags": [
+      "negative"
+    ]
+  },
+  {
+    "prompt": "Check the codebase for dependency vulnerabilities and leaked secrets",
+    "expect": [
+      "security-audit",
+      "dependency-management"
+    ],
+    "not": [
+      "seo-technical"
+    ],
+    "tags": [
+      "hard-negative"
+    ]
+  }
 ]

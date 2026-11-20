@@ -705,6 +705,49 @@ console.log('\n[seo wordpress routing]');
 
 }
 
+if (on('live and scenario evals')) {
+console.log('\n[live and scenario evals]');
+{
+  const lib = await import(pathToFileURL(path.join(HERE, 'evals', 'lib.mjs')).href);
+  const all = lib.loadCases('all'); const legacy = lib.loadCases('legacy'); const trig = lib.loadCases('triggers');
+  check(legacy.length === 70 && trig.length > 0 && all.length === legacy.length + trig.length, 'case loader reads cases.json and evals/triggers/*.json');
+  const multi = { expect: ['a'], expect_all: ['b'], not: ['x'], live_expect_all: ['c'], live_not: ['y'] };
+  check(lib.scoreCase(multi, ['a', 'b'], false).ok && !lib.scoreCase(multi, ['a', 'b'], true).ok && lib.scoreCase(multi, ['a', 'b', 'c'], true).ok, 'scoring: live_* expectations apply only in live mode');
+  check(lib.scoreCase(multi, ['a', 'b', 'x'], false).forbidden.join() === 'x' && !lib.scoreCase(multi, ['b'], false).ok, 'scoring: forbidden and missing skills fail the case');
+  const sum = lib.summarize([{ case: { expect: ['a'] }, got: ['a'], forbidden: [] }, { case: { expect: ['a'] }, got: [], forbidden: [], ok: false }, { case: { not: ['x'] }, got: ['x'], forbidden: ['x'], ok: false }]);
+  check(sum.per.a.tp === 1 && sum.per.a.fn === 1 && sum.per.x.fp === 1 && sum.per.a.recall === 0.5, 'summary counts per-skill tp/fn/fp and recall');
+  const dry = spawnSync(process.execPath, [path.join(HERE, 'evals/live.mjs'), '--dry-run', '--suite', 'all', '--repeats', '2', '--type', 'mobile', '--stack', 'flutter'], { encoding: 'utf8', env: { ...process.env, ANTHROPIC_API_KEY: '' } });
+  check(dry.status === 0 && /API calls: 270/.test(dry.stdout), 'live eval dry-run counts suite x repeats and sends nothing');
+  const capped = spawnSync(process.execPath, [path.join(HERE, 'evals/live.mjs'), '--suite', 'all', '--repeats', '3'], { encoding: 'utf8', env: { ...process.env, ANTHROPIC_API_KEY: 'x' } });
+  check(capped.status === 2 && /exceed --max-calls/.test(capped.stderr), 'live eval refuses a run above --max-calls before any API call');
+
+  const sl = await import(pathToFileURL(path.join(HERE, 'evals', 'scenario-lib.mjs')).href);
+  const ids = sl.listScenarios();
+  check(ids.length >= 5, `${ids.length} task scenarios present`);
+  const chk = spawnSync(process.execPath, [path.join(HERE, 'evals/scenarios.mjs'), '--check'], { encoding: 'utf8' });
+  check(chk.status === 0, `every scenario's graders fail on the bare fixture and pass on the reference solution${chk.status ? '\n' + chk.stdout : ''}`);
+  const bad = sl.loadScenario('structured-data-product');
+  const tmp = fs.mkdtempSync(path.join(base, 'scen-'));
+  sl.copyDir(path.join(bad.root, 'fixture'), tmp); sl.copyDir(path.join(bad.root, 'solution'), tmp);
+  const rp = path.join(tmp, 'render.mjs');
+  fs.writeFileSync(rp, fs.readFileSync(rp, 'utf8').replace("name: product.name,", "name: product.name, aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.8', reviewCount: '12' },"));
+  const g = sl.grade(tmp, bad);
+  check(g.find((x) => x.id === 'no-fabricated-reviews').pass === false && g.find((x) => x.id === 'jsonld-valid-and-matches-data').pass, 'graders catch fabricated ratings that a plausible answer might add');
+  const hostile = fs.mkdtempSync(path.join(base, 'scen-'));
+  sl.copyDir(path.join(bad.root, 'fixture'), hostile); sl.copyDir(path.join(bad.root, 'solution'), hostile);
+  const hp = path.join(hostile, 'render.mjs');
+  fs.writeFileSync(hp, fs.readFileSync(hp, 'utf8').replace(/\.replace\(\/<\/g,[^)]*\)\.replace\(\/>\/g,[^)]*\)/, ''));
+  check(sl.grade(hostile, bad).find((x) => x.id === 'script-breakout-escaped').pass === false, 'graders catch JSON-LD that can be closed with </script>');
+  check(sl.changedFiles(tmp, path.join(bad.root, 'fixture')).includes('render.mjs') && !sl.changedFiles(tmp, path.join(bad.root, 'fixture')).includes('product.json'), 'changedFiles reports only edited files');
+
+  const { buildReport } = await import(pathToFileURL(path.join(HERE, 'evals', 'report.mjs')).href);
+  check(/unevaluated/.test(buildReport([])), 'report says "unevaluated" when no live results exist');
+  const rep = buildReport([{ kind: 'trigger', date: '2026-01-01', model: 'm', suite: 'all', repeats: 1, skillsListed: 5, tokens: { fresh: 1, cacheWrite: 2, cacheRead: 3, out: 4 }, summary: { calls: 10, passed: 9, passRate: 0.9, per: { a: { tp: 9, fn: 1, fp: 0, recall: 0.9, precision: 1 } } }, failures: [] }, { kind: 'scenarios', date: '2026-01-01', model: 'm', runsPerCell: 1, budgetPerRunUsd: 1, runs: [{ scenario: 's', arm: 'skills', run: 1, pass: true, cost: 0.5, turns: 3, graders: [{ category: 'security', pass: true }] }] }]);
+  check(/9 \(90%\)/.test(rep) && /\| s \| skills \| 1 \| 1\/1/.test(rep) && /security \| skills \| 1\/1/.test(rep), 'report renders trigger and scenario results with counts');
+}
+
+}
+
 if (on('invalid config')) {
 console.log('\n[invalid config]');
 const inv = path.join(base, 'invalid');

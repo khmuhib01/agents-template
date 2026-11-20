@@ -1,21 +1,188 @@
 [
-  { "prompt": "Pages dropped out of Google's index after the deploy, check robots.txt, noindex and canonicals", "expect": ["seo-technical"], "tags": ["positive", "regression"] },
-  { "prompt": "Audit our XML sitemap and redirect chains for crawlability problems", "expect": ["seo-technical"], "tags": ["positive"] },
-  { "prompt": "Faceted navigation creates thousands of duplicate filter URLs, control crawling and indexing", "expect": ["seo-technical"], "tags": ["positive"] },
-  { "prompt": "Add JSON-LD Product and BreadcrumbList structured data to the product pages", "expect": ["seo-structured-data"], "tags": ["positive"] },
-  { "prompt": "Validate schema.org markup and rich result eligibility for our articles", "expect": ["seo-structured-data"], "tags": ["positive"] },
-  { "prompt": "We are migrating the site to a new domain, build the redirect map and launch checklist for SEO", "expect": ["seo-migration-monitoring"], "tags": ["positive"] },
-  { "prompt": "Set up Search Console monitoring and automated SEO regression tests in CI", "expect": ["seo-migration-monitoring"], "tags": ["positive"] },
-  { "prompt": "Write a WordPress plugin with a REST endpoint, nonce check and capability check", "expect": ["wordpress-development"], "tags": ["positive"] },
-  { "prompt": "Optimize a slow WP_Query and transients on our WordPress site", "expect": ["wordpress-development"], "tags": ["positive"] },
-  { "prompt": "Refactor this PHP class to use enums, readonly properties and strict types", "expect": ["php-development"], "tags": ["positive"] },
-  { "prompt": "Our mobile app needs a test strategy, device matrix and performance budgets", "expect": ["mobile-quality"], "tags": ["positive"] },
-  { "prompt": "Run an accessibility review of the mobile app with TalkBack and VoiceOver", "expect": ["mobile-quality"], "tags": ["positive"] },
-  { "prompt": "Add Product JSON-LD to the Next.js product pages and check raw HTML for the canonical", "expect_all": ["seo-structured-data", "seo-technical"], "tags": ["multi"] },
-  { "prompt": "WordPress site migration to a new domain with redirects and SEO monitoring", "expect": ["seo-migration-monitoring"], "tags": ["multi", "live-only: should also load wordpress-development; lexical ranking cannot show it"] },
-  { "prompt": "Harden the WordPress plugin: escaping, SQL injection and capabilities", "expect_all": ["wordpress-development", "security-audit"], "tags": ["multi"] },
-  { "prompt": "Add a Laravel migration and Eloquent relationship for invoices", "not": ["wordpress-development", "php-development", "seo-technical"], "tags": ["negative"] },
-  { "prompt": "Fix the login form validation in our React dashboard", "not": ["seo-technical", "seo-structured-data", "seo-migration-monitoring"], "tags": ["negative"] },
-  { "prompt": "Tune the PostgreSQL query plan for the reports table", "not": ["wordpress-development", "mobile-quality"], "tags": ["negative"] },
-  { "prompt": "Write unit tests for the Python invoice service", "not": ["mobile-quality", "php-development"], "tags": ["negative"] }
+  {
+    "prompt": "Pages dropped out of Google's index after the deploy, check robots.txt, noindex and canonicals",
+    "expect": [
+      "seo-technical"
+    ],
+    "tags": [
+      "positive",
+      "regression"
+    ]
+  },
+  {
+    "prompt": "Audit our XML sitemap and redirect chains for crawlability problems",
+    "expect": [
+      "seo-technical"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Faceted navigation creates thousands of duplicate filter URLs, control crawling and indexing",
+    "expect": [
+      "seo-technical"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Add JSON-LD Product and BreadcrumbList structured data to the product pages",
+    "expect": [
+      "seo-structured-data"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Validate schema.org markup and rich result eligibility for our articles",
+    "expect": [
+      "seo-structured-data"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "We are migrating the site to a new domain, build the redirect map and launch checklist for SEO",
+    "expect": [
+      "seo-migration-monitoring"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Set up Search Console monitoring and automated SEO regression tests in CI",
+    "expect": [
+      "seo-migration-monitoring"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Write a WordPress plugin with a REST endpoint, nonce check and capability check",
+    "expect": [
+      "wordpress-development"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Optimize a slow WP_Query and transients on our WordPress site",
+    "expect": [
+      "wordpress-development"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Refactor this PHP class to use enums, readonly properties and strict types",
+    "expect": [
+      "php-development"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Our mobile app needs a test strategy, device matrix and performance budgets",
+    "expect": [
+      "mobile-quality"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Run an accessibility review of the mobile app with TalkBack and VoiceOver",
+    "expect": [
+      "mobile-quality"
+    ],
+    "tags": [
+      "positive"
+    ]
+  },
+  {
+    "prompt": "Add Product JSON-LD to the Next.js product pages and check raw HTML for the canonical",
+    "expect_all": [
+      "seo-structured-data",
+      "seo-technical"
+    ],
+    "tags": [
+      "multi"
+    ]
+  },
+  {
+    "prompt": "WordPress site migration to a new domain with redirects and SEO monitoring",
+    "expect": [
+      "seo-migration-monitoring"
+    ],
+    "tags": [
+      "multi",
+      "live-only"
+    ],
+    "live_expect_all": [
+      "seo-migration-monitoring",
+      "wordpress-development"
+    ],
+    "note": "lexical ranking does not show the second skill; checked live only"
+  },
+  {
+    "prompt": "Harden the WordPress plugin: escaping, SQL injection and capabilities",
+    "expect_all": [
+      "wordpress-development",
+      "security-audit"
+    ],
+    "tags": [
+      "multi"
+    ]
+  },
+  {
+    "prompt": "Add a Laravel migration and Eloquent relationship for invoices",
+    "not": [
+      "wordpress-development",
+      "php-development",
+      "seo-technical"
+    ],
+    "tags": [
+      "negative"
+    ]
+  },
+  {
+    "prompt": "Fix the login form validation in our React dashboard",
+    "not": [
+      "seo-technical",
+      "seo-structured-data",
+      "seo-migration-monitoring"
+    ],
+    "tags": [
+      "negative"
+    ]
+  },
+  {
+    "prompt": "Tune the PostgreSQL query plan for the reports table",
+    "not": [
+      "wordpress-development",
+      "mobile-quality"
+    ],
+    "tags": [
+      "negative"
+    ]
+  },
+  {
+    "prompt": "Write unit tests for the Python invoice service",
+    "not": [
+      "mobile-quality",
+      "php-development"
+    ],
+    "tags": [
+      "negative"
+    ]
+  }
 ]

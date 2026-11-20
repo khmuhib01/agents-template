@@ -2,6 +2,12 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.16.0 - 2026-11-21
+
+- live evaluation tooling (phase P5), no results recorded yet: `evals/live.mjs` runs v2 cases with repeats, per-skill recall/precision, `--type/--stack/--domains` realism, `--max-calls` cap and `--out`; `evals/scenarios.mjs` runs 5 task scenarios (SEO regression, Product JSON-LD, Expo token storage, WordPress plugin security, React 18 version gate) with deterministic graders; `evals/report.mjs` builds `evals/REPORT.md`
+- `node evals/scenarios.mjs --check` (free, in test.mjs) proves each scenario's graders fail on the bare fixture and pass on a reference solution
+- `live_expect_all` / `live_not` on trigger cases carry expectations that lexical ranking cannot check
+
 ## 1.15.0 - 2026-11-21
 
 - SEO (phase P4): `seo-on-page-content`, `seo-web-vitals`, `seo-international-ecommerce` complete the six-skill `domains: [seo]` set

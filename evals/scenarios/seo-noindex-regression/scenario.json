@@ -1,0 +1,17 @@
+{
+  "title": "Pages vanished from search after a deploy (noindex/robots regression)",
+  "type": "web",
+  "stack": ["node"],
+  "domains": ["seo"],
+  "tags": ["seo", "regression"],
+  "prompt": "After the last deploy our pages dropped out of Google. The production build output seems to tell crawlers to stay away. Find the root cause and fix it, and add a regression test (node --test) that fails if the production build ships `Disallow: /` or a noindex meta tag. Staging must keep blocking crawlers. Do not touch anything unrelated.",
+  "graders": [
+    { "id": "prod-build-indexable", "category": "correctness", "type": "command", "cmd": ["node", "check-prod.mjs"] },
+    { "id": "staging-still-blocked", "category": "security", "type": "command", "cmd": ["node", "check-staging.mjs"] },
+    { "id": "regression-test-exists", "category": "test_quality", "type": "exists", "path": "test" },
+    { "id": "tests-pass", "category": "test_quality", "type": "command", "cmd": ["node", "--test"] },
+    { "id": "test-catches-original-bug", "category": "test_quality", "type": "regression_test", "restore": ["build.mjs", "deploy.mjs"], "cmd": ["node", "--test"] },
+    { "id": "package-untouched", "category": "correctness", "type": "unchanged", "path": "package.json" },
+    { "id": "no-invented-urls", "category": "docs", "type": "no_new_urls", "allow": "^https?://(example\\.com|schema\\.org)" }
+  ]
+}
