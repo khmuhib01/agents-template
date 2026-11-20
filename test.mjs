@@ -197,7 +197,7 @@ console.log('\n[catalog]');
   const coreSkills = fs.readdirSync(path.join(HERE, 'core', 'skills'));
   const tplSkills = fs.readdirSync(path.join(HERE, 'templates', '.claude', 'skills'));
   const known = new Set([...coreSkills, ...tplSkills]);
-  const referenced = new Set([...map.always, ...Object.values(map.types).flat(), ...Object.values(map.stack).flat()]);
+  const referenced = new Set([...map.always, ...Object.values(map.types).flat(), ...Object.values(map.stack).flat(), ...Object.values(map.deps || {}).flat(), ...Object.values(map.domains || {}).flat()]);
   const dangling = [...referenced].filter((s) => !known.has(s));
   check(dangling.length === 0, `skill-map.json references only existing skills${dangling.length ? ': ' + dangling.join(', ') : ''}`);
   const fm = (f) => { const m = fs.readFileSync(f, 'utf8').match(/^---\r?\n([\s\S]*?)\r?\n---/); const o = {}; if (m) for (const l of m[1].split(/\r?\n/)) { const i = l.indexOf(':'); if (i > 0) o[l.slice(0, i).trim()] = l.slice(i + 1).trim().replace(/^"|"$/g, ''); } return o; };
@@ -661,6 +661,111 @@ console.log('\n[skill lint]');
   fs.writeFileSync(path.join(base, 'domains-warn', 'project.config.yml'), 'name: D\ntype: web\nstack: [react]\ndomains: [nonexistent]\nbranches: {working: a, production: main}\n');
   const w = spawnSync(process.execPath, [INIT, '--target', path.join(base, 'domains-warn'), '--dry-run'], { encoding: 'utf8' });
   check(w.status === 0 && /domain\(s\) matched no skill: nonexistent/.test(w.stderr), 'unknown domains warn but do not fail');
+}
+
+}
+
+if (on('mobile routing')) {
+console.log('\n[mobile routing]');
+{
+  const mk = (name, body) => { const d = path.join(base, 'mob-' + name); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'project.config.yml'), `name: M\n${body}\nbranches: {working: a, integration: "", production: main}\n`); return d; };
+  const shared = ['mobile-architecture', 'mobile-security', 'mobile-release'];
+  const fixtures = { flutter: ['type: mobile\nstack: [flutter]', 'flutter-development'], expo: ['type: mobile\nstack: [expo, typescript]', 'react-native-development'], android: ['type: mobile\nstack: [android]', 'android-kotlin-development'], ios: ['type: mobile\nstack: [swiftui]', 'swift-development'] };
+  for (const [k, [body, main]] of Object.entries(fixtures)) {
+    const d = mk(k, body); const r = run(d);
+    const have = new Set(fs.readdirSync(path.join(d, '.claude/skills')));
+    check(r.status === 0 && have.has(main) && shared.every((s) => have.has(s)), `${k}: installs ${main} plus the shared mobile skills`);
+    check(fs.existsSync(path.join(d, '.claude/skills', main, 'references')) && !fs.existsSync(path.join(d, '.claude/skills', main, 'evals')), `${k}: references are installed, evals are not`);
+    check(/0 created, 0 updated/.test(run(d).stdout), `${k}: re-run is idempotent`);
+  }
+  const web = mk('web', 'type: web\nstack: [laravel]'); run(web);
+  check(!fs.readdirSync(path.join(web, '.claude/skills')).some((s) => s.startsWith('mobile-') || s === 'android-kotlin-development'), 'web/laravel project gets no mobile skills');
+  const bare = mk('bare', 'type: mobile\nstack: [cobol]'); run(bare);
+  const hb = new Set(fs.readdirSync(path.join(bare, '.claude/skills')));
+  check(hb.has('mobile-architecture') && hb.has('mobile-security') && !hb.has('mobile-release'), 'mobile type with unmapped stack still gets architecture + security guidance');
+}
+
+}
+
+if (on('seo wordpress routing')) {
+console.log('\n[seo wordpress routing]');
+{
+  const mk = (name, body) => { const d = path.join(base, 'p3-' + name); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'project.config.yml'), `name: P\n${body}\nbranches: {working: a, integration: "", production: main}\n`); return d; };
+  const skills = (d) => new Set(fs.readdirSync(path.join(d, '.claude/skills')));
+  const wp = mk('wp', 'type: web\nstack: [wordpress, mysql]\ndomains: [seo]'); const r = run(wp); const h = skills(wp);
+  check(r.status === 0 && !/matched no skill/.test(r.stderr), 'wordpress + seo domain generates without routing warnings');
+  check(['wordpress-development', 'php-development', 'seo-technical', 'seo-on-page-content', 'seo-structured-data', 'seo-web-vitals', 'seo-international-ecommerce', 'seo-migration-monitoring'].every((s) => h.has(s)), 'wordpress stack + seo domain install the WordPress, PHP and SEO skills');
+  check(/0 created, 0 updated/.test(run(wp).stdout), 'wordpress + seo re-run is idempotent');
+  const plain = mk('plain', 'type: web\nstack: [react]'); run(plain);
+  check(![...skills(plain)].some((s) => s.startsWith('seo-') || s === 'wordpress-development' || s === 'php-development'), 'a web project without the seo domain gets no SEO/WordPress/PHP skills');
+  const mob = mk('mob', 'type: mobile\nstack: [flutter]'); run(mob);
+  check(skills(mob).has('mobile-quality'), 'mobile framework skills pull in mobile-quality');
+  check(fs.existsSync(path.join(wp, '.claude/skills/seo-technical/references/frameworks/wordpress.md')), 'nested framework references are installed');
+}
+
+}
+
+if (on('live and scenario evals')) {
+console.log('\n[live and scenario evals]');
+{
+  const lib = await import(pathToFileURL(path.join(HERE, 'evals', 'lib.mjs')).href);
+  const all = lib.loadCases('all'); const legacy = lib.loadCases('legacy'); const trig = lib.loadCases('triggers');
+  check(legacy.length === 70 && trig.length > 0 && all.length === legacy.length + trig.length, 'case loader reads cases.json and evals/triggers/*.json');
+  const multi = { expect: ['a'], expect_all: ['b'], not: ['x'], live_expect_all: ['c'], live_not: ['y'] };
+  check(lib.scoreCase(multi, ['a', 'b'], false).ok && !lib.scoreCase(multi, ['a', 'b'], true).ok && lib.scoreCase(multi, ['a', 'b', 'c'], true).ok, 'scoring: live_* expectations apply only in live mode');
+  check(lib.scoreCase(multi, ['a', 'b', 'x'], false).forbidden.join() === 'x' && !lib.scoreCase(multi, ['b'], false).ok, 'scoring: forbidden and missing skills fail the case');
+  const sum = lib.summarize([{ case: { expect: ['a'] }, got: ['a'], forbidden: [] }, { case: { expect: ['a'] }, got: [], forbidden: [], ok: false }, { case: { not: ['x'] }, got: ['x'], forbidden: ['x'], ok: false }]);
+  check(sum.per.a.tp === 1 && sum.per.a.fn === 1 && sum.per.x.fp === 1 && sum.per.a.recall === 0.5, 'summary counts per-skill tp/fn/fp and recall');
+  const dry = spawnSync(process.execPath, [path.join(HERE, 'evals/live.mjs'), '--dry-run', '--suite', 'all', '--repeats', '2', '--type', 'mobile', '--stack', 'flutter'], { encoding: 'utf8', env: { ...process.env, ANTHROPIC_API_KEY: '' } });
+  check(dry.status === 0 && new RegExp(`API calls: ${all.length * 2}\\b`).test(dry.stdout), 'live eval dry-run counts suite x repeats and sends nothing');
+  const capped = spawnSync(process.execPath, [path.join(HERE, 'evals/live.mjs'), '--suite', 'all', '--repeats', '3'], { encoding: 'utf8', env: { ...process.env, ANTHROPIC_API_KEY: 'x' } });
+  check(capped.status === 2 && /exceed --max-calls/.test(capped.stderr), 'live eval refuses a run above --max-calls before any API call');
+
+  const sl = await import(pathToFileURL(path.join(HERE, 'evals', 'scenario-lib.mjs')).href);
+  const ids = sl.listScenarios();
+  check(ids.length >= 5, `${ids.length} task scenarios present`);
+  const chk = spawnSync(process.execPath, [path.join(HERE, 'evals/scenarios.mjs'), '--check'], { encoding: 'utf8' });
+  check(chk.status === 0, `every scenario's graders fail on the bare fixture and pass on the reference solution${chk.status ? '\n' + chk.stdout : ''}`);
+  const bad = sl.loadScenario('structured-data-product');
+  const tmp = fs.mkdtempSync(path.join(base, 'scen-'));
+  sl.copyDir(path.join(bad.root, 'fixture'), tmp); sl.copyDir(path.join(bad.root, 'solution'), tmp);
+  const rp = path.join(tmp, 'render.mjs');
+  fs.writeFileSync(rp, fs.readFileSync(rp, 'utf8').replace("name: product.name,", "name: product.name, aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.8', reviewCount: '12' },"));
+  const g = sl.grade(tmp, bad);
+  check(g.find((x) => x.id === 'no-fabricated-reviews').pass === false && g.find((x) => x.id === 'jsonld-valid-and-matches-data').pass, 'graders catch fabricated ratings that a plausible answer might add');
+  const hostile = fs.mkdtempSync(path.join(base, 'scen-'));
+  sl.copyDir(path.join(bad.root, 'fixture'), hostile); sl.copyDir(path.join(bad.root, 'solution'), hostile);
+  const hp = path.join(hostile, 'render.mjs');
+  fs.writeFileSync(hp, fs.readFileSync(hp, 'utf8').replace(/\.replace\(\/<\/g,[^)]*\)\.replace\(\/>\/g,[^)]*\)/, ''));
+  check(sl.grade(hostile, bad).find((x) => x.id === 'script-breakout-escaped').pass === false, 'graders catch JSON-LD that can be closed with </script>');
+  check(sl.changedFiles(tmp, path.join(bad.root, 'fixture')).includes('render.mjs') && !sl.changedFiles(tmp, path.join(bad.root, 'fixture')).includes('product.json'), 'changedFiles reports only edited files');
+
+  const { buildReport } = await import(pathToFileURL(path.join(HERE, 'evals', 'report.mjs')).href);
+  check(/unevaluated/.test(buildReport([])), 'report says "unevaluated" when no live results exist');
+  const rep = buildReport([{ kind: 'trigger', date: '2026-01-01', model: 'm', suite: 'all', repeats: 1, skillsListed: 5, tokens: { fresh: 1, cacheWrite: 2, cacheRead: 3, out: 4 }, summary: { calls: 10, passed: 9, passRate: 0.9, per: { a: { tp: 9, fn: 1, fp: 0, recall: 0.9, precision: 1 } } }, failures: [] }, { kind: 'scenarios', date: '2026-01-01', model: 'm', runsPerCell: 1, budgetPerRunUsd: 1, runs: [{ scenario: 's', arm: 'skills', run: 1, pass: true, cost: 0.5, turns: 3, graders: [{ category: 'security', pass: true }] }] }]);
+  check(/9 \(90%\)/.test(rep) && /\| s \| skills \| 1 \| 1\/1/.test(rep) && /security \| skills \| 1\/1/.test(rep), 'report renders trigger and scenario results with counts');
+}
+
+}
+
+if (on('fullstack product domains')) {
+console.log('\n[fullstack product domains]');
+{
+  const mk = (name, body) => { const d = path.join(base, 'p6-' + name); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'project.config.yml'), `name: P\n${body}\nbranches: {working: a, integration: "", production: main}\n`); return d; };
+  const skills = (d) => new Set(fs.readdirSync(path.join(d, '.claude/skills')));
+  const map = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));
+  const dom = ['saas', 'payments', 'realtime', 'events', 'search', 'product'];
+  check(dom.every((d) => (map.domains[d] || []).length > 0), 'domains saas, payments, realtime, events, search and product are mapped');
+  for (const d of dom) {
+    const dir = mk(d, `type: api\nstack: [node]\ndomains: [${d}]`); const r = run(dir); const have = skills(dir);
+    const want = [...map.domains[d], ...map.domains[d].flatMap((s) => map.deps[s] || [])];
+    check(r.status === 0 && !/matched no skill/.test(r.stderr) && want.every((s) => have.has(s)), `domain "${d}" installs ${map.domains[d].join(', ')} and their dependencies`);
+  }
+  const plain = mk('plain', 'type: api\nstack: [node]'); run(plain);
+  const all = new Set(dom.flatMap((d) => map.domains[d]));
+  check(![...skills(plain)].some((s) => all.has(s)), 'projects without domains do not get saas/payments/realtime/events/search/product skills');
+  const build = fs.readFileSync(path.join(HERE, 'core/skills/build/SKILL.md'), 'utf8');
+  check(/Full lifecycle/.test(build) && /disable-model-invocation:\s*true/.test(build) && /explicit approval/.test(build), 'build keeps manual-only and approval gates and mentions the lifecycle stages');
 }
 
 }

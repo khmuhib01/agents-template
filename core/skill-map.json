@@ -41,7 +41,9 @@
     ],
     "mobile": [
       "ui-ux-engineering",
-      "api-engineering"
+      "api-engineering",
+      "mobile-architecture",
+      "mobile-security"
     ],
     "fullstack": [
       "frontend-engineering",
@@ -195,8 +197,116 @@
     ],
     "ios": [
       "swift-development"
+    ],
+    "android": [
+      "android-kotlin-development"
+    ],
+    "compose": [
+      "android-kotlin-development"
+    ],
+    "jetpack": [
+      "android-kotlin-development"
+    ],
+    "swiftui": [
+      "swift-development"
+    ],
+    "php": [
+      "php-development"
+    ],
+    "wordpress": [
+      "wordpress-development",
+      "php-development"
+    ],
+    "woocommerce": [
+      "wordpress-development",
+      "php-development"
     ]
   },
-  "deps": {},
-  "domains": {}
+  "deps": {
+    "flutter-development": [
+      "mobile-architecture",
+      "mobile-security",
+      "mobile-release",
+      "mobile-quality"
+    ],
+    "react-native-development": [
+      "mobile-architecture",
+      "mobile-security",
+      "mobile-release",
+      "mobile-quality"
+    ],
+    "swift-development": [
+      "mobile-architecture",
+      "mobile-security",
+      "mobile-release",
+      "mobile-quality"
+    ],
+    "android-kotlin-development": [
+      "mobile-architecture",
+      "mobile-security",
+      "mobile-release",
+      "mobile-quality"
+    ],
+    "wordpress-development": [
+      "php-development"
+    ],
+    "saas-multitenancy": [
+      "database-engineering",
+      "api-engineering"
+    ],
+    "payments-billing": [
+      "api-engineering",
+      "database-engineering"
+    ],
+    "realtime-systems": [
+      "api-engineering"
+    ],
+    "event-driven-architecture": [
+      "system-design"
+    ],
+    "search-engineering": [
+      "database-engineering"
+    ],
+    "product-delivery": [
+      "system-design",
+      "api-engineering",
+      "test-engineering"
+    ],
+    "production-readiness": [
+      "security-audit",
+      "performance-engineering",
+      "devops-engineering"
+    ]
+  },
+  "domains": {
+    "seo": [
+      "seo-technical",
+      "seo-on-page-content",
+      "seo-structured-data",
+      "seo-web-vitals",
+      "seo-international-ecommerce",
+      "seo-migration-monitoring"
+    ],
+    "saas": [
+      "saas-multitenancy"
+    ],
+    "payments": [
+      "payments-billing"
+    ],
+    "realtime": [
+      "realtime-systems"
+    ],
+    "events": [
+      "event-driven-architecture"
+    ],
+    "search": [
+      "search-engineering"
+    ],
+    "product": [
+      "product-discovery",
+      "prd-requirements",
+      "product-delivery",
+      "production-readiness"
+    ]
+  }
 }

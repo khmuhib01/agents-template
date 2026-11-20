@@ -1,0 +1,12 @@
+# Event contracts, testing and operations
+
+- **Schema design:** envelope with `id`, `type`, `version`, `occurred_at`, `producer`, `correlation_id`, `causation_id`, tenant ID if applicable; payload minimal but sufficient (thin events plus fetch vs fat events carrying state: choose consciously; fat events reduce coupling to the producer's API but risk leaking data and staleness).
+- **Evolution:** additive changes are compatible; breaking changes get a new event type/version with a deprecation period and dual publishing; use a schema registry or versioned JSON Schema/Avro/Protobuf definitions in the repo with compatibility checks in CI.
+- **Ownership and documentation:** every event has an owning team, catalog entry, example payload and consumer list; do not let consumers depend on undocumented fields.
+- **Security and privacy:** authorize who can publish/subscribe per topic, encrypt in transit (and at rest if required), avoid PII in events or use references, retention and deletion policy (events in logs can be hard to delete: plan for it).
+- **Testing:** unit-test handlers for idempotency (same event twice) and ordering variants; contract tests between producer and consumer schemas; integration tests with a real broker (container) for retry and DLQ paths; failure injection (crash after side effect before ack); replay tests from DLQ.
+- **Observability:** metrics per queue/topic (depth, lag, oldest message age, throughput, error rate, retries, DLQ size), distributed traces propagating correlation IDs through messages, structured logs including event IDs, dashboards per business flow, alerts on age not just depth.
+- **Operations:** runbooks (replay, purge, pause consumers, scale), capacity planning, consumer group rebalancing effects, upgrade strategy for brokers, backup/DR for the log if it is a source of truth, cost monitoring for managed services.
+- **When not to use events:** simple CRUD apps, strongly consistent multi-step operations that must be atomic in one database, teams without operational maturity for brokers, flows where debugging complexity outweighs decoupling benefits.
+- **Migration path:** start with transactional outbox + a database or framework queue inside the monolith; extract to a broker/service only when evidence (scale, team boundaries, failure isolation) demands.
+- **Approval:** new infrastructure, topic creation in shared brokers and replay/purge in production need explicit approval.

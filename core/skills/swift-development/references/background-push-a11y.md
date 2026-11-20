@@ -1,0 +1,9 @@
+# Push, background tasks, accessibility, localization
+
+- **Push (APNs):** enable Push Notifications capability, request authorization in context, register for remote notifications, send the device token to the server, handle token changes; handle foreground presentation via `UNUserNotificationCenterDelegate`; notification service extension for rich/mutable content; silent/background pushes are best-effort and throttled; payloads carry hints, not secrets. Test on real devices with the right APNs environment (sandbox vs production) and key.
+- **Background work:** `BGTaskScheduler` (`BGAppRefreshTask`, `BGProcessingTask`) with identifiers in Info.plist, scheduled opportunistically by the system, short and idempotent with expiration handlers; background `URLSession` for large transfers; background modes only for legitimate declared uses (App Review rejects misuse). Never assume execution time.
+- **Deep links:** Universal Links with associated domains entitlement and a correctly hosted association file; handle `onOpenURL`/scene delegates; validate parameters; require auth for sensitive routes.
+- **Accessibility:** accessibility labels/hints/traits/values, grouping (`accessibilityElement(children:)`), Dynamic Type (`@ScaledMetric`, no fixed heights), contrast, VoiceOver rotor order, reduce motion/transparency, minimum 44pt targets; audit with Accessibility Inspector and real VoiceOver.
+- **Localization:** String Catalogs (`.xcstrings`) or `.strings`/`.stringsdict`, plural variations, no string concatenation, `Locale`-aware formatters, RTL layout via leading/trailing, pseudo-localization testing.
+- **App lifecycle:** scene phases (`scenePhase`), save state on backgrounding, restore state.
+- **Widgets/extensions:** share data via App Group containers; keep extension memory budgets small.

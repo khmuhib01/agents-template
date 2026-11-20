@@ -1,0 +1,10 @@
+# Platform channels, isolates, push, deep links
+
+- **Platform channels:** `MethodChannel` for calls, `EventChannel` for streams; prefer Pigeon (typed codegen) for non-trivial APIs; FFI (`dart:ffi`, ffigen) for C libraries. Keep channel names namespaced, handle `PlatformException` and `MissingPluginException`, run native work off the platform main thread, test with mock handlers. Before writing a channel check whether a maintained plugin exists; verify its platform and version support.
+- **Plugin authoring:** federated structure only if multi-platform publishing is intended.
+- **Isolates:** Dart isolates do not share memory. `Isolate.run`/`compute` for CPU-heavy one-off work (parsing, image processing); long-lived workers via `Isolate.spawn` with ports. Plugins/platform channels from background isolates require the background isolate setup the plugin documents. Not needed for I/O (async already non-blocking).
+- **Push notifications:** Firebase Cloud Messaging; request permission (iOS and recent Android require it), handle foreground/background/terminated states, top-level background handler function, token refresh and server registration, notification channels on Android, APNs key configuration on iOS. Test on real devices; simulators/emulators differ.
+- **Deep/universal links:** `go_router` or the project's router; Android App Links (`assetlinks.json`, intent filters with `autoVerify`) and iOS Universal Links (`apple-app-site-association`, associated domains entitlement); handle cold start and warm start link delivery; validate parameters and require auth where needed.
+- **Platform files:** edits to AndroidManifest, Info.plist, Gradle, Podfile are made only when needed and reported; run `pod install`/Gradle sync consequences stated.
+- **Permissions:** `permission_handler` or plugin-specific APIs; platform declarations (manifest keys, plist usage strings) are required or the app is rejected/crashes.
+- **Flavors:** per-environment entrypoints/flavors with separate bundle IDs and Firebase configs.

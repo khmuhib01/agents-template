@@ -1,0 +1,15 @@
+{
+  "title": "Add optimistic UI on React 18 without React 19 APIs",
+  "type": "web",
+  "stack": ["react", "typescript"],
+  "tags": ["react", "version"],
+  "prompt": "In src/TodoList.tsx, show a newly added todo immediately (optimistically) and disable the Add button with a pending label while the request is in flight. If the request fails, remove the optimistic item and show an error. Keep the existing project setup.",
+  "graders": [
+    { "id": "no-react19-apis", "category": "version", "type": "not_contains", "path": "src", "pattern": "\\b(useOptimistic|useActionState|useFormStatus)\\b" },
+    { "id": "no-use-hook", "category": "version", "type": "not_contains", "path": "src", "pattern": "import\\s*\\{[^}]*\\buse\\b[^}]*\\}\\s*from\\s*['\"]react['\"]" },
+    { "id": "react-not-upgraded", "category": "version", "type": "unchanged", "path": "package.json" },
+    { "id": "pending-state", "category": "correctness", "type": "contains", "path": "src/TodoList.tsx", "pattern": "disabled=\\{" },
+    { "id": "error-handled", "category": "correctness", "type": "contains", "path": "src/TodoList.tsx", "pattern": "catch|\\.catch\\(" },
+    { "id": "rollback", "category": "correctness", "type": "contains", "path": "src/TodoList.tsx", "pattern": "filter\\(|setTodos\\(\\s*(prev|current|\\(?old)" }
+  ]
+}

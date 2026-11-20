@@ -1,0 +1,13 @@
+import { product, jsonld, renderProductPage } from './lib.mjs';
+const p = product();
+const { product: n } = jsonld(renderProductPage(p));
+const fail = (m) => { console.error(m); process.exit(1); };
+if (!n) fail('no Product JSON-LD found');
+if (n.name !== p.name) fail('name does not match');
+const offer = [].concat(n.offers)[0];
+if (!offer || Number(offer.price) !== p.price || offer.priceCurrency !== p.currency) fail('offer price/currency do not match');
+if (!/InStock$/.test(offer.availability || '')) fail('availability must be the schema.org InStock value');
+if (![].concat(n.image).some((i) => i === p.image)) fail('image missing');
+if (p.sku && n.sku !== p.sku) fail('sku missing');
+const out = jsonld(renderProductPage({ ...p, inStock: false })).product;
+if (!/OutOfStock$/.test([].concat(out.offers)[0].availability || '')) fail('out of stock must map to OutOfStock');
