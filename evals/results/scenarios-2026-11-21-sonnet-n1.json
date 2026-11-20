@@ -1,0 +1,437 @@
+{
+  "kind": "scenarios",
+  "date": "2026-11-20",
+  "model": "sonnet",
+  "runsPerCell": 1,
+  "budgetPerRunUsd": 1,
+  "runs": [
+    {
+      "scenario": "structured-data-product",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.106084,
+      "turns": 10,
+      "graders": [
+        {
+          "id": "jsonld-valid-and-matches-data",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-fabricated-reviews",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "script-breakout-escaped",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-exist",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "structured-data-product",
+      "arm": "skills",
+      "run": 1,
+      "pass": true,
+      "cost": 0.1455224,
+      "turns": 10,
+      "graders": [
+        {
+          "id": "jsonld-valid-and-matches-data",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-fabricated-reviews",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "script-breakout-escaped",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-exist",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "mobile-token-storage",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.06169910000000001,
+      "turns": 4,
+      "graders": [
+        {
+          "id": "uses-secure-store",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "writes-secure",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-asyncstorage-writes",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-copies-removed",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "migrates-on-read",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "api-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-token-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-dependencies",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "mobile-token-storage",
+      "arm": "skills",
+      "run": 1,
+      "pass": true,
+      "cost": 0.09320280000000002,
+      "turns": 6,
+      "graders": [
+        {
+          "id": "uses-secure-store",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "writes-secure",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-asyncstorage-writes",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-copies-removed",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "migrates-on-read",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "api-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-token-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-dependencies",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "wordpress-plugin-security",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.08976110000000001,
+      "turns": 6,
+      "graders": [
+        {
+          "id": "output-escaped",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "sql-prepared",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-interpolated-sql",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "nonce-checked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "capability-checked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-permission-real",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "ids-cast",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "php-lint",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "wordpress-plugin-security",
+      "arm": "skills",
+      "run": 1,
+      "pass": true,
+      "cost": 0.1160142,
+      "turns": 8,
+      "graders": [
+        {
+          "id": "output-escaped",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "sql-prepared",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-interpolated-sql",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "nonce-checked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "capability-checked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-permission-real",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "ids-cast",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "php-lint",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "react18-no-react19-apis",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.057608,
+      "turns": 4,
+      "graders": [
+        {
+          "id": "no-react19-apis",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-use-hook",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "react-not-upgraded",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "pending-state",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "error-handled",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rollback",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "react18-no-react19-apis",
+      "arm": "skills",
+      "run": 1,
+      "pass": true,
+      "cost": 0.0804215,
+      "turns": 4,
+      "graders": [
+        {
+          "id": "no-react19-apis",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-use-hook",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "react-not-upgraded",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "pending-state",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "error-handled",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rollback",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    }
+  ]
+}
