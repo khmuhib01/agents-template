@@ -1,6 +1,7 @@
 ---
 name: ship
 description: Ships the working branch through the integration branch to production - commits, syncs, runs the test gate, merges with one confirmation, and returns to the starting branch. Triggered by /ship.
+disable-model-invocation: true
 ---
 
 # Ship Skill

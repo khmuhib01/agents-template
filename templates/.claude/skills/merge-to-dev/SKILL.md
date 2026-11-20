@@ -1,6 +1,7 @@
 ---
 name: merge-to-dev
 description: Commits and pushes the current working branch, merges it into the integration branch, pushes it, and returns to the original branch. Auto-aborts on conflict. Triggered by /merge-to-dev.
+disable-model-invocation: true
 ---
 
 # Safe Merge-to-Dev Skill

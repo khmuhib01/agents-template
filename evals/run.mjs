@@ -24,7 +24,9 @@ function loadSkills() {
     for (const name of fs.readdirSync(dir)) {
       const f = path.join(dir, name, 'SKILL.md');
       if (!fs.existsSync(f)) continue;
-      const m = fs.readFileSync(f, 'utf8').match(/^description:\s*(.*)$/m);
+      const text = fs.readFileSync(f, 'utf8');
+      if (/^disable-model-invocation:\s*true/m.test(text)) continue; // manual-only: never listed to the model, a prompt cannot trigger it
+      const m = text.match(/^description:\s*(.*)$/m);
       const desc = (m ? m[1] : '').replace(/^"|"$/g, '');
       out.push({ name, words: new Set([...tokens(name), ...tokens(name), ...tokens(desc)]) });
     }

@@ -60,3 +60,7 @@ agents_mirror: true             # default true: .agents/{rules,skills,agents} li
 codex_mirror: true              # default true: .codex/{rules,skills,agents} link to .claude/ (Codex); false disables
 hooks: true                   # default true: install .claude/hooks (guard-bash, guard-secrets) and register them in settings.json; false disables
 format_command: ""            # optional: run after every Write/Edit with the file path appended, e.g. "npx prettier --write" or "vendor/bin/pint"
+model_profile: balanced       # balanced (default: agent files as written) | economy (sonnet everywhere, haiku for git-manager) | quality (opus for architect/planner/debugger/security-reviewer and the main model)
+token_budget: 0               # 0 = off; init warns when always-loaded context (instructions + rules + skill/agent descriptions) is over this many tokens
+big_file_kb: 100              # guard-read hook: block whole-file reads above this size (and large lockfiles); 0 disables
+context_nudge_kb: 400         # context-nudge hook: warn the user when the session transcript passes this size; 0 disables
