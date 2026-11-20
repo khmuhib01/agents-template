@@ -11,6 +11,10 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const INIT = path.join(HERE, 'init.mjs');
 const base = fs.mkdtempSync(path.join(os.tmpdir(), 'claude-template-test-'));
 let failed = 0;
+// --only <text>[,<text>] runs just the sections/cases whose name contains the text; --list prints them.
+const ONLY = (process.argv.includes('--only') ? String(process.argv[process.argv.indexOf('--only') + 1] || '') : '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+const LIST = process.argv.includes('--list');
+const on = (n) => { if (LIST) { console.log(n); return false; } return !ONLY.length || ONLY.some((o) => n.toLowerCase().includes(o)); };
 const check = (ok, msg) => { if (!ok) { failed++; console.error(`  ✖ ${msg}`); } else console.log(`  ✔ ${msg}`); };
 const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
 const run = (dir, extra = []) => spawnSync(process.execPath, [INIT, '--target', dir, ...extra], { encoding: 'utf8' });
@@ -48,6 +52,7 @@ branches: {working: x, integration: develop, production: main}
 };
 
 for (const [name, c] of Object.entries(cases)) {
+  if (!on(name)) continue;
   console.log(`\n[${name}]`);
   const dir = path.join(base, name);
   fs.mkdirSync(dir, { recursive: true });
@@ -65,6 +70,7 @@ for (const [name, c] of Object.entries(cases)) {
   check(r2.status === 0 && /0 created, 0 updated/.test(r2.stdout), 'second run changes nothing (idempotent)');
 }
 
+if (on('hooks')) {
 console.log('\n[hooks]');
 {
   const hp = path.join(base, 'hooks'); fs.mkdirSync(hp, { recursive: true });
@@ -136,6 +142,9 @@ ${extra}`;
   check(!/\.claude\/hooks\//.test(offCmds) && /echo mine/.test(offCmds), 'hooks: false removes ours but keeps foreign hooks');
 }
 
+}
+
+if (on('yaml parser')) {
 console.log('\n[yaml parser]');
 {
   const head = 'name: P\ntype: web\nstack: [laravel]\n';
@@ -168,6 +177,9 @@ console.log('\n[yaml parser]');
   check(fs.existsSync(path.join(d, '.claude/skills/laravel-best-practices/SKILL.md')) && /not a comment/.test(fs.readFileSync(path.join(d, '.claude/CLAUDE.md'), 'utf8')), 'parsed values reach the generated files (stack list, quoted # kept)');
 }
 
+}
+
+if (on('core rules')) {
 console.log('\n[core rules]');
 {
   const d = path.join(base, 'laravel-docker');
@@ -176,6 +188,9 @@ console.log('\n[core rules]');
   check(total < 12000, `rules stay small (always-loaded): ${total} bytes < 12000`);
 }
 
+}
+
+if (on('catalog')) {
 console.log('\n[catalog]');
 {
   const map = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));
@@ -201,12 +216,18 @@ console.log('\n[catalog]');
   check(orphans.length === 0, `every core skill is routed by skill-map.json${orphans.length ? ' (orphans: ' + orphans.join(', ') + ')' : ''}`);
 }
 
+}
+
+if (on('skill routing eval')) {
 console.log('\n[skill routing eval]');
 {
   const r = spawnSync(process.execPath, [path.join(HERE, 'evals', 'run.mjs')], { encoding: 'utf8' });
   check(r.status === 0, `offline skill-trigger eval passes (${(r.stdout.match(/^\d+\/\d+ prompts.*$/m) || [''])[0]})${r.status ? '\n' + r.stdout : ''}`);
 }
 
+}
+
+if (on('stack matrix')) {
 console.log('\n[stack matrix]');
 {
   const map = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));
@@ -235,12 +256,21 @@ console.log('\n[stack matrix]');
     for (const x of denyAbsent[token] || []) check(!s.includes(x), `stack "${token}" does not deny ${x}`);
   }
   const unk = path.join(mdir, 'unknown'); fs.mkdirSync(unk, { recursive: true });
-  fs.writeFileSync(path.join(unk, 'project.config.yml'), 'name: U\ntype: other\nstack: [cobol]\nbranches: {working: a, production: main}\n');
+  fs.writeFileSync(path.join(unk, 'project.config.yml'), 'name: U\ntype: other\nstack: [cobol]\nskills_mode: all\nbranches: {working: a, production: main}\n');
   const ur = run(unk);
   check(ur.status === 0 && /matched no skill: cobol/.test(ur.stderr), 'unknown stack token warns but still generates');
   check(/Skills: \d+ installed, \d+ model-invocable \(~\d+ tokens/.test(ur.stdout) && /skills_mode: focused would install/.test(ur.stdout), 'init reports skill token overhead and the focused saving');
+  // Default is focused: an unset skills_mode installs fewer skills than skills_mode: all, and routing says so.
+  const def = path.join(mdir, 'default-focused'); fs.mkdirSync(def, { recursive: true });
+  fs.writeFileSync(path.join(def, 'project.config.yml'), 'name: D\ntype: api\nstack: [node]\nbranches: {working: a, production: main}\n');
+  check(run(def).status === 0, 'default config (no skills_mode) generates');
+  const nSkills = (d) => fs.readdirSync(path.join(d, '.claude', 'skills')).length;
+  check(nSkills(def) < nSkills(unk), 'skills_mode defaults to focused (fewer skills than all)');
 }
 
+}
+
+if (on('cost optimizer')) {
 console.log('\n[cost optimizer]');
 {
   const mk = (name, extra = '') => {
@@ -305,6 +335,9 @@ console.log('\n[cost optimizer]');
   check(run(mk('cost-badprofile', 'model_profile: turbo\n')).status === 1, 'unknown model_profile is rejected');
 }
 
+}
+
+if (on('safe upgrades')) {
 console.log('\n[safe upgrades]');
 {
   const schema = JSON.parse(fs.readFileSync(path.join(HERE, 'project.config.schema.json'), 'utf8'));
@@ -376,6 +409,9 @@ console.log('\n[safe upgrades]');
   check(lr.status === 0 && !/Kept/.test(lr.stdout) && !/LEGACY EDIT/.test(rd(l, 'AGENTS.md')) && fs.existsSync(path.join(l, '.claude/.template-hashes.json')), 'without a hash file (older projects) init overwrites with a backup, then starts tracking');
 }
 
+}
+
+if (on('monorepo')) {
 console.log('\n[monorepo]');
 {
   const d = path.join(base, 'mono'); fs.mkdirSync(path.join(d, 'apps/web'), { recursive: true }); fs.mkdirSync(path.join(d, 'services/api'), { recursive: true });
@@ -403,6 +439,9 @@ console.log('\n[monorepo]');
   }
 }
 
+}
+
+if (on('opt-in hooks, mcp, path rules')) {
 console.log('\n[opt-in hooks, mcp, path rules]');
 {
   const d = path.join(base, 'optin'); fs.mkdirSync(d, { recursive: true });
@@ -464,6 +503,9 @@ console.log('\n[opt-in hooks, mcp, path rules]');
   check(rulesTok > 0 && rulesTok < Math.round(rulesBytes / 4), `path-scoped rules are excluded from the always-loaded estimate (${rulesTok} < ${Math.round(rulesBytes / 4)} tokens)`);
 }
 
+}
+
+if (on('plugin + live eval')) {
 console.log('\n[plugin + live eval]');
 {
   const b = spawnSync(process.execPath, [path.join(HERE, 'build-plugin.mjs'), '--check'], { encoding: 'utf8' });
@@ -488,6 +530,9 @@ console.log('\n[plugin + live eval]');
   check(nokey.status === 2 && /ANTHROPIC_API_KEY/.test(nokey.stderr), 'live eval refuses to run without an API key');
 }
 
+}
+
+if (on('forbid')) {
 console.log('\n[forbid]');
 const bad = path.join(base, 'forbid');
 fs.mkdirSync(bad, { recursive: true });
@@ -495,6 +540,9 @@ fs.writeFileSync(path.join(bad, 'project.config.yml'), 'name: Bad\ntype: web\nst
 check(run(bad).status === 1, 'forbidden term makes init fail');
 
 // scaffold detects a non-JS/PHP stack and the draft config generates cleanly
+}
+
+if (on('scaffold-go')) {
 console.log('\n[scaffold-go]');
 const go = path.join(base, 'go-cli'); fs.mkdirSync(go);
 fs.writeFileSync(path.join(go, 'go.mod'), 'module example.com/x\n');
@@ -505,6 +553,9 @@ check(/skills_mode: focused/.test(draft), 'scaffold drafts skills_mode: focused'
 check(run(go).status === 0, 'init accepts the scaffolded go config');
 check(fs.existsSync(path.join(go, '.claude/skills/go-development/SKILL.md')) && /`go-development`/.test(fs.readFileSync(path.join(go, '.claude/CLAUDE.md'), 'utf8')), 'go project routes to go-development');
 
+}
+
+if (on('vscode settings')) {
 console.log('\n[vscode settings]');
 {
   const git = (d, ...a) => spawnSync('git', a, { cwd: d, encoding: 'utf8' });
@@ -554,12 +605,26 @@ console.log('\n[vscode settings]');
   check(rb.status === 0 && rd(bad) === '{ not json' && /could not be parsed/.test(rb.stdout), 'unparseable settings file is left untouched with a warning');
 }
 
+}
+
+if (on('bench')) {
+  console.log('\n[bench]');
+  const br = spawnSync(process.execPath, [path.join(HERE, 'bench.mjs'), '--json'], { encoding: 'utf8' });
+  check(br.status === 0, 'bench.mjs runs');
+  let rows = [];
+  try { rows = JSON.parse(br.stdout); } catch { /* reported below */ }
+  check(rows.length === 3 && rows.every((r) => r.saved > 0 && r.optimized > 0), 'generated always-loaded context is smaller than the unoptimized setup for every sample');
+}
+
+if (on('invalid config')) {
 console.log('\n[invalid config]');
 const inv = path.join(base, 'invalid');
 fs.mkdirSync(inv, { recursive: true });
 fs.writeFileSync(path.join(inv, 'project.config.yml'), 'name: X\ntype: banana\nstack: [laravel]\nbranches: {working: a, production: main}\n');
 check(run(inv).status === 1, 'bad type is rejected');
+}
 
 fs.rmSync(base, { recursive: true, force: true });
+if (LIST) { fs.rmSync(base, { recursive: true, force: true }); process.exit(0); }
 console.log(failed ? `\n${failed} check(s) FAILED` : '\nAll checks passed');
 process.exit(failed ? 1 : 0);

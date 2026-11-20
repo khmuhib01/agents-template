@@ -2,6 +2,35 @@
 
 One config file per project → generates `AGENTS.md`, `CLAUDE.md` and `.claude/` (rules, skills, agents) for that project.
 
+## Quick start (3 steps)
+
+1. `node <path-to>/agents-template/init.mjs --scaffold` in your project: drafts `project.config.yml` from the detected stack.
+2. Open `project.config.yml` and check `name`, `type`, `stack`, `test_command`, `branches` (the rest is optional).
+3. `node <path-to>/agents-template/init.mjs`: generates everything. Re-run any time; `--dry-run` previews.
+
+The smallest valid config is `name`, `type`, `stack` and `branches.{working,production}`. Every other key has a default.
+
+## What it saves, and what is not measured
+
+**Measured, and not flattering: on short read-only tasks the template costs more than no template.**
+
+`node bench-cost.mjs` (spends real money) runs the same 5 read-only prompts with `claude -p` on a small fixture project, once with no template and once with the generated setup, same model (sonnet) in both. Runs on 2026-11-20 (Claude Code 2.1.329, n=5 per arm after a warm-up, so treat the size as rough; the direction was the same for every task):
+
+| avg per run | no template | v1.10.0 | v1.11.0 (lean) |
+|---|---|---|---|
+| cost | $0.047 | $0.073 (+57%) | $0.060 (+37%) |
+| input tokens (summed over turns) | 123K | 148K (+20%) | 123K (+7%) |
+
+The remaining gap is the template's always-loaded context (now about 3.2K tokens, was 4.7K), which is written to the prompt cache once at the start of every session (1.25x price) and then re-read each turn (0.1x). Measured per run: about 4K more cache-write tokens than no template, roughly $0.015. In a long session that is paid once, so it shrinks to a few percent of the session cost (rough arithmetic from the published price ratios, not measured here). On short tasks it is pure overhead: there was nothing for the template to save, and even the log and lockfile prompts did not trigger runaway reads in the baseline.
+
+v1.11.0 cut the always-loaded context by a third: `skills_mode` now defaults to `focused`, layout and project notes are no longer loaded twice, duplicated rules were merged, and the skill routing no longer lists skills that are not installed.
+
+`node bench.mjs` shows the static side only: the generated setup carries 16-20% less always-loaded context than a *worse version of itself* (all skills model-invocable, path-scoped rules always loaded). It does **not** compare against having no template, so do not read it as a saving.
+
+What is **not** measured, and where a saving could still exist: `model_profile: economy` (cheaper models for agents; both arms above used the same model), long sessions with large files where `guard-read` / `deny_heavy` stop expensive reads, and the `/compact` nudge. If you want the template for cost, use `skills_mode: focused`, `model_profile: economy` and a `token_budget`, and measure on your own project with `bench-cost.mjs`. Its main value today is consistency and safety (hooks, rules, one config for three agents), not lower cost.
+
+Also not verified yet: use by anyone other than the author. (The plugin install via `claude plugin install` was checked once on Linux with Claude Code 2.1.329: marketplace add, install, `/agents-template:agent-setup-scaffold` and a full init, 67 files generated.) `evals/run.mjs` (70 prompts, written by the author) guards skill-description quality offline; it does not measure how a real model triggers skills (`evals/live.mjs` does, and costs money).
+
 ## Use it in a new project
 
 ```bash
@@ -68,7 +97,9 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 | `templates/` | Files with `{{placeholders}}`: AGENTS.md, CLAUDE.md, project rules, git skills (commit, push, ship, ...) |
 | `global-skills/` | Sources of `/agent-setup-scaffold` and `/agent-init` |
 | `install-global.mjs` | Installs those global commands for Claude Code / Codex / Antigravity |
-| `init.mjs` | The generator |
+| `init.mjs` | The generator (orchestrator) |
+| `lib/` | Pure parts of the generator: `yaml.mjs` parser, `render.mjs` template engine, `scaffold.mjs` |
+| `.githooks/pre-commit` | Regenerates the plugin files before each commit (`git config core.hooksPath .githooks`) |
 
 ## Config keys
 
@@ -86,7 +117,7 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 | `protect_secrets` | true | `settings.json` denies Read on `.env` and every `local_only` path (dumps never enter context) |
 | `deny_heavy` | true | also denies Read on `vendor/`, `node_modules/`, `dist/`, `build/`, logs, `*.min.js`, `*.map` (stack-aware) |
 | `allow_safe_commands` | true | `git status/diff/log` and the project test command run without a permission prompt (fewer turns) |
-| `skills_mode` | all (`--scaffold` drafts write `focused`) | `focused` installs only skills routed for this type/stack (init never deletes skills already installed). Every run prints the skill-description token overhead and what `focused` would save |
+| `skills_mode` | focused | `focused` installs only skills routed for this type/stack (init never deletes skills already installed). Every run prints the skill-description token overhead and what `focused` would save |
 | `model` | sonnet | default model written to `settings.json` if none is set (overrides `model_profile`) |
 | `model_profile` | balanced | `economy`: sonnet for every agent, haiku for `git-manager`. `quality`: opus for architect/planner/debugger/security-reviewer and the main model. `balanced` keeps the agent files as written |
 | `token_budget` | 0 (off) | init warns when the always-loaded context is over this many tokens |
@@ -135,7 +166,7 @@ claude plugin marketplace add khmuhib01/agents-template
 claude plugin install agents-template@agents-template
 ```
 
-You get `/agents-template:agent-setup-scaffold` and `/agents-template:agent-init`; they run `init.mjs` from the plugin folder. The plugin files (`skills/`, `.claude-plugin/`) are generated from `global-skills/` and `VERSION` by `node build-plugin.mjs`; `test.mjs` fails if they are stale, so run it after changing either. Not verified against a live install yet: try it once and report any issue.
+You get `/agents-template:agent-setup-scaffold` and `/agents-template:agent-init`; they run `init.mjs` from the plugin folder. The plugin files (`skills/`, `.claude-plugin/`) are generated from `global-skills/` and `VERSION` by `node build-plugin.mjs`; `test.mjs` fails if they are stale, so run it after changing either. Checked once on Linux with Claude Code 2.1.329 (install, scaffold and init all worked); report any issue on other systems.
 
 ## Live skill-trigger eval (costs money)
 

@@ -1,0 +1,5 @@
+#!/bin/sh
+# Keeps the generated plugin files (skills/, .claude-plugin/) in sync with global-skills/ and VERSION.
+# Enable once per clone: git config core.hooksPath .githooks
+node build-plugin.mjs >/dev/null || exit 1
+git add skills .claude-plugin

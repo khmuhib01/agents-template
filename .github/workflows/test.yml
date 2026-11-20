@@ -16,4 +16,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+      - name: Plugin files are in sync (run `node build-plugin.mjs` if this fails)
+        run: node build-plugin.mjs --check
       - run: node test.mjs

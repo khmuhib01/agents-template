@@ -1,6 +1,6 @@
 # Project Engineering Environment
 
-> Operating profile, engineering principles, execution autonomy, git safety, and completion report are defined in the root `CLAUDE.md` and `.claude/rules/`. This file holds only project-specific configuration. Generated from `project.config.yml`; do not edit by hand.
+> Project-specific configuration generated from `project.config.yml`; do not edit by hand. General rules: root `CLAUDE.md` and `.claude/rules/`.
 
 ## Project
 
@@ -16,26 +16,17 @@ Type `{{type}}`; stack: {{stack_list}}.
 
 ## Skill routing
 
-All skills are installed; use the ones that fit the task.
-
 {{skill_routing}}
 
 ## Token Efficiency
 
-- Read only the files needed; `Grep` first, then line ranges. Never open lockfiles, dumps or logs whole.
-- `Edit` instead of `Write` for existing files; batch independent calls; do not re-read after an edit.
-- No skills or subagents for simple tasks. Pipe long command output through `head`/`tail`.
-- Start a new task with `/clear`; for a big change, plan first and wait for approval.
-- Keep responses short.
-
-## Session Start
-
-1. `git status --short --branch`.
-2. Read {{docs_list}} only when the task needs setup context.
+- `Grep` first, then read line ranges; never open lockfiles, dumps or logs whole.
+- `Edit`, not `Write`, for existing files; batch independent calls; no re-read after an edit; pipe long output through `head`/`tail`.
+- No skills or subagents for simple tasks. `/clear` between tasks; plan first for big changes. Keep responses short.
 
 ## Workflow
 
-1. {{exec_text}}
+1. Read {{docs_list}} only when the task needs setup context. {{exec_text}}
 2. {{verify_text}}
 3. Commit with conventional messages; push only when explicitly asked. {{attribution_text}}
 4. {{deploy_text}}
