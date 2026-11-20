@@ -1,6 +1,6 @@
 ---
 name: technical-debt
-description: "Use when asked to list, find, rank, or plan cleanup of tech debt (technical debt), duplication, fragile code, or outdated patterns. Plans only; no broad refactors without approval."
+description: "Use when asked to list, find, rank, or plan cleanup of tech debt (technical debt), duplication, fragile code, or outdated patterns. Plans only; no broad refactors without approval. Not a bug or security review."
 ---
 
 

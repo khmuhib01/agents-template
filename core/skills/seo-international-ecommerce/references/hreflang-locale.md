@@ -1,0 +1,12 @@
+# International SEO: hreflang and locale structure
+
+Verify syntax and behavior in the current search engine documentation. Google uses hreflang; Bing relies more on other signals (content-language, `lang`, geotargeting), so confirm per engine.
+- **Purpose:** hreflang tells search engines which language/region variant of a page to show to which users; it does not move rankings between pages and is a hint.
+- **Rules [Requirement/Guideline, verify]:** each variant lists all alternates **including itself** (self-reference); links are **reciprocal** (A lists B and B lists A, otherwise ignored); use absolute URLs; value = ISO 639-1 language, optionally with ISO 3166-1 alpha-2 region (`en`, `en-GB`, `pt-BR`; script subtags like `zh-Hans` are supported), not a region alone; `x-default` for the fallback/selector page; alternates must be indexable, canonical and return 200; canonical of each variant points to itself, not to another language.
+- **Implementation options:** `<link rel="alternate" hreflang>` in `<head>`, HTTP `Link` headers (non-HTML), or XML sitemap `xhtml:link` entries; choose one source of truth and generate it from the same locale mapping the site uses (avoid hand-maintained lists). For big sites the sitemap method scales better.
+- **URL strategy trade-offs [Practice]:** subdirectories (`/de/`) simplest, share domain authority and one Search Console property; subdomains separate infrastructure; ccTLDs strongest geotargeting but costly. Avoid parameters (`?lang=`) and cookie/IP-only locale switching, because crawlers cannot see variants.
+- **No forced redirects by IP/Accept-Language** for crawlers or users without an easy switch; offer a language selector with crawlable links; remember users' choice client-side.
+- **Content:** translate, do not machine-dump untouched text at scale; localize currency, units, dates, legal text, examples; translated titles/descriptions per locale; similar-language variants (en-US vs en-GB) still need distinct value or consolidation.
+- **Mixed signals to avoid:** hreflang to non-canonical URLs, noindex variants in the cluster, redirecting alternates, inconsistent language codes, missing return links, conflicting `lang` attribute and content.
+- **Search Console:** report coverage per locale property/section; the old international targeting report has been deprecated in some forms (verify).
+- **Testing:** script that crawls a sample, extracts hreflang, asserts reciprocity, self-reference, valid codes, 200 + indexable targets (see `seo-migration-monitoring` regression tests).

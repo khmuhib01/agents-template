@@ -694,7 +694,7 @@ console.log('\n[seo wordpress routing]');
   const skills = (d) => new Set(fs.readdirSync(path.join(d, '.claude/skills')));
   const wp = mk('wp', 'type: web\nstack: [wordpress, mysql]\ndomains: [seo]'); const r = run(wp); const h = skills(wp);
   check(r.status === 0 && !/matched no skill/.test(r.stderr), 'wordpress + seo domain generates without routing warnings');
-  check(['wordpress-development', 'php-development', 'seo-technical', 'seo-structured-data', 'seo-migration-monitoring'].every((s) => h.has(s)), 'wordpress stack + seo domain install the WordPress, PHP and SEO skills');
+  check(['wordpress-development', 'php-development', 'seo-technical', 'seo-on-page-content', 'seo-structured-data', 'seo-web-vitals', 'seo-international-ecommerce', 'seo-migration-monitoring'].every((s) => h.has(s)), 'wordpress stack + seo domain install the WordPress, PHP and SEO skills');
   check(/0 created, 0 updated/.test(run(wp).stdout), 'wordpress + seo re-run is idempotent');
   const plain = mk('plain', 'type: web\nstack: [react]'); run(plain);
   check(![...skills(plain)].some((s) => s.startsWith('seo-') || s === 'wordpress-development' || s === 'php-development'), 'a web project without the seo domain gets no SEO/WordPress/PHP skills');

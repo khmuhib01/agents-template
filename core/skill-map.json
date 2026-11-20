@@ -254,7 +254,10 @@
   "domains": {
     "seo": [
       "seo-technical",
+      "seo-on-page-content",
       "seo-structured-data",
+      "seo-web-vitals",
+      "seo-international-ecommerce",
       "seo-migration-monitoring"
     ]
   }

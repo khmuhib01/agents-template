@@ -1,6 +1,6 @@
 ---
 name: test-engineering
-description: "Use when planning or writing automated tests for new behavior, regressions, or edge cases, using the project's installed test framework."
+description: "Use when planning or writing automated tests for new behavior, regressions, or edge cases, using the project's installed test framework. To run existing checks use test; for rules on test quality see testing-best-practices."
 ---
 
 

@@ -1,6 +1,6 @@
 ---
 name: ui-ux-engineering
-description: "Use for UI/UX design and polish: layout, spacing, typography, color, states (hover, loading, empty, error), responsive design, and accessibility. Follows the existing design system."
+description: "Use for UI/UX design and polish: layout, spacing, typography, color, states (hover, loading, empty, error), responsive design, and accessibility. Follows the existing design system. Component code: frontend-engineering or the framework skill."
 ---
 
 

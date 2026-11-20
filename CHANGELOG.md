@@ -2,6 +2,14 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.15.0 - 2026-11-21
+
+- SEO (phase P4): `seo-on-page-content`, `seo-web-vitals`, `seo-international-ecommerce` complete the six-skill `domains: [seo]` set
+- reworked with references (existing rules and approval gates kept): `security-audit` (severity rubric, web checklist, authn/authz/tenancy, supply chain), `api-engineering`, `database-engineering` (migration safety, scaling), `devops-engineering`, `performance-engineering`, `nextjs-development` (rendering/caching, security/testing)
+- "Not for ..." clauses on overlapping skills (audit, technical-debt, test-engineering, ui-ux-engineering, security-audit, devops-engineering, performance-engineering)
+- token cost of the longer descriptions on always-installed skills: laravel sample 3321 -> 3436, expo 3370 -> 3467, python (all) 5119 -> 5447 always-loaded tokens
+- evals: 18 more trigger cases; 135/135 offline. Three cases are marked `live-only` where lexical ranking cannot show a second expected skill
+
 ## 1.14.0 - 2026-11-21
 
 - SEO (phase P3): new `domains: [seo]` set with skills `seo-technical` (with Next.js, React SPA, Laravel, WordPress references), `seo-structured-data`, `seo-migration-monitoring`; recommendations are labelled Requirement/Guideline/Practice and never promise rankings or rich results (lint-enforced)

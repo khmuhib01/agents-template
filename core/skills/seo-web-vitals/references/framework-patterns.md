@@ -1,0 +1,10 @@
+# Framework patterns
+
+Applies to: installed framework versions; read their current performance docs before applying API-specific advice.
+- **Next.js:** `next/image` (set `sizes`, `priority` for the LCP image only, correct width/height or `fill` with sized container), `next/font` (self-hosted fonts with size-adjusted fallback, avoids layout shift), prefer Server Components and static/ISR output, keep client components small, `next/script` strategies (`afterInteractive`, `lazyOnload`) for third parties, dynamic imports for heavy client widgets, check `next build` route sizes, streaming with Suspense to improve perceived loading, avoid blocking data fetches in layouts.
+- **React (SPA or any):** code-split routes (`lazy`/dynamic import), avoid shipping large state/data libraries without need, virtualize long lists, memoize deliberately, transitions (`startTransition`) for non-urgent updates, profile with React DevTools Profiler; consider SSR/prerender for LCP of public pages (see `seo-technical`).
+- **Laravel (Blade):** full-page/fragment caching for public pages, HTTP caching headers, `loading="lazy"` plus explicit sizes on images, Vite asset splitting and preloading, defer scripts, avoid N+1 queries that inflate TTFB, queue slow work, use a CDN for assets; Livewire/Inertia pages: keep payloads small and consider SSR for public pages.
+- **WordPress:** page cache plugin or server cache, image optimization and responsive images (core adds `srcset`; ensure dimensions), disable unused plugin assets per page, defer/async scripts, limit page-builder bloat, preload LCP image/fonts, avoid layout-shifting ads/popups, use a CDN; see `wordpress-development` data-performance reference.
+- **Hosting/CDN:** HTTP/2 or HTTP/3, Brotli/gzip, long-lived immutable caching for hashed assets, `stale-while-revalidate` for HTML where safe, early hints (verify support), regional edge presence.
+- **Images/video:** AVIF/WebP with fallback, responsive sizes, lazy-load below the fold, poster frames, avoid autoplay heavy video at the top.
+- **Verification:** run the production build, test with throttling, compare RUM/field results after deploy.
