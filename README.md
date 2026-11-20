@@ -16,7 +16,7 @@ The smallest valid config is `name`, `type`, `stack` and `branches.{working,prod
 
 The larger savings are behavioural and are **not measured here**: `model_profile: economy` (cheaper models for agents), `guard-read` (blocks whole-file reads of big files), `deny_heavy` (never opens `node_modules`, `vendor`, logs), and the `/compact` nudge. Their effect depends on how you work. Real API cost also depends on prompt caching and conversation length. If you measure a before/after on a real project, please share it.
 
-Also not verified yet: installing the plugin through `claude plugin install` (the manual `install-global.mjs` path is the tested one), and use by anyone other than the author. `evals/run.mjs` (70 prompts, written by the author) guards skill-description quality offline; it does not measure how a real model triggers skills (`evals/live.mjs` does, and costs money).
+Also not verified yet: use by anyone other than the author. (The plugin install via `claude plugin install` was checked once on Linux with Claude Code 2.1.329: marketplace add, install, `/agents-template:agent-setup-scaffold` and a full init, 67 files generated.) `evals/run.mjs` (70 prompts, written by the author) guards skill-description quality offline; it does not measure how a real model triggers skills (`evals/live.mjs` does, and costs money).
 
 ## Use it in a new project
 
@@ -153,7 +153,7 @@ claude plugin marketplace add khmuhib01/agents-template
 claude plugin install agents-template@agents-template
 ```
 
-You get `/agents-template:agent-setup-scaffold` and `/agents-template:agent-init`; they run `init.mjs` from the plugin folder. The plugin files (`skills/`, `.claude-plugin/`) are generated from `global-skills/` and `VERSION` by `node build-plugin.mjs`; `test.mjs` fails if they are stale, so run it after changing either. Not verified against a live install yet: try it once and report any issue.
+You get `/agents-template:agent-setup-scaffold` and `/agents-template:agent-init`; they run `init.mjs` from the plugin folder. The plugin files (`skills/`, `.claude-plugin/`) are generated from `global-skills/` and `VERSION` by `node build-plugin.mjs`; `test.mjs` fails if they are stale, so run it after changing either. Checked once on Linux with Claude Code 2.1.329 (install, scaffold and init all worked); report any issue on other systems.
 
 ## Live skill-trigger eval (costs money)
 
