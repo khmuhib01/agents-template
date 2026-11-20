@@ -687,6 +687,24 @@ console.log('\n[mobile routing]');
 
 }
 
+if (on('seo wordpress routing')) {
+console.log('\n[seo wordpress routing]');
+{
+  const mk = (name, body) => { const d = path.join(base, 'p3-' + name); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'project.config.yml'), `name: P\n${body}\nbranches: {working: a, integration: "", production: main}\n`); return d; };
+  const skills = (d) => new Set(fs.readdirSync(path.join(d, '.claude/skills')));
+  const wp = mk('wp', 'type: web\nstack: [wordpress, mysql]\ndomains: [seo]'); const r = run(wp); const h = skills(wp);
+  check(r.status === 0 && !/matched no skill/.test(r.stderr), 'wordpress + seo domain generates without routing warnings');
+  check(['wordpress-development', 'php-development', 'seo-technical', 'seo-structured-data', 'seo-migration-monitoring'].every((s) => h.has(s)), 'wordpress stack + seo domain install the WordPress, PHP and SEO skills');
+  check(/0 created, 0 updated/.test(run(wp).stdout), 'wordpress + seo re-run is idempotent');
+  const plain = mk('plain', 'type: web\nstack: [react]'); run(plain);
+  check(![...skills(plain)].some((s) => s.startsWith('seo-') || s === 'wordpress-development' || s === 'php-development'), 'a web project without the seo domain gets no SEO/WordPress/PHP skills');
+  const mob = mk('mob', 'type: mobile\nstack: [flutter]'); run(mob);
+  check(skills(mob).has('mobile-quality'), 'mobile framework skills pull in mobile-quality');
+  check(fs.existsSync(path.join(wp, '.claude/skills/seo-technical/references/frameworks/wordpress.md')), 'nested framework references are installed');
+}
+
+}
+
 if (on('invalid config')) {
 console.log('\n[invalid config]');
 const inv = path.join(base, 'invalid');

@@ -209,29 +209,53 @@
     ],
     "swiftui": [
       "swift-development"
+    ],
+    "php": [
+      "php-development"
+    ],
+    "wordpress": [
+      "wordpress-development",
+      "php-development"
+    ],
+    "woocommerce": [
+      "wordpress-development",
+      "php-development"
     ]
   },
   "deps": {
     "flutter-development": [
       "mobile-architecture",
       "mobile-security",
-      "mobile-release"
+      "mobile-release",
+      "mobile-quality"
     ],
     "react-native-development": [
       "mobile-architecture",
       "mobile-security",
-      "mobile-release"
+      "mobile-release",
+      "mobile-quality"
     ],
     "swift-development": [
       "mobile-architecture",
       "mobile-security",
-      "mobile-release"
+      "mobile-release",
+      "mobile-quality"
     ],
     "android-kotlin-development": [
       "mobile-architecture",
       "mobile-security",
-      "mobile-release"
+      "mobile-release",
+      "mobile-quality"
+    ],
+    "wordpress-development": [
+      "php-development"
     ]
   },
-  "domains": {}
+  "domains": {
+    "seo": [
+      "seo-technical",
+      "seo-structured-data",
+      "seo-migration-monitoring"
+    ]
+  }
 }

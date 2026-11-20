@@ -1,6 +1,6 @@
 # agents-template — Skills Expansion Blueprint (Phase 1: audit + plan)
 
-Status: **approved (D1-D5 recommended options). P1.0 foundation and P2 mobile A implemented on branches feat/foundation-p1-0 and feat/mobile-a-p2; later phases pending.** Nothing in `core/`, `templates/`, `lib/`, `init.mjs` or tests was changed by this phase.
+Status: **approved (D1-D5 recommended options). P1.0, P2 and P3 implemented on stacked branches feat/foundation-p1-0, feat/mobile-a-p2, feat/seo-php-p3; later phases pending.** Nothing in `core/`, `templates/`, `lib/`, `init.mjs` or tests was changed by this phase.
 Baseline audited: `VERSION 1.11.0`, branch `dev`, `node test.mjs` passes, `node evals/run.mjs` 70/70, `node bench.mjs` runs.
 
 Conventions used below: **[E]** = evidence read in the repo, **[I]** = inference/recommendation, **[U]** = uncertainty to confirm before building.

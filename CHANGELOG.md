@@ -2,6 +2,12 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.14.0 - 2026-11-21
+
+- SEO (phase P3): new `domains: [seo]` set with skills `seo-technical` (with Next.js, React SPA, Laravel, WordPress references), `seo-structured-data`, `seo-migration-monitoring`; recommendations are labelled Requirement/Guideline/Practice and never promise rankings or rich results (lint-enforced)
+- new skills `php-development`, `wordpress-development` (tokens `php`, `wordpress`, `woocommerce`) and `mobile-quality` (now a dependency of the mobile framework skills; expo sample 3307 -> 3370 always-loaded tokens, python skills_mode all 4697 -> 5119, laravel unchanged)
+- evals: 19 more trigger cases; tests for seo/wordpress routing; every new skill ships `references/SOURCES.md` with no verified sources yet
+
 ## 1.13.0 - 2026-11-21
 
 - mobile (phase P2): new skills `android-kotlin-development`, `mobile-architecture`, `mobile-security`, `mobile-release`, each with `references/`; flutter, react-native and swift skills gain reference files (architecture, data/offline, native, performance/a11y, security, release)
