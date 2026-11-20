@@ -181,6 +181,20 @@
       "type": "boolean",
       "description": "Deny Read on .env and local_only paths; installs the guard-secrets hook."
     },
+    "domains": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "Optional concerns that add skills on top of type and stack (matched against \"domains\" in core/skill-map.json). Unknown names produce a warning."
+    },
     "skills_mode": {
       "enum": [
         "all",
