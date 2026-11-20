@@ -68,7 +68,9 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 | `templates/` | Files with `{{placeholders}}`: AGENTS.md, CLAUDE.md, project rules, git skills (commit, push, ship, ...) |
 | `global-skills/` | Sources of `/agent-setup-scaffold` and `/agent-init` |
 | `install-global.mjs` | Installs those global commands for Claude Code / Codex / Antigravity |
-| `init.mjs` | The generator |
+| `init.mjs` | The generator (orchestrator) |
+| `lib/` | Pure parts of the generator: `yaml.mjs` parser, `render.mjs` template engine, `scaffold.mjs` |
+| `.githooks/pre-commit` | Regenerates the plugin files before each commit (`git config core.hooksPath .githooks`) |
 
 ## Config keys
 
