@@ -660,6 +660,26 @@ function main() {
     }
   }
 
+  // The VS Code "@" picker honours .gitignore; when .claude/ is ignored, make search include ignored files.
+  // Written only if .vscode/ is itself git-ignored (so shared team settings are never changed) and the file is plain JSON.
+  function fixVscodeSearch() {
+    const keys = { 'search.useIgnoreFiles': false, 'search.useParentIgnoreFiles': false };
+    const sp = path.join(TARGET, '.vscode', 'settings.json');
+    const manual = `  Set ${Object.keys(keys).join(' and ')} to false in your own VS Code settings to fix it.`;
+    let ignored = false;
+    try { execSync('git check-ignore -q .vscode/settings.json', { cwd: TARGET, stdio: 'ignore' }); ignored = true; } catch { /* not ignored, or not a git repo */ }
+    if (!ignored) { console.warn(`  .vscode/ is not git-ignored, so .vscode/settings.json was left alone.\n${manual}`); return; }
+    let cur = {};
+    if (fs.existsSync(sp)) {
+      try { cur = JSON.parse(fs.readFileSync(sp, 'utf8')); } catch { console.warn(`  .vscode/settings.json is not plain JSON; left untouched.\n${manual}`); return; }
+    }
+    const next = { ...cur };
+    for (const [k, v] of Object.entries(keys)) if (!(k in next)) next[k] = v;
+    if (JSON.stringify(next) === JSON.stringify(cur)) return;
+    if (!DRY) { fs.mkdirSync(path.dirname(sp), { recursive: true }); fs.writeFileSync(sp, JSON.stringify(next, null, 2) + '\n'); }
+    console.log('Updated .vscode/settings.json: search now includes git-ignored files (needed for the "@" picker). Reload the window.');
+  }
+
   // 4. checks
   const problems = [];
   if (!DRY) {
@@ -678,12 +698,16 @@ function main() {
     }
     try {
       const gi = fs.readFileSync(path.join(TARGET, '.gitignore'), 'utf8');
-      if (/^\/?\.claude\/?\s*$/m.test(gi)) console.warn('⚠ .gitignore ignores .claude/ — remove that line if you want the config shared via git.');
+      if (/^\/?\.claude\/?\s*$/m.test(gi)) {
+        console.warn('⚠ .gitignore ignores .claude/ — remove that line if you want the config shared via git.\n  Side effect: the VS Code "@" picker is a file search that obeys .gitignore, so @agent-name will not list the agents.');
+        fixVscodeSearch();
+      }
     } catch { /* no .gitignore */ }
   }
   if (missing.size) problems.push(`template uses undefined keys: ${[...missing].join(', ')}`);
 
   console.log(`${stats.created} created, ${stats.updated} updated, ${stats.same} unchanged.`);
+  console.log('Note: "@" in chat only mentions files. To run an agent, ask for it by name or use /agents.');
   if (stats.updated && !DRY) console.log(`Previous versions of updated files were saved in .claude/.init-backup/${ts}/ (add it to .gitignore).`);
   if (kept.length) console.log(`Kept ${kept.length} file(s) you edited by hand (the template version differs): ${kept.join(', ')}\n  Merge from .claude/.init-backup/${ts}/<file>.template, or re-run with --force to overwrite them (a backup is made).`);
   if (problems.length) { console.error('✖ Checks failed:\n' + problems.map((p) => '  - ' + p).join('\n')); process.exit(1); }
