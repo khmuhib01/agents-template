@@ -12,9 +12,21 @@ The smallest valid config is `name`, `type`, `stack` and `branches.{working,prod
 
 ## What it saves, and what is not measured
 
-`node bench.mjs` generates sample projects and compares the always-loaded context (re-sent each session) against an unoptimized setup built from the same files. Current result: about **12-17% less static context** (roughly 650-820 tokens per session, out of ~4.5-5.5K). That is small on its own.
+**Measured, and not flattering: on short read-only tasks the template costs more than no template.**
 
-The larger savings are behavioural and are **not measured here**: `model_profile: economy` (cheaper models for agents), `guard-read` (blocks whole-file reads of big files), `deny_heavy` (never opens `node_modules`, `vendor`, logs), and the `/compact` nudge. Their effect depends on how you work. Real API cost also depends on prompt caching and conversation length. If you measure a before/after on a real project, please share it.
+`node bench-cost.mjs` (spends real money) runs the same 5 read-only prompts with `claude -p` on a small fixture project, once with no template and once with the generated setup, same model (sonnet) in both. One run on 2026-11-20 (Claude Code 2.1.329, n=5 per arm after a warm-up, so treat the size as rough; the direction was the same for every task):
+
+| | no template | with template | change |
+|---|---|---|---|
+| avg cost per run | $0.047 | $0.073 | +57% |
+| avg input tokens (summed over turns) | 123K | 148K | +20% |
+| avg turns | 4.4 | 4.4 | 0% |
+
+The template adds roughly 4-5K tokens of always-loaded context (`CLAUDE.md`, rules, skill and agent descriptions) that every turn re-reads. On these tasks there was nothing for it to save: even the log and lockfile prompts did not trigger runaway reads in the baseline, and blocked reads cost the template arm extra turns on the lockfile task (9 vs 7).
+
+`node bench.mjs` shows the static side: the generated setup carries 12-17% less always-loaded context than a *worse version of itself* (all skills model-invocable, path-scoped rules always loaded). It does **not** compare against having no template, so do not read it as a saving.
+
+What is **not** measured, and where a saving could still exist: `model_profile: economy` (cheaper models for agents; both arms above used the same model), long sessions with large files where `guard-read` / `deny_heavy` stop expensive reads, and the `/compact` nudge. If you want the template for cost, use `skills_mode: focused`, `model_profile: economy` and a `token_budget`, and measure on your own project with `bench-cost.mjs`. Its main value today is consistency and safety (hooks, rules, one config for three agents), not lower cost.
 
 Also not verified yet: use by anyone other than the author. (The plugin install via `claude plugin install` was checked once on Linux with Claude Code 2.1.329: marketplace add, install, `/agents-template:agent-setup-scaffold` and a full init, 67 files generated.) `evals/run.mjs` (70 prompts, written by the author) guards skill-description quality offline; it does not measure how a real model triggers skills (`evals/live.mjs` does, and costs money).
 
