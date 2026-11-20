@@ -70,7 +70,7 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 
 ## Config keys
 
-`name`, `description`, `url`, `type` (web/api/mobile/fullstack/cli/library/other), `stack`, `package_manager`, `run_in_docker` + `docker.{dir,service}`, `test_command`, `branches.{working,integration,production}`, `deploy.{mode,scope,target,needs_approval}`, `commit_attribution`, `docs_language`, `docs_files`, `layout`, `local_only`, `notes`, `forbid`, `agents_mirror`, `codex_mirror` (both default on; see above), `hooks` (default true), `format_command`, `model_profile`, `token_budget`, `big_file_kb`, `context_nudge_kb`. The full list with descriptions is `project.config.schema.json`.
+`name`, `description`, `url`, `type` (web/api/mobile/fullstack/cli/library/other), `stack`, `package_manager`, `run_in_docker` + `docker.{dir,service}`, `test_command`, `branches.{working,integration,production}`, `deploy.{mode,scope,target,needs_approval}`, `commit_attribution`, `docs_language`, `docs_files`, `layout`, `local_only`, `notes`, `forbid`, `agents_mirror`, `codex_mirror` (both default on; see above), `hooks` (default true), `format_command`, `model_profile`, `token_budget`, `big_file_kb`, `context_nudge_kb`, `packages`, `statusline`, `session_context`, `mcp_allow`, `mcp_deny`. The full list with descriptions is `project.config.schema.json`.
 
 - Empty `branches.integration` → `/merge-to-dev`, `/merge-to-main`, `/ship` are not generated.
 - `forbid: [oldprojectname]` → init fails if that word appears anywhere in generated files.
@@ -107,6 +107,36 @@ Rules in markdown can be forgotten; hooks are run by Claude Code itself. init co
 | `context-nudge` | each prompt | Warns the **user** (no tokens) to `/compact` or `/clear` when the transcript passes `context_nudge_kb` (default 400); repeats after 25% growth. `0` disables |
 
 Config: `hooks: false` installs none (and removes ours from `settings.json`); `format_command` e.g. `npx prettier --write` or `vendor/bin/pint`. A hook that crashes reports the error (non-blocking) instead of failing silently.
+
+## Monorepo
+
+Add a `packages:` map (see `project.config.example.yml`; each folder must already exist). init writes a small `CLAUDE.md` into every package folder (stack, tests, the stack-specific skills, notes) and routes skills for the union of all stacks. Claude Code loads a nested `CLAUDE.md` only when it reads or edits files in that folder, so package instructions cost nothing in other parts of the repo. A package `path` must be a relative folder inside the project (no `..`, not under `.claude/`); `test_command` runs from the repo root.
+
+## Optional extras (all off by default)
+
+| Key | Effect |
+|---|---|
+| `statusline: true` | Status line: `[Model] folder branch \| ctx 42% \| $0.35` (context turns yellow at 60%, red at 80%). Never replaces a `statusLine` you configured yourself |
+| `session_context: true` | `SessionStart` hook that hands Claude the git branch, status and last 3 commits, saving a first `git status` call; costs a few hundred tokens per session |
+| `mcp_allow: [github]` | Only these `.mcp.json` servers are enabled (`enabledMcpjsonServers`, `enableAllProjectMcpServers: false`). Servers from your user settings or claude.ai connectors are not controlled by this |
+| `mcp_deny: [slack]` | Denies every tool of these MCP servers (`permissions.deny` `mcp__<name>`) |
+
+Rules with a `paths:` frontmatter (like `TESTING.md`, which loads only when test files are touched) are excluded from the "always-loaded" estimate init prints. Add the same frontmatter to your own stack-specific rules to keep them out of every session.
+
+## Install as a Claude Code plugin
+
+Instead of cloning and running `install-global.mjs` (which still works), install from the marketplace in this repo:
+
+```bash
+claude plugin marketplace add khmuhib01/agents-template
+claude plugin install agents-template@agents-template
+```
+
+You get `/agents-template:agent-setup-scaffold` and `/agents-template:agent-init`; they run `init.mjs` from the plugin folder. The plugin files (`skills/`, `.claude-plugin/`) are generated from `global-skills/` and `VERSION` by `node build-plugin.mjs`; `test.mjs` fails if they are stale, so run it after changing either. Not verified against a live install yet: try it once and report any issue.
+
+## Live skill-trigger eval (costs money)
+
+`node evals/live.mjs --dry-run --limit 3` previews the request. With `ANTHROPIC_API_KEY` set, `node evals/live.mjs [--limit N] [--model ID]` shows a real model the list of model-invocable skills (name + description) and checks that it picks an expected skill for each prompt in `evals/cases.json`. It is an approximation of how Claude Code triggers skills, not Claude Code itself, and is never run by `test.mjs` or CI.
 
 ## Safe upgrades
 

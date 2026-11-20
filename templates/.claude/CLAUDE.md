@@ -10,6 +10,10 @@ Type `{{type}}`; stack: {{stack_list}}.
 
 {{layout_list}}
 
+{{#if packages_list}}Packages (each has its own CLAUDE.md):
+
+{{packages_list}}{{/if}}
+
 ## Skill routing
 
 All skills are installed; use the ones that fit the task.

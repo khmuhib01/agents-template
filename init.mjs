@@ -276,6 +276,11 @@ function buildContext(c) {
   const d = { ...c };
   d.stack = toArr(c.stack);
   d.stack_list = d.stack.join(', ');
+  const rawPk = c.packages && typeof c.packages === 'object' && !Array.isArray(c.packages) ? c.packages : {};
+  d.packages = Object.entries(rawPk).map(([key, p]) => ({ key, path: String((p && p.path) || '').replace(/\\/g, '/').replace(/\/+$/, ''), stack: toArr(p && p.stack).map(String), type: String((p && p.type) || c.type), test_command: String((p && p.test_command) || ''), notes: toArr(p && p.notes).map(String) }));
+  d.packages = d.packages.filter((p) => { const ok = !p.path || fs.existsSync(path.join(TARGET, p.path)); if (!ok) console.warn(`⚠ packages.${p.key}: folder "${p.path}" does not exist; package ignored`); return ok; });
+  d.stack = [...new Set([...d.stack, ...d.packages.flatMap((p) => p.stack)])]; // routing and deny rules see every package's stack
+  d.packages_list = bullets(d.packages.map((p) => `\`${p.path}/\` (${p.stack.join(', ') || 'no stack'})${p.test_command ? `, tests: \`${p.test_command}\`` : ''}`));
   const b = c.branches || {};
   d.branch_flow = b.integration ? `${b.working} → ${b.integration} → ${b.production}` : `${b.working} → ${b.production}`;
 
@@ -347,7 +352,8 @@ function allowRules(ctx) {
 }
 
 // Hooks: scripts live in core/hooks and are copied to .claude/hooks; project values go in .claude/hooks/config.json.
-const HOOK_SCRIPTS = ['guard-bash', 'guard-secrets', 'guard-read', 'context-nudge', 'format'];
+const HOOK_SCRIPTS = ['guard-bash', 'guard-secrets', 'guard-read', 'context-nudge', 'session-context', 'format'];
+const STATUSLINE_CMD = 'node "$CLAUDE_PROJECT_DIR/.claude/hooks/statusline.mjs"';
 const numOpt = (v, dflt) => (v === undefined || v === '' ? dflt : Number(v));
 const hookCommand = (script) => `node "$CLAUDE_PROJECT_DIR/.claude/hooks/${script}.mjs"`;
 function desiredHooks(cfg) {
@@ -356,6 +362,7 @@ function desiredHooks(cfg) {
   if (cfg.protect_secrets !== false) list.push({ event: 'PreToolUse', matcher: 'Write|Edit|MultiEdit|NotebookEdit', script: 'guard-secrets' });
   if (numOpt(cfg.big_file_kb, 100) > 0) list.push({ event: 'PreToolUse', matcher: 'Read', script: 'guard-read' });
   if (numOpt(cfg.context_nudge_kb, 400) > 0) list.push({ event: 'UserPromptSubmit', script: 'context-nudge' });
+  if (cfg.session_context === true) list.push({ event: 'SessionStart', matcher: 'startup|clear', script: 'session-context' });
   if (truthy(cfg.format_command)) list.push({ event: 'PostToolUse', matcher: 'Write|Edit|MultiEdit', script: 'format' });
   return list;
 }
@@ -369,6 +376,27 @@ function hooksConfig(cfg) {
     bigFileKb: numOpt(cfg.big_file_kb, 100),
     contextNudgeKb: numOpt(cfg.context_nudge_kb, 400),
   };
+}
+// statusline: opt-in, never replaces a status line you configured yourself.
+function mergeStatusLine(settings, on) {
+  const ours = settings.statusLine && String(settings.statusLine.command || '').includes('.claude/hooks/statusline.mjs');
+  if (on) {
+    if (!settings.statusLine || ours) settings.statusLine = { type: 'command', command: STATUSLINE_CMD };
+    else console.warn('⚠ statusline: true, but settings.json already has a different statusLine; left unchanged.');
+  } else if (ours) delete settings.statusLine;
+}
+// MCP: mcp_allow limits which .mcp.json servers are enabled; mcp_deny blocks a server's tools. Both are additive.
+function mergeMcp(settings, cfg) {
+  const allow = toArr(cfg.mcp_allow).map(String);
+  const deny = toArr(cfg.mcp_deny).map(String);
+  if (allow.length) {
+    settings.enabledMcpjsonServers = [...new Set([...(settings.enabledMcpjsonServers || []), ...allow])];
+    if (settings.enableAllProjectMcpServers === undefined) settings.enableAllProjectMcpServers = false;
+  }
+  if (deny.length) {
+    settings.permissions = settings.permissions || {};
+    settings.permissions.deny = [...new Set([...(settings.permissions.deny || []), ...deny.map((n) => `mcp__${n}`)])];
+  }
 }
 // Adds our hook entries, drops our stale ones, and leaves every other hook untouched.
 function mergeHooks(settings, desired) {
@@ -419,18 +447,26 @@ function warnUnknownKeys(cfg) {
   }
 }
 
+// Skills routed for a type + stack tokens (shared by the project-level routing and per-package CLAUDE.md files).
+function focusSkills(map, installed, type, stack) {
+  const focus = new Set(toArr(map.types[type]));
+  const unmatched = [];
+  for (const token of stack.map(norm)) {
+    let hit = false;
+    for (const [key, skills] of Object.entries(map.stack)) {
+      if (token === key || (token.startsWith(key) && /^(\d*|js)$/.test(token.slice(key.length)))) { skills.forEach((x) => focus.add(x)); hit = true; }
+    }
+    if (!hit) unmatched.push(token);
+  }
+  return { focus: new Set([...focus].filter((x) => installed.has(x))), unmatched };
+}
+const installedSkills = () => new Set([...fs.readdirSync(path.join(HERE, 'core', 'skills')), ...fs.readdirSync(path.join(HERE, 'templates', '.claude', 'skills'))]);
+
 function skillRouting(d) {
   const map = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));
   const installed = new Set([...fs.readdirSync(path.join(HERE, 'core', 'skills')), ...fs.readdirSync(path.join(HERE, 'templates', '.claude', 'skills'))]);
-  const focus = new Set(toArr(map.types[d.type]));
-  d.unmatched_stack = [];
-  for (const token of d.stack.map(norm)) {
-    let hit = false;
-    for (const [key, skills] of Object.entries(map.stack)) {
-      if (token === key || (token.startsWith(key) && /^(\d*|js)$/.test(token.slice(key.length)))) { skills.forEach((s) => focus.add(s)); hit = true; }
-    }
-    if (!hit) d.unmatched_stack.push(token);
-  }
+  const { focus, unmatched } = focusSkills(map, installed, d.type, d.stack);
+  d.unmatched_stack = unmatched;
   const always = map.always.filter((s) => installed.has(s));
   const focusList = [...focus].filter((s) => installed.has(s) && !always.includes(s));
   d.routed_set = new Set([...always, ...focusList]);
@@ -495,7 +531,15 @@ function main() {
   const TYPES = Object.keys(JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8')).types);
   if (cfg.type && !TYPES.includes(cfg.type)) errors.push(`type must be ${TYPES.join(' | ')} (got "${cfg.type}")`);
   if (cfg.model_profile !== undefined && !Object.keys(MODEL_PROFILES).includes(String(cfg.model_profile))) errors.push(`model_profile must be ${Object.keys(MODEL_PROFILES).join(' | ')} (got "${cfg.model_profile}")`);
+  for (const k of ['mcp_allow', 'mcp_deny']) for (const n of toArr(cfg[k])) if (!/^[\w.-]+$/.test(String(n))) errors.push(`${k}: "${n}" is not a valid MCP server name (letters, digits, _ . -)`);
   for (const k of ['token_budget', 'big_file_kb', 'context_nudge_kb']) if (cfg[k] !== undefined && cfg[k] !== '' && !(Number.isFinite(Number(cfg[k])) && Number(cfg[k]) >= 0)) errors.push(`${k} must be a number >= 0 (got "${cfg[k]}")`);
+  if (cfg.packages !== undefined && cfg.packages !== '' && (typeof cfg.packages !== 'object' || Array.isArray(cfg.packages))) errors.push('packages must be a map of name -> {path, stack, ...} (see project.config.example.yml)');
+  else for (const [key, p] of Object.entries(cfg.packages || {})) {
+    const pp = String((p && p.path) || '').replace(/\\/g, '/');
+    if (!pp) errors.push(`packages.${key}.path is required`);
+    else if (path.isAbsolute(pp) || /^[a-zA-Z]:/.test(pp) || pp.split('/').includes('..') || /^\.?\/?\.claude(\/|$)/.test(pp)) errors.push(`packages.${key}.path must be a relative folder inside the project (got "${pp}")`);
+    if (p && p.type && !TYPES.includes(p.type)) errors.push(`packages.${key}.type must be ${TYPES.join(' | ')} (got "${p.type}")`);
+  }
   if (cfg.run_in_docker && !(cfg.docker && cfg.docker.service)) errors.push('run_in_docker is true but docker.service is missing');
   if (errors.length) { console.error('✖ Config problems:\n' + errors.map((e) => '  - ' + e).join('\n')); process.exit(1); }
 
@@ -521,11 +565,30 @@ function main() {
   }
   // 1b. hooks (only the scripts this config needs, plus their shared lib and config)
   const hookList = desiredHooks(cfg);
-  if (hookList.length) {
+  if (hookList.length || cfg.statusline === true) {
     const hbase = path.join(HERE, 'core', 'hooks');
-    const names = new Set(['lib', ...hookList.map((h) => h.script)]);
+    const names = new Set(['lib', ...hookList.map((h) => h.script), ...(cfg.statusline === true ? ['statusline'] : [])]);
     for (const n of names) put(path.join(TARGET, '.claude', 'hooks', `${n}.mjs`), fs.readFileSync(path.join(hbase, `${n}.mjs`)));
     put(path.join(TARGET, '.claude', 'hooks', 'config.json'), JSON.stringify(hooksConfig(cfg), null, 2) + '\n');
+  }
+  // 1c. monorepo: a small CLAUDE.md inside each package folder (Claude Code reads nested CLAUDE.md files when it works there)
+  if (ctx.packages.length) {
+    const map = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));
+    const installed = installedSkills();
+    for (const p of ctx.packages) {
+      const dir = path.join(TARGET, p.path);
+      const mine = [...focusSkills(map, installed, 'library', p.stack).focus].filter((x) => !map.always.includes(x)); // stack-specific only; 'library' adds no type skills
+      const prefix = ctx.exec_prefix ? ctx.exec_prefix + ' ' : '';
+      const lines = [
+        `# ${p.key} (\`${p.path}/\`)`, '',
+        'Package context; the root CLAUDE.md and .claude/ rules still apply. Generated from project.config.yml.', '',
+        `Type ${p.type}; stack: ${p.stack.join(', ') || 'see root'}.`,
+        ...(p.test_command ? [`Tests: \`${prefix}${p.test_command}\``] : []),
+        ...(mine.length ? [`Skills for this package: ${mine.map((x) => '\`' + x + '\`').join(', ')}.`] : []),
+        ...(p.notes.length ? ['', ...p.notes.map((n) => '- ' + n)] : []),
+      ];
+      put(path.join(dir, 'CLAUDE.md'), lines.join('\n') + '\n');
+    }
   }
   // 2. templates (rendered with the config)
   const tbase = path.join(HERE, 'templates');
@@ -544,7 +607,7 @@ function main() {
   const agentNames = fs.readdirSync(path.join(HERE, 'core', 'agents')).map((f) => f.replace(/\.md$/i, '')).sort();
   put(path.join(TARGET, '.claude', 'CONFIGURATION.MANIFEST.JSON'), JSON.stringify({
     name: cfg.name, generatedBy: 'claude-template', templateVersion: TEMPLATE_VERSION, skillsMode: focused ? 'focused' : 'all', type: cfg.type, stack: ctx.stack, branches: ctx.branches,
-    runInDocker: Boolean(cfg.run_in_docker), testCommand: ctx.test_cmd_full, skills: skillNames, agents: agentNames, hooks: hookList.map((h) => h.script),
+    runInDocker: Boolean(cfg.run_in_docker), testCommand: ctx.test_cmd_full, skills: skillNames, agents: agentNames, hooks: hookList.map((h) => h.script), packages: ctx.packages.map((p) => p.path),
   }, null, 2) + '\n');
 
   const stampPath = path.join(TARGET, '.claude', '.template-version');
@@ -563,6 +626,8 @@ function main() {
     if (deny.length) settings.permissions.deny = [...new Set([...(settings.permissions.deny || []), ...deny])];
     if (cfg.allow_safe_commands !== false) settings.permissions.allow = [...new Set([...(settings.permissions.allow || []), ...allowRules(ctx)])];
     mergeHooks(settings, hookList);
+    mergeStatusLine(settings, cfg.statusline === true);
+    mergeMcp(settings, cfg);
     put(settingsPath, JSON.stringify(settings, null, 2) + '\n');
   }
 
@@ -661,7 +726,8 @@ function main() {
     const size = (f) => (fs.existsSync(f) ? fs.statSync(f).size : 0);
     const mdIn = (d) => (fs.existsSync(d) ? fs.readdirSync(d).filter((f) => f.endsWith('.md')).map((f) => path.join(d, f)) : []);
     const instrTok = Math.round([path.join(TARGET, 'CLAUDE.md'), path.join(claudeDir, 'CLAUDE.md')].reduce((n, f) => n + size(f), 0) / 4);
-    const rulesTok = Math.round(mdIn(path.join(claudeDir, 'rules')).reduce((n, f) => n + size(f), 0) / 4);
+    const alwaysRule = (f) => !/^paths:/m.test(frontmatter(f)); // rules with a paths: frontmatter load only when matching files are touched
+    const rulesTok = Math.round(mdIn(path.join(claudeDir, 'rules')).filter(alwaysRule).reduce((n, f) => n + size(f), 0) / 4);
     const skillsDir = path.join(claudeDir, 'skills');
     const skillsTok = descTokens(fs.existsSync(skillsDir) ? fs.readdirSync(skillsDir) : []);
     const agentsTok = Math.round(mdIn(path.join(claudeDir, 'agents')).reduce((n, f) => { const d = frontmatter(f).match(/^description:\s*(.*)$/m); return n + path.basename(f).length + (d ? d[1].length : 0); }, 0) / 4);
