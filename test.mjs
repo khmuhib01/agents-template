@@ -256,10 +256,16 @@ console.log('\n[stack matrix]');
     for (const x of denyAbsent[token] || []) check(!s.includes(x), `stack "${token}" does not deny ${x}`);
   }
   const unk = path.join(mdir, 'unknown'); fs.mkdirSync(unk, { recursive: true });
-  fs.writeFileSync(path.join(unk, 'project.config.yml'), 'name: U\ntype: other\nstack: [cobol]\nbranches: {working: a, production: main}\n');
+  fs.writeFileSync(path.join(unk, 'project.config.yml'), 'name: U\ntype: other\nstack: [cobol]\nskills_mode: all\nbranches: {working: a, production: main}\n');
   const ur = run(unk);
   check(ur.status === 0 && /matched no skill: cobol/.test(ur.stderr), 'unknown stack token warns but still generates');
   check(/Skills: \d+ installed, \d+ model-invocable \(~\d+ tokens/.test(ur.stdout) && /skills_mode: focused would install/.test(ur.stdout), 'init reports skill token overhead and the focused saving');
+  // Default is focused: an unset skills_mode installs fewer skills than skills_mode: all, and routing says so.
+  const def = path.join(mdir, 'default-focused'); fs.mkdirSync(def, { recursive: true });
+  fs.writeFileSync(path.join(def, 'project.config.yml'), 'name: D\ntype: api\nstack: [node]\nbranches: {working: a, production: main}\n');
+  check(run(def).status === 0, 'default config (no skills_mode) generates');
+  const nSkills = (d) => fs.readdirSync(path.join(d, '.claude', 'skills')).length;
+  check(nSkills(def) < nSkills(unk), 'skills_mode defaults to focused (fewer skills than all)');
 }
 
 }

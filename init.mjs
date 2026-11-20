@@ -77,7 +77,7 @@ function buildContext(c) {
   d.url = c.url || '';
   d.description = c.description || '';
   d.package_manager = c.package_manager || '';
-  d.skill_routing = skillRouting(d);
+  d.skill_routing = skillRouting(d, c.skills_mode !== 'all');
   return d;
 }
 
@@ -227,7 +227,7 @@ function focusSkills(map, installed, type, stack) {
 }
 const installedSkills = () => new Set([...fs.readdirSync(path.join(HERE, 'core', 'skills')), ...fs.readdirSync(path.join(HERE, 'templates', '.claude', 'skills'))]);
 
-function skillRouting(d) {
+function skillRouting(d, focused) {
   const map = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));
   const installed = new Set([...fs.readdirSync(path.join(HERE, 'core', 'skills')), ...fs.readdirSync(path.join(HERE, 'templates', '.claude', 'skills'))]);
   const { focus, unmatched } = focusSkills(map, installed, d.type, d.stack);
@@ -237,8 +237,11 @@ function skillRouting(d) {
   d.routed_set = new Set([...always, ...focusList]);
   const rest = [...installed].filter((s) => !focus.has(s) && !always.includes(s)).sort();
   const fmt = (a) => a.map((s) => `\`${s}\``).join(', ');
+  const primary = `**Primary for this project** (${d.type}; ${d.stack_list || 'no stack set'}): ${focusList.length ? fmt(focusList) : '_none matched — set `stack` in project.config.yml_'}`;
+  // focused: only routed skills are installed and the harness already lists every installed skill, so repeating them (or naming skills that are not installed) only costs tokens.
+  if (focused) return primary;
   return [
-    `**Primary for this project** (${d.type}; ${d.stack_list || 'no stack set'}): ${focusList.length ? fmt(focusList) : '_none matched — set `stack` in project.config.yml_'}`,
+    primary,
     `**Always useful:** ${fmt(always)}`,
     `**Also installed, use only when the task needs them:** ${fmt(rest)}`,
   ].join('\n\n');
@@ -314,8 +317,8 @@ function main() {
   console.log(`${DRY ? '[dry-run] ' : ''}Generating for "${cfg.name}" → ${TARGET}`);
 
   // 1. core (generic, always overwritten from the template)
-  // skills_mode: all (default) installs every skill; focused installs only the ones routed for this type/stack.
-  const focused = cfg.skills_mode === 'focused';
+  // skills_mode: focused (default) installs only the skills routed for this type/stack; all installs every skill.
+  const focused = cfg.skills_mode !== 'all';
   const profile = String(cfg.model_profile || 'balanced');
   const wanted = (rel) => !focused || ctx.routed_set.has(rel.split(path.sep)[0]);
   if (ctx.unmatched_stack.length) console.warn(`⚠ stack token(s) matched no skill: ${ctx.unmatched_stack.join(', ')} (check spelling, or map them in core/skill-map.json)`);

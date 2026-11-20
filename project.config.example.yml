@@ -54,7 +54,7 @@ notes:                          # project-specific rules in plain words
 model: sonnet                   # default model written to .claude/settings.json (only if not already set)
 deny_heavy: true                # true: also deny Read on vendor/, node_modules/, dist/, build/, logs, *.min.js, *.map (set false if you need to read them)
 allow_safe_commands: true       # true: git status/diff/log and the test command run without a permission prompt
-skills_mode: all                # all: install every skill (default) | focused: install only skills routed for this type/stack
+skills_mode: focused            # focused: install only skills routed for this type/stack (default, saves context) | all: install every skill
 protect_secrets: true         # true: settings.json denies Read on .env and every local_only path (also keeps big dumps out of context)
 forbid: []                    # words that must NOT appear in generated files (e.g. another project's name)
 agents_mirror: true             # default true: .agents/{rules,skills,agents} link to .claude/ (Antigravity/Gemini, Codex); false disables

@@ -186,7 +186,7 @@
         "all",
         "focused"
       ],
-      "description": "focused installs only skills routed for this type/stack."
+      "description": "focused (default) installs only skills routed for this type/stack; all installs every skill."
     },
     "token_budget": {
       "type": "integer",

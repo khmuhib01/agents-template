@@ -14,17 +14,18 @@ The smallest valid config is `name`, `type`, `stack` and `branches.{working,prod
 
 **Measured, and not flattering: on short read-only tasks the template costs more than no template.**
 
-`node bench-cost.mjs` (spends real money) runs the same 5 read-only prompts with `claude -p` on a small fixture project, once with no template and once with the generated setup, same model (sonnet) in both. One run on 2026-11-20 (Claude Code 2.1.329, n=5 per arm after a warm-up, so treat the size as rough; the direction was the same for every task):
+`node bench-cost.mjs` (spends real money) runs the same 5 read-only prompts with `claude -p` on a small fixture project, once with no template and once with the generated setup, same model (sonnet) in both. Runs on 2026-11-20 (Claude Code 2.1.329, n=5 per arm after a warm-up, so treat the size as rough; the direction was the same for every task):
 
-| | no template | with template | change |
+| avg per run | no template | v1.10.0 | v1.11.0 (lean) |
 |---|---|---|---|
-| avg cost per run | $0.047 | $0.073 | +57% |
-| avg input tokens (summed over turns) | 123K | 148K | +20% |
-| avg turns | 4.4 | 4.4 | 0% |
+| cost | $0.047 | $0.073 (+57%) | $0.060 (+37%) |
+| input tokens (summed over turns) | 123K | 148K (+20%) | 123K (+7%) |
 
-The template adds roughly 4-5K tokens of always-loaded context (`CLAUDE.md`, rules, skill and agent descriptions) that every turn re-reads. On these tasks there was nothing for it to save: even the log and lockfile prompts did not trigger runaway reads in the baseline, and blocked reads cost the template arm extra turns on the lockfile task (9 vs 7).
+The remaining gap is the template's always-loaded context (now about 3.2K tokens, was 4.7K), which is written to the prompt cache once at the start of every session (1.25x price) and then re-read each turn (0.1x). Measured per run: about 4K more cache-write tokens than no template, roughly $0.015. In a long session that is paid once, so it shrinks to a few percent of the session cost (rough arithmetic from the published price ratios, not measured here). On short tasks it is pure overhead: there was nothing for the template to save, and even the log and lockfile prompts did not trigger runaway reads in the baseline.
 
-`node bench.mjs` shows the static side: the generated setup carries 12-17% less always-loaded context than a *worse version of itself* (all skills model-invocable, path-scoped rules always loaded). It does **not** compare against having no template, so do not read it as a saving.
+v1.11.0 cut the always-loaded context by a third: `skills_mode` now defaults to `focused`, layout and project notes are no longer loaded twice, duplicated rules were merged, and the skill routing no longer lists skills that are not installed.
+
+`node bench.mjs` shows the static side only: the generated setup carries 16-20% less always-loaded context than a *worse version of itself* (all skills model-invocable, path-scoped rules always loaded). It does **not** compare against having no template, so do not read it as a saving.
 
 What is **not** measured, and where a saving could still exist: `model_profile: economy` (cheaper models for agents; both arms above used the same model), long sessions with large files where `guard-read` / `deny_heavy` stop expensive reads, and the `/compact` nudge. If you want the template for cost, use `skills_mode: focused`, `model_profile: economy` and a `token_budget`, and measure on your own project with `bench-cost.mjs`. Its main value today is consistency and safety (hooks, rules, one config for three agents), not lower cost.
 
@@ -116,7 +117,7 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 | `protect_secrets` | true | `settings.json` denies Read on `.env` and every `local_only` path (dumps never enter context) |
 | `deny_heavy` | true | also denies Read on `vendor/`, `node_modules/`, `dist/`, `build/`, logs, `*.min.js`, `*.map` (stack-aware) |
 | `allow_safe_commands` | true | `git status/diff/log` and the project test command run without a permission prompt (fewer turns) |
-| `skills_mode` | all (`--scaffold` drafts write `focused`) | `focused` installs only skills routed for this type/stack (init never deletes skills already installed). Every run prints the skill-description token overhead and what `focused` would save |
+| `skills_mode` | focused | `focused` installs only skills routed for this type/stack (init never deletes skills already installed). Every run prints the skill-description token overhead and what `focused` would save |
 | `model` | sonnet | default model written to `settings.json` if none is set (overrides `model_profile`) |
 | `model_profile` | balanced | `economy`: sonnet for every agent, haiku for `git-manager`. `quality`: opus for architect/planner/debugger/security-reviewer and the main model. `balanced` keeps the agent files as written |
 | `token_budget` | 0 (off) | init warns when the always-loaded context is over this many tokens |
