@@ -70,7 +70,7 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 
 ## Config keys
 
-`name`, `description`, `url`, `type` (web/api/mobile/fullstack/cli/library/other), `stack`, `package_manager`, `run_in_docker` + `docker.{dir,service}`, `test_command`, `branches.{working,integration,production}`, `deploy.{mode,scope,target,needs_approval}`, `commit_attribution`, `docs_language`, `docs_files`, `layout`, `local_only`, `notes`, `forbid`, `agents_mirror`, `codex_mirror` (both default on; see above), `hooks` (default true), `format_command`.
+`name`, `description`, `url`, `type` (web/api/mobile/fullstack/cli/library/other), `stack`, `package_manager`, `run_in_docker` + `docker.{dir,service}`, `test_command`, `branches.{working,integration,production}`, `deploy.{mode,scope,target,needs_approval}`, `commit_attribution`, `docs_language`, `docs_files`, `layout`, `local_only`, `notes`, `forbid`, `agents_mirror`, `codex_mirror` (both default on; see above), `hooks` (default true), `format_command`, `model_profile`, `token_budget`, `big_file_kb`, `context_nudge_kb`. The full list with descriptions is `project.config.schema.json`.
 
 - Empty `branches.integration` → `/merge-to-dev`, `/merge-to-main`, `/ship` are not generated.
 - `forbid: [oldprojectname]` → init fails if that word appears anywhere in generated files.
@@ -107,6 +107,12 @@ Rules in markdown can be forgotten; hooks are run by Claude Code itself. init co
 | `context-nudge` | each prompt | Warns the **user** (no tokens) to `/compact` or `/clear` when the transcript passes `context_nudge_kb` (default 400); repeats after 25% growth. `0` disables |
 
 Config: `hooks: false` installs none (and removes ours from `settings.json`); `format_command` e.g. `npx prettier --write` or `vendor/bin/pint`. A hook that crashes reports the error (non-blocking) instead of failing silently.
+
+## Safe upgrades
+
+- **Hand-edit protection.** init records a hash of every generated file in `.claude/.template-hashes.json` (commit it). If you edit a generated file (a skill, a rule, `AGENTS.md`...), the next run **keeps your version**, reports it, and saves the new template version as `.claude/.init-backup/<time>/<file>.template` so you can merge by hand. `node init.mjs --force` overwrites them (a backup of your edit is made). `settings.json` is always merged, never skipped. Line-ending changes (git autocrlf) do not count as edits. Projects initialized before this feature have no hash file: the first run behaves as before (overwrite with backup) and starts tracking.
+- **Drift check for CI.** `node init.mjs --check` writes nothing and exits 1 when generated files are out of date (config changed, or the template was upgraded), 0 when in sync. Intentionally edited files do not fail it.
+- **Editor validation.** `project.config.schema.json` describes every key; the first line of the example/scaffolded config points a YAML language server at it. init also warns about unknown keys with a suggestion (`skils_mode` -> `skills_mode`).
 
 ## Versioning and tests
 
