@@ -60,7 +60,7 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 | `project.config.example.yml` | Fully documented example of the one file you edit |
 | `core/skills/` | All skills (Laravel, React, Next.js, Vue, Node, Python, Go, Rust, Java/Kotlin, .NET, Ruby/Rails, Flutter, Swift, React Native/Expo, MySQL, Postgres, TypeScript, security, testing, ...). Always copied in full. |
 | `core/agents/` | planner, architect, backend/frontend/devops engineer, debugger, code-reviewer, qa, security-reviewer, git-manager |
-| `core/rules/` | Generic rules not already in `~/.claude/rules` (global security/testing/code-quality/git rules are not duplicated) |
+| `core/rules/` | Generic always-loaded rules: `CODE-QUALITY`, `SECURITY`, `TESTING`, `COMPLETION-REPORT` (~3 KB total, so teammates without personal global rules still get them; git/docs rules are generated from the config) |
 | `core/skill-map.json` | Maps `type` / `stack` tokens to skills; drives the "Skill routing" section |
 | `templates/` | Files with `{{placeholders}}`: AGENTS.md, CLAUDE.md, project rules, git skills (commit, push, ship, ...) |
 | `global-skills/` | Sources of `/agent-setup-scaffold` and `/agent-init` |
@@ -73,6 +73,7 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 
 - Empty `branches.integration` → `/merge-to-dev`, `/merge-to-main`, `/ship` are not generated.
 - `forbid: [oldprojectname]` → init fails if that word appears anywhere in generated files.
+- `project.config.yml` uses a YAML subset: `key: value`, nested maps, `- item` lists, inline `[a, b]` / `{a: b}`, quoted strings. Unsupported syntax (block scalars `|`/`>`, anchors/aliases, tabs, duplicate keys, unclosed quotes/brackets, multi-line flow lists) stops init with `line N: ...` instead of being silently misread.
 - `notes` is where project-specific rules go; they are written into AGENTS.md, `.claude/CLAUDE.md` and ARCHITECTURE.md.
 
 ## Credit / token savers (all configurable)
@@ -82,7 +83,7 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 | `protect_secrets` | true | `settings.json` denies Read on `.env` and every `local_only` path (dumps never enter context) |
 | `deny_heavy` | true | also denies Read on `vendor/`, `node_modules/`, `dist/`, `build/`, logs, `*.min.js`, `*.map` (stack-aware) |
 | `allow_safe_commands` | true | `git status/diff/log` and the project test command run without a permission prompt (fewer turns) |
-| `skills_mode` | all | `focused` installs only skills routed for this type/stack (init never deletes skills already installed) |
+| `skills_mode` | all (`--scaffold` drafts write `focused`) | `focused` installs only skills routed for this type/stack (init never deletes skills already installed). Every run prints the skill-description token overhead and what `focused` would save |
 | `model` | sonnet | default model written to `settings.json` if none is set |
 
 Also: always-loaded text is kept short (git procedures live in skills, loaded only when used), `git-manager` runs on `haiku`, and `.claude/CLAUDE.md` carries short context-hygiene rules. `settings.json` is merged, never replaced.
@@ -90,7 +91,8 @@ Also: always-loaded text is kept short (git procedures live in skills, loaded on
 ## Versioning and tests
 
 - `VERSION` is stamped into `.claude/.template-version` and the manifest; init prints `old → new` when a project is upgraded.
-- `node test.mjs` runs init against sample configs (Laravel+Docker, mobile, focused skills, forbid, invalid) and checks files, settings, placeholders and idempotency. CI runs it on every push.
+- `node test.mjs` runs init against sample configs (Laravel+Docker, mobile, focused skills, forbid, invalid), every stack token in `skill-map.json` (right skills installed, other stacks' skills absent), YAML parser error cases, catalog consistency (skill/agent frontmatter, `skill-map.json` references, description length) and idempotency. CI runs it on every push.
+- `node evals/run.mjs [--verbose]` is an offline skill-trigger eval: it ranks skills by word overlap between each prompt in `evals/cases.json` and the skill descriptions, and requires an expected skill in the top 3. It guards description quality; it does not measure real model triggering. Add a case when you add or reword a skill.
 
 ## Improving the template
 

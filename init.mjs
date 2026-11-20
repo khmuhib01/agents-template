@@ -47,45 +47,81 @@ function splitTop(s) {
   if (cur.trim() !== '') out.push(cur);
   return out.map((x) => x.trim()).filter((x) => x !== '');
 }
-function scalar(s) {
+function yerr(no, msg) { return new Error(`line ${no}: ${msg}`); }
+function scalar(s, no) {
   s = s.trim();
   if (s === '') return '';
-  if ((s[0] === '"' && s.endsWith('"') && s.length > 1) || (s[0] === "'" && s.endsWith("'") && s.length > 1)) return s.slice(1, -1);
+  const c = s[0];
+  if (c === '|' || c === '>') throw yerr(no, 'block scalars ("|" and ">") are not supported; use a quoted one-line string or a list');
+  if (c === '&' || c === '*' || c === '!') throw yerr(no, 'anchors, aliases and tags (&, *, !) are not supported; repeat the value instead');
+  if (c === '"' || c === "'") {
+    if (s.length < 2 || !s.endsWith(c)) throw yerr(no, `unterminated quoted string, or text after the closing quote: ${s}`);
+    return s.slice(1, -1);
+  }
   if (s === 'true') return true;
   if (s === 'false') return false;
   if (s === 'null' || s === '~') return '';
   if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s);
-  if (s[0] === '[' && s.endsWith(']')) return splitTop(s.slice(1, -1)).map(scalar);
-  if (s[0] === '{' && s.endsWith('}')) {
+  if (c === '[') {
+    if (!s.endsWith(']')) throw yerr(no, `unclosed "[" (multi-line lists are not supported; put it on one line or use "- item" lines): ${s}`);
+    return splitTop(s.slice(1, -1)).map((x) => scalar(x, no));
+  }
+  if (c === '{') {
+    if (!s.endsWith('}')) throw yerr(no, `unclosed "{" (multi-line maps are not supported; put it on one line or nest the keys): ${s}`);
     const o = {};
-    for (const part of splitTop(s.slice(1, -1))) { const i = part.indexOf(':'); o[part.slice(0, i).trim()] = scalar(part.slice(i + 1)); }
+    for (const part of splitTop(s.slice(1, -1))) {
+      const i = part.indexOf(':');
+      if (i <= 0) throw yerr(no, `inline map entries must look like "key: value", got "${part}"`);
+      o[part.slice(0, i).trim()] = scalar(part.slice(i + 1), no);
+    }
     return o;
   }
   return s;
 }
 function parseYaml(text) {
-  const lines = text.split(/\r?\n/).map(stripComment).filter((l) => l.trim() !== '')
-    .map((l) => ({ indent: l.match(/^ */)[0].length, text: l.trim() }));
+  const lines = [];
+  text.replace(/^﻿/, '').split(/\r?\n/).forEach((raw, i) => {
+    const no = i + 1;
+    const body = stripComment(raw);
+    if (body.trim() === '') return;
+    if (/^ *\t/.test(body)) throw yerr(no, 'tabs are not allowed for indentation; use spaces (2 per level)');
+    if (lines.length === 0 && body.trim() === '---') return;
+    lines.push({ no, indent: body.match(/^ */)[0].length, text: body.trim() });
+  });
   let pos = 0;
   const list = (indent) => {
     const arr = [];
-    while (pos < lines.length && lines[pos].indent === indent && lines[pos].text.startsWith('-')) { arr.push(scalar(lines[pos].text.slice(1))); pos++; }
+    while (pos < lines.length && lines[pos].indent === indent && lines[pos].text.startsWith('-')) {
+      const l = lines[pos];
+      const rest = l.text.slice(1).trim();
+      if (rest === '') throw yerr(l.no, 'empty list item; nested structures under "-" are not supported');
+      arr.push(scalar(rest, l.no)); pos++;
+    }
     return arr;
   };
   const map = (indent) => {
     const obj = {};
     while (pos < lines.length && lines[pos].indent === indent) {
-      const m = lines[pos].text.match(/^([A-Za-z0-9_.-]+):(?:\s+(.*))?$/);
-      if (!m) throw new Error(`Cannot parse line: "${lines[pos].text}"`);
+      const l = lines[pos];
+      const m = l.text.match(/^([A-Za-z0-9_.-]+):(?:\s+(.*))?$/);
+      if (!m) {
+        const hint = l.text.startsWith('-') ? 'unexpected list item (indent it under its key)' : l.text.startsWith('<<') ? 'merge keys ("<<") are not supported' : 'expected "key: value" (keys use letters, digits, _ . -; a space is required after ":")';
+        throw yerr(l.no, `cannot parse "${l.text}": ${hint}`);
+      }
+      if (Object.hasOwn(obj, m[1])) throw yerr(l.no, `duplicate key "${m[1]}"`);
       pos++;
-      if (m[2] !== undefined && m[2] !== '') obj[m[1]] = scalar(m[2]);
-      else if (pos < lines.length && lines[pos].indent > indent) obj[m[1]] = lines[pos].text.startsWith('-') ? list(lines[pos].indent) : map(lines[pos].indent);
+      const next = lines[pos];
+      if (m[2] !== undefined && m[2] !== '') obj[m[1]] = scalar(m[2], l.no);
+      else if (next && next.indent > indent) obj[m[1]] = next.text.startsWith('-') ? list(next.indent) : map(next.indent);
+      else if (next && next.indent === indent && next.text.startsWith('-')) obj[m[1]] = list(indent);
       else obj[m[1]] = '';
     }
-    if (pos < lines.length && lines[pos].indent > indent) throw new Error(`Bad indentation near: "${lines[pos].text}"`);
+    if (pos < lines.length && lines[pos].indent > indent) throw yerr(lines[pos].no, `bad indentation near "${lines[pos].text}"`);
     return obj;
   };
-  return lines.length ? map(lines[0].indent) : {};
+  const out = lines.length ? map(lines[0].indent) : {};
+  if (pos < lines.length) throw yerr(lines[pos].no, `inconsistent indentation near "${lines[pos].text}"`);
+  return out;
 }
 
 // ---------------------------------------------------------------- scaffold (detect stack)
@@ -201,6 +237,7 @@ local_only:
 notes:                                # TODO project-specific rules
   - ""
 
+skills_mode: focused                  # focused = only skills routed for this type/stack (fewer tokens); all = every skill
 forbid: []
 agents_mirror: true
 codex_mirror: true
@@ -351,7 +388,8 @@ function walk(dir) {
 
 function main() {
   if (!fs.existsSync(CONFIG)) { console.error(`✖ Config not found: ${CONFIG}\n  Create it from project.config.example.yml, or run: node init.mjs --scaffold --target "${TARGET}"`); process.exit(1); }
-  const cfg = parseYaml(fs.readFileSync(CONFIG, 'utf8'));
+  let cfg;
+  try { cfg = parseYaml(fs.readFileSync(CONFIG, 'utf8')); } catch (e) { console.error(`✖ ${path.basename(CONFIG)}: ${e.message}`); process.exit(1); }
   const errors = [];
   for (const k of ['name', 'type', 'stack']) if (!truthy(cfg[k])) errors.push(`missing required key: ${k}`);
   if (!(cfg.branches && cfg.branches.working && cfg.branches.production)) errors.push('missing required keys: branches.working and branches.production');
@@ -469,6 +507,22 @@ function main() {
   console.log(`${stats.created} created, ${stats.updated} updated, ${stats.same} unchanged.`);
   if (stats.updated && !DRY) console.log(`Previous versions of updated files were saved in .claude/.init-backup/${ts}/ (add it to .gitignore).`);
   if (problems.length) { console.error('✖ Checks failed:\n' + problems.map((p) => '  - ' + p).join('\n')); process.exit(1); }
+  // skill description overhead: every installed skill's description is loaded into each session
+  const tplSkills = new Set(fs.readdirSync(path.join(tbase, '.claude', 'skills')));
+  const descTokens = (names) => Math.round(names.reduce((n, name) => {
+    for (const dir of [path.join(HERE, 'core', 'skills'), path.join(tbase, '.claude', 'skills')]) {
+      const f = path.join(dir, name, 'SKILL.md');
+      if (fs.existsSync(f)) { const m = fs.readFileSync(f, 'utf8').match(/^description:s*(.*)$/m); return n + name.length + (m ? m[1].length : 0); }
+    }
+    return n;
+  }, 0) / 4);
+  const nowTok = descTokens(skillNames);
+  console.log(`Skills: ${skillNames.length} installed (~${nowTok} tokens of descriptions in every session).`);
+  if (!focused) {
+    const fNames = skillNames.filter((n) => ctx.routed_set.has(n) || tplSkills.has(n));
+    const fTok = descTokens(fNames);
+    if (fNames.length < skillNames.length) console.log(`  skills_mode: focused would install ${fNames.length} (~${fTok} tokens, saves ~${nowTok - fTok}).`);
+  }
   console.log('✔ Done. Checks passed (no placeholders left, no forbidden terms).');
 }
 

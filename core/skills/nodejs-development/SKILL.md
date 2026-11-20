@@ -18,5 +18,15 @@ Detect first: framework, Node version, ESM vs CJS, TS, ORM or query builder, val
 - Graceful shutdown on SIGTERM (stop accepting, drain, close pool). Structured logs with request IDs. Rate limit and set security headers (`helmet`) on public APIs.
 - Prisma: `migrate dev` is for development only; production uses `migrate deploy`. Ask before running any migration against a non-local database.
 
+## Common pitfalls
+- Unhandled promise rejections crash Node 15+. Express 4 does not catch errors thrown in async handlers (wrap them or use Express 5); error middleware takes four arguments and is registered last.
+- `array.forEach(async ...)` does not wait. Use `for...of` or `Promise.all` (with a concurrency limit for large lists).
+- Do not block the event loop: sync `fs`/`crypto`, huge `JSON.parse`, catastrophic regexes. Stream large data; move CPU work to a worker thread.
+- ESM vs CommonJS: check `"type"` in package.json. `__dirname` does not exist in ESM (use `import.meta.dirname` on Node 20.11+ or `fileURLToPath`); `require()` of an ESM-only package fails.
+- Validate environment variables once at startup and fail fast; do not read `process.env` all over the code.
+- Handle `SIGTERM`: stop accepting requests, finish in-flight work, close the database pool, then exit.
+- Never pass user input to `child_process.exec`, `eval`, or a file path without normalizing it (path traversal). Set body size limits, rate limits and CORS deliberately.
+- ORMs: avoid N+1 (`include`/relations, batching); use real transactions for multi-step writes; mind connection-pool limits in serverless.
+
 ## Verify
 Tests (supertest or framework inject), typecheck, lint.
