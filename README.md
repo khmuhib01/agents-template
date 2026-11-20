@@ -85,7 +85,12 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 | `deny_heavy` | true | also denies Read on `vendor/`, `node_modules/`, `dist/`, `build/`, logs, `*.min.js`, `*.map` (stack-aware) |
 | `allow_safe_commands` | true | `git status/diff/log` and the project test command run without a permission prompt (fewer turns) |
 | `skills_mode` | all (`--scaffold` drafts write `focused`) | `focused` installs only skills routed for this type/stack (init never deletes skills already installed). Every run prints the skill-description token overhead and what `focused` would save |
-| `model` | sonnet | default model written to `settings.json` if none is set |
+| `model` | sonnet | default model written to `settings.json` if none is set (overrides `model_profile`) |
+| `model_profile` | balanced | `economy`: sonnet for every agent, haiku for `git-manager`. `quality`: opus for architect/planner/debugger/security-reviewer and the main model. `balanced` keeps the agent files as written |
+| `token_budget` | 0 (off) | init warns when the always-loaded context is over this many tokens |
+| manual-only skills | built in | `/commit`, `/push`, `/ship`, `/merge-*`, `/pr`, `/status`, `/sync`, `/review`, `/deploy`, `/build`, `/project-init` are `disable-model-invocation: true`: their descriptions are not loaded into context, you invoke them by name (`doc-sync` stays invocable because other skills call it) |
+
+Every init run prints the always-loaded context (instructions, rules, skill and agent descriptions; ~4 chars per token, an estimate). It is re-sent each turn but mostly served from the prompt cache, so the bigger levers are model choice, `/compact`/`/clear`, and not reading large files.
 
 Also: always-loaded text is kept short (git procedures live in skills, loaded only when used), `git-manager` runs on `haiku`, and `.claude/CLAUDE.md` carries short context-hygiene rules. `settings.json` is merged, never replaced.
 
@@ -98,6 +103,8 @@ Rules in markdown can be forgotten; hooks are run by Claude Code itself. init co
 | `guard-bash` | Bash | **Blocks**: commit or push on `branches.production`/`integration`, force-push, `--no-verify`, and `Co-Authored-By`/"Generated with" lines when `commit_attribution` is false. **Asks**: `git reset --hard`, `git branch -D` |
 | `guard-secrets` | Write/Edit | **Blocks** writes to `.env*` and `local_only` paths, and content with obvious secrets (AWS/GitHub/Slack/Google keys, private keys, `sk-…`). Needs `protect_secrets` (default true) |
 | `format` | after Write/Edit | Runs `format_command "<file>"`. Only installed when `format_command` is set |
+| `guard-read` | Read | **Blocks** whole-file reads above `big_file_kb` (default 100) and large lockfiles; Read with `offset`/`limit` is always allowed. `0` disables |
+| `context-nudge` | each prompt | Warns the **user** (no tokens) to `/compact` or `/clear` when the transcript passes `context_nudge_kb` (default 400); repeats after 25% growth. `0` disables |
 
 Config: `hooks: false` installs none (and removes ours from `settings.json`); `format_command` e.g. `npx prettier --write` or `vendor/bin/pint`. A hook that crashes reports the error (non-blocking) instead of failing silently.
 

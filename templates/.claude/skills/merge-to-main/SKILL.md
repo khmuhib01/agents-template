@@ -1,6 +1,7 @@
 ---
 name: merge-to-main
 description: Merges the integration branch into the production branch directly (no PR) after the test gate and one explicit confirmation, then pushes. Only the integration branch ever merges to production. Triggered by /merge-to-main.
+disable-model-invocation: true
 ---
 
 # Merge {{branches.integration}} → {{branches.production}}

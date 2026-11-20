@@ -341,12 +341,15 @@ function allowRules(ctx) {
 }
 
 // Hooks: scripts live in core/hooks and are copied to .claude/hooks; project values go in .claude/hooks/config.json.
-const HOOK_SCRIPTS = ['guard-bash', 'guard-secrets', 'format'];
+const HOOK_SCRIPTS = ['guard-bash', 'guard-secrets', 'guard-read', 'context-nudge', 'format'];
+const numOpt = (v, dflt) => (v === undefined || v === '' ? dflt : Number(v));
 const hookCommand = (script) => `node "$CLAUDE_PROJECT_DIR/.claude/hooks/${script}.mjs"`;
 function desiredHooks(cfg) {
   if (cfg.hooks === false) return [];
   const list = [{ event: 'PreToolUse', matcher: 'Bash', script: 'guard-bash' }];
   if (cfg.protect_secrets !== false) list.push({ event: 'PreToolUse', matcher: 'Write|Edit|MultiEdit|NotebookEdit', script: 'guard-secrets' });
+  if (numOpt(cfg.big_file_kb, 100) > 0) list.push({ event: 'PreToolUse', matcher: 'Read', script: 'guard-read' });
+  if (numOpt(cfg.context_nudge_kb, 400) > 0) list.push({ event: 'UserPromptSubmit', script: 'context-nudge' });
   if (truthy(cfg.format_command)) list.push({ event: 'PostToolUse', matcher: 'Write|Edit|MultiEdit', script: 'format' });
   return list;
 }
@@ -357,6 +360,8 @@ function hooksConfig(cfg) {
     blockAttribution: !cfg.commit_attribution,
     localOnly: toArr(cfg.local_only).map(String),
     formatCommand: truthy(cfg.format_command) ? String(cfg.format_command) : '',
+    bigFileKb: numOpt(cfg.big_file_kb, 100),
+    contextNudgeKb: numOpt(cfg.context_nudge_kb, 400),
   };
 }
 // Adds our hook entries, drops our stale ones, and leaves every other hook untouched.
@@ -377,6 +382,24 @@ function mergeHooks(settings, desired) {
     if (!list.some((g) => Array.isArray(g.hooks) && g.hooks.some((h) => h.command === cmd))) list.push({ matcher: d.matcher, hooks: [{ type: 'command', command: cmd }] });
   }
   if (Object.keys(hooks).length) settings.hooks = hooks; else delete settings.hooks;
+}
+
+// model_profile: which model each agent runs on. 'balanced' keeps the model written in the agent file.
+const MODEL_PROFILES = {
+  economy: { main: 'sonnet', agents: { '*': 'sonnet', 'git-manager': 'haiku' } },
+  balanced: { main: 'sonnet', agents: {} },
+  quality: { main: 'opus', agents: { architect: 'opus', planner: 'opus', debugger: 'opus', 'security-reviewer': 'opus' } },
+};
+function applyModelProfile(name, text, profile) {
+  const rule = MODEL_PROFILES[profile].agents;
+  const model = rule[name] || rule['*'];
+  if (!model) return text;
+  const nl = text.includes('\r\n') ? '\r\n' : '\n';
+  const fmEnd = text.indexOf(nl + '---', 3);
+  if (!text.startsWith('---') || fmEnd < 0) return text;
+  let fm = text.slice(0, fmEnd);
+  fm = /^model:.*$/m.test(fm) ? fm.replace(/^model:.*$/m, `model: ${model}`) : fm + nl + `model: ${model}`;
+  return fm + text.slice(fmEnd);
 }
 
 function skillRouting(d) {
@@ -434,6 +457,8 @@ function main() {
   if (!(cfg.branches && cfg.branches.working && cfg.branches.production)) errors.push('missing required keys: branches.working and branches.production');
   const TYPES = Object.keys(JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8')).types);
   if (cfg.type && !TYPES.includes(cfg.type)) errors.push(`type must be ${TYPES.join(' | ')} (got "${cfg.type}")`);
+  if (cfg.model_profile !== undefined && !Object.keys(MODEL_PROFILES).includes(String(cfg.model_profile))) errors.push(`model_profile must be ${Object.keys(MODEL_PROFILES).join(' | ')} (got "${cfg.model_profile}")`);
+  for (const k of ['token_budget', 'big_file_kb', 'context_nudge_kb']) if (cfg[k] !== undefined && cfg[k] !== '' && !(Number.isFinite(Number(cfg[k])) && Number(cfg[k]) >= 0)) errors.push(`${k} must be a number >= 0 (got "${cfg[k]}")`);
   if (cfg.run_in_docker && !(cfg.docker && cfg.docker.service)) errors.push('run_in_docker is true but docker.service is missing');
   if (errors.length) { console.error('✖ Config problems:\n' + errors.map((e) => '  - ' + e).join('\n')); process.exit(1); }
 
@@ -443,6 +468,7 @@ function main() {
   // 1. core (generic, always overwritten from the template)
   // skills_mode: all (default) installs every skill; focused installs only the ones routed for this type/stack.
   const focused = cfg.skills_mode === 'focused';
+  const profile = String(cfg.model_profile || 'balanced');
   const wanted = (rel) => !focused || ctx.routed_set.has(rel.split(path.sep)[0]);
   if (ctx.unmatched_stack.length) console.warn(`⚠ stack token(s) matched no skill: ${ctx.unmatched_stack.join(', ')} (check spelling, or map them in core/skill-map.json)`);
   for (const sub of ['skills', 'agents', 'rules']) {
@@ -450,7 +476,8 @@ function main() {
     for (const f of walk(base)) {
       const rel = path.relative(base, f);
       if (sub === 'skills' && !wanted(rel)) continue;
-      put(path.join(TARGET, '.claude', sub, rel), fs.readFileSync(f));
+      const buf = sub === 'agents' ? Buffer.from(applyModelProfile(rel.replace(/.md$/i, ''), fs.readFileSync(f, 'utf8'), profile)) : fs.readFileSync(f);
+      put(path.join(TARGET, '.claude', sub, rel), buf);
     }
   }
   // 1b. hooks (only the scripts this config needs, plus their shared lib and config)
@@ -491,7 +518,7 @@ function main() {
   if (fs.existsSync(settingsPath)) { try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch { settingsOk = false; console.warn('⚠ .claude/settings.json is not valid JSON; left untouched.'); } }
   if (settingsOk) {
     settings.$schema = settings.$schema || 'https://json.schemastore.org/claude-code-settings.json';
-    settings.model = settings.model || cfg.model || 'sonnet';
+    settings.model = settings.model || cfg.model || MODEL_PROFILES[profile].main;
     settings.permissions = settings.permissions || {};
     const deny = denyRules(cfg, ctx);
     if (deny.length) settings.permissions.deny = [...new Set([...(settings.permissions.deny || []), ...deny])];
@@ -555,21 +582,42 @@ function main() {
   console.log(`${stats.created} created, ${stats.updated} updated, ${stats.same} unchanged.`);
   if (stats.updated && !DRY) console.log(`Previous versions of updated files were saved in .claude/.init-backup/${ts}/ (add it to .gitignore).`);
   if (problems.length) { console.error('✖ Checks failed:\n' + problems.map((p) => '  - ' + p).join('\n')); process.exit(1); }
-  // skill description overhead: every installed skill's description is loaded into each session
+  // Always-loaded context: what every session pays before the first prompt. Descriptions of model-invocable skills count;
+  // manual-only skills (disable-model-invocation: true) are not listed to the model, so they cost nothing.
   const tplSkills = new Set(fs.readdirSync(path.join(tbase, '.claude', 'skills')));
-  const descTokens = (names) => Math.round(names.reduce((n, name) => {
+  const frontmatter = (f) => { const m = fs.readFileSync(f, 'utf8').match(/^---\r?\n([\s\S]*?)\r?\n---/); return m ? m[1] : ''; };
+  const skillMeta = (name) => {
     for (const dir of [path.join(HERE, 'core', 'skills'), path.join(tbase, '.claude', 'skills')]) {
       const f = path.join(dir, name, 'SKILL.md');
-      if (fs.existsSync(f)) { const m = fs.readFileSync(f, 'utf8').match(/^description:s*(.*)$/m); return n + name.length + (m ? m[1].length : 0); }
+      if (!fs.existsSync(f)) continue;
+      const fm = frontmatter(f);
+      const d = fm.match(/^description:\s*(.*)$/m);
+      return { manual: /^disable-model-invocation:\s*true/m.test(fm), chars: name.length + (d ? d[1].length : 0) };
     }
-    return n;
-  }, 0) / 4);
+    return { manual: true, chars: 0 };
+  };
+  const descTokens = (names) => Math.round(names.reduce((n, name) => { const m = skillMeta(name); return n + (m.manual ? 0 : m.chars); }, 0) / 4);
   const nowTok = descTokens(skillNames);
-  console.log(`Skills: ${skillNames.length} installed (~${nowTok} tokens of descriptions in every session).`);
+  const invocable = skillNames.filter((n) => !skillMeta(n).manual).length;
+  console.log(`Skills: ${skillNames.length} installed, ${invocable} model-invocable (~${nowTok} tokens of descriptions in every session).`);
   if (!focused) {
     const fNames = skillNames.filter((n) => ctx.routed_set.has(n) || tplSkills.has(n));
     const fTok = descTokens(fNames);
     if (fNames.length < skillNames.length) console.log(`  skills_mode: focused would install ${fNames.length} (~${fTok} tokens, saves ~${nowTok - fTok}).`);
+  }
+  if (!DRY) {
+    const claudeDir = path.join(TARGET, '.claude');
+    const size = (f) => (fs.existsSync(f) ? fs.statSync(f).size : 0);
+    const mdIn = (d) => (fs.existsSync(d) ? fs.readdirSync(d).filter((f) => f.endsWith('.md')).map((f) => path.join(d, f)) : []);
+    const instrTok = Math.round([path.join(TARGET, 'CLAUDE.md'), path.join(claudeDir, 'CLAUDE.md')].reduce((n, f) => n + size(f), 0) / 4);
+    const rulesTok = Math.round(mdIn(path.join(claudeDir, 'rules')).reduce((n, f) => n + size(f), 0) / 4);
+    const skillsDir = path.join(claudeDir, 'skills');
+    const skillsTok = descTokens(fs.existsSync(skillsDir) ? fs.readdirSync(skillsDir) : []);
+    const agentsTok = Math.round(mdIn(path.join(claudeDir, 'agents')).reduce((n, f) => { const d = frontmatter(f).match(/^description:\s*(.*)$/m); return n + path.basename(f).length + (d ? d[1].length : 0); }, 0) / 4);
+    const total = instrTok + rulesTok + skillsTok + agentsTok;
+    console.log(`Always-loaded context: ~${total} tokens (instructions ~${instrTok}, rules ~${rulesTok}, skill descriptions ~${skillsTok}, agent descriptions ~${agentsTok}).`);
+    const budget = numOpt(cfg.token_budget, 0);
+    if (budget > 0 && total > budget) console.warn(`⚠ always-loaded context (~${total} tokens) is over token_budget (${budget}). Try skills_mode: focused, fewer rules, or shorter notes.`);
   }
   console.log('✔ Done. Checks passed (no placeholders left, no forbidden terms).');
 }
