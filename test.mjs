@@ -505,6 +505,55 @@ check(/skills_mode: focused/.test(draft), 'scaffold drafts skills_mode: focused'
 check(run(go).status === 0, 'init accepts the scaffolded go config');
 check(fs.existsSync(path.join(go, '.claude/skills/go-development/SKILL.md')) && /`go-development`/.test(fs.readFileSync(path.join(go, '.claude/CLAUDE.md'), 'utf8')), 'go project routes to go-development');
 
+console.log('\n[vscode settings]');
+{
+  const git = (d, ...a) => spawnSync('git', a, { cwd: d, encoding: 'utf8' });
+  const mk = (name, extraCfg = '', gi = '.vscode/\n') => {
+    const d = path.join(base, name);
+    fs.mkdirSync(d, { recursive: true });
+    git(d, 'init', '-q');
+    fs.writeFileSync(path.join(d, '.gitignore'), gi);
+    fs.writeFileSync(path.join(d, 'project.config.yml'), `name: V\ntype: other\nstack: [go]\nbranches: {working: a, production: main}\n${extraCfg}`);
+    return d;
+  };
+  const sp = (d) => path.join(d, '.vscode/settings.json');
+  const rd = (d) => fs.readFileSync(sp(d), 'utf8');
+  const a = mk('vs-new');
+  const r1 = run(a);
+  const j = JSON.parse(rd(a));
+  check(r1.status === 0 && j['search.useIgnoreFiles'] === false && j['search.useParentIgnoreFiles'] === false && j['search.exclude']['**/.claude/.init-backup'] === true, 'creates .vscode/settings.json when .vscode/ is git-ignored');
+  const before = rd(a);
+  check(run(a).stdout.includes('0 created, 0 updated') && rd(a) === before, 'vscode settings are idempotent');
+
+  const b = mk('vs-merge');
+  fs.mkdirSync(path.join(b, '.vscode'));
+  fs.writeFileSync(sp(b), '{\r\n  "editor.tabSize": 2,\r\n  "search.useIgnoreFiles": true,\r\n  "search.exclude": { "**/dist": true }\r\n}\r\n');
+  run(b);
+  const jb = JSON.parse(rd(b));
+  check(jb['search.useIgnoreFiles'] === true && jb['search.useParentIgnoreFiles'] === false && jb['editor.tabSize'] === 2 && jb['search.exclude']['**/dist'] === true && jb['search.exclude']['**/.claude/.init-backup'] === true, 'merge adds missing keys and never overwrites user values');
+  check(/\r\n/.test(rd(b)) && !/[^\r]\n/.test(rd(b)), 'merge preserves CRLF line endings');
+
+  const c = mk('vs-jsonc');
+  fs.mkdirSync(path.join(c, '.vscode'));
+  fs.writeFileSync(sp(c), '{\n  // keep me\n  "editor.tabSize": 4, /* note */\n}\n');
+  run(c);
+  const tc = rd(c);
+  check(tc.includes('// keep me') && tc.includes('/* note */') && JSON.parse(tc.replace(/\/\/.*|\/\*.*?\*\//g, '').replace(/,(\s*})/g, '$1'))['search.useIgnoreFiles'] === false, 'JSONC file keeps comments and gets the missing keys');
+
+  const n = mk('vs-notignored', '', 'node_modules/\n');
+  const rn = run(n);
+  check(rn.status === 0 && !fs.existsSync(sp(n)) && /not git-ignored/.test(rn.stdout), 'does not write when .vscode/ is not git-ignored (warns instead)');
+
+  const o = mk('vs-optout', 'vscode_settings: false\n');
+  check(run(o).status === 0 && !fs.existsSync(sp(o)), 'vscode_settings: false skips the file');
+
+  const bad = mk('vs-bad');
+  fs.mkdirSync(path.join(bad, '.vscode'));
+  fs.writeFileSync(sp(bad), '{ not json');
+  const rb = run(bad);
+  check(rb.status === 0 && rd(bad) === '{ not json' && /could not be parsed/.test(rb.stdout), 'unparseable settings file is left untouched with a warning');
+}
+
 console.log('\n[invalid config]');
 const inv = path.join(base, 'invalid');
 fs.mkdirSync(inv, { recursive: true });

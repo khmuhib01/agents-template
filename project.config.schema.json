@@ -278,6 +278,10 @@
         "additionalProperties": false
       }
     },
+    "vscode_settings": {
+      "type": "boolean",
+      "description": "Default true: add search.useIgnoreFiles=false (and friends) to .vscode/settings.json so the VS Code \"@\" picker finds git-ignored generated files. Only written when .vscode/ is git-ignored; never overwrites your values. false = skip."
+    },
     "statusline": {
       "type": "boolean",
       "description": "Opt-in: install a status line (model, folder, branch, context %, cost). Never replaces a status line you set yourself."

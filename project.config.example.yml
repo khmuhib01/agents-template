@@ -65,7 +65,8 @@ model_profile: balanced       # balanced (default: agent files as written) | eco
 token_budget: 0               # 0 = off; init warns when always-loaded context (instructions + rules + skill/agent descriptions) is over this many tokens
 big_file_kb: 100              # guard-read hook: block whole-file reads above this size (and large lockfiles); 0 disables
 context_nudge_kb: 400         # context-nudge hook: warn the user when the session transcript passes this size; 0 disables
-statusline: false             # opt-in: status line with model, folder, branch, context % and cost (never replaces your own statusLine)
+vscode_settings: true         # add search.useIgnoreFiles=false to .vscode/settings.json (only if .vscode/ is git-ignored) so the VS Code "@" picker finds generated files
+statusline: false           # opt-in: status line with model, folder, branch, context % and cost (never replaces your own statusLine)
 session_context: false        # opt-in: SessionStart hook injecting git branch/status/last commits (saves a tool call, costs a few hundred tokens)
 mcp_allow: []                 # only these .mcp.json servers are enabled, e.g. [github, postgres]
 mcp_deny: []                  # deny every tool of these MCP servers, e.g. [slack]

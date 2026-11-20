@@ -660,6 +660,87 @@ function main() {
     }
   }
 
+  // Blank out comments and trailing commas (same length, so offsets still match the raw text) to read JSONC settings files.
+  function blankJsonc(raw) {
+    let out = ''; let i = 0;
+    while (i < raw.length) {
+      const c = raw[i]; const n = raw[i + 1];
+      if (c === '"') {
+        let j = i + 1;
+        while (j < raw.length && raw[j] !== '"') j += raw[j] === '\\' ? 2 : 1;
+        out += raw.slice(i, j + 1); i = j + 1;
+      } else if (c === '/' && n === '/') {
+        while (i < raw.length && raw[i] !== '\n' && raw[i] !== '\r') { out += ' '; i++; }
+      } else if (c === '/' && n === '*') {
+        const end = raw.indexOf('*/', i + 2); const stop = end === -1 ? raw.length : end + 2;
+        out += raw.slice(i, stop).replace(/[^\r\n]/g, ' '); i = stop;
+      } else { out += c; i++; }
+    }
+    return out.replace(/,(\s*[}\]])/g, (_, t) => ' ' + t);
+  }
+
+  function applyVscodeSettings() {
+    const WANT = { 'search.useIgnoreFiles': false, 'search.useParentIgnoreFiles': false };
+    const EXCLUDE_KEY = 'search.exclude'; const EXCLUDE_SUB = '**/.claude/.init-backup';
+    const rel = '.vscode/settings.json';
+    const sp = path.join(TARGET, '.vscode', 'settings.json');
+    const manual = `Set ${Object.keys(WANT).join(' and ')} to false (and exclude **/.claude/.init-backup from search) in your VS Code settings yourself.`;
+    // 0 = ignored, 1 = not ignored, 128 = not a git repository (nothing can be committed, so it is safe to write).
+    let code = 0;
+    try { execSync(`git check-ignore -q ${rel}`, { cwd: TARGET, stdio: 'ignore' }); } catch (e) { code = e.status ?? 1; }
+    if (code === 1) return { status: 'skipped', message: `⚠ ${rel} not written: .vscode/ is not git-ignored, so these settings would be committed and change teammates' editors. Ignore .vscode/ or ${manual}  (vscode_settings: false silences this.)` };
+
+    const exists = fs.existsSync(sp);
+    const raw = exists ? fs.readFileSync(sp, 'utf8').replace(/^﻿/, '') : '';
+    const eol = raw.includes('\r\n') ? '\r\n' : '\n';
+    let cur = {};
+    if (exists && raw.trim()) {
+      try { cur = JSON.parse(blankJsonc(raw)); } catch { return { status: 'skipped', message: `⚠ ${rel} could not be parsed; left untouched. ${manual}` }; }
+      if (!cur || typeof cur !== 'object' || Array.isArray(cur)) return { status: 'skipped', message: `⚠ ${rel} is not a JSON object; left untouched. ${manual}` };
+    }
+    const addTop = Object.entries(WANT).filter(([k]) => !(k in cur));
+    const ex = cur[EXCLUDE_KEY];
+    const exObject = ex && typeof ex === 'object' && !Array.isArray(ex);
+    const needExcludeKey = !(EXCLUDE_KEY in cur);
+    const needExcludeSub = exObject && !(EXCLUDE_SUB in ex);
+    if (!addTop.length && !needExcludeKey && !needExcludeSub) return { status: 'unchanged' };
+
+    let strict = true;
+    try { JSON.parse(raw || '{}'); } catch { strict = false; }
+    let text; let note = '';
+    if (!exists || !raw.trim() || strict) {
+      const next = { ...cur };
+      for (const [k, v] of addTop) next[k] = v;
+      if (needExcludeKey) next[EXCLUDE_KEY] = { [EXCLUDE_SUB]: true };
+      else if (needExcludeSub) next[EXCLUDE_KEY] = { ...ex, [EXCLUDE_SUB]: true };
+      const indent = (raw.match(/^([ \t]+)"/m) || [, '  '])[1];
+      text = JSON.stringify(next, null, indent).replace(/\n/g, eol) + eol;
+    } else {
+      // The file has comments or trailing commas: insert only missing top-level keys as text so nothing else is touched.
+      const entries = [...addTop.map(([k, v]) => `"${k}": ${v}`)];
+      if (needExcludeKey) entries.push(`"${EXCLUDE_KEY}": { "${EXCLUDE_SUB}": true }`);
+      if (needExcludeSub) note = ` ("${EXCLUDE_KEY}" has comments, so add "${EXCLUDE_SUB}": true to it yourself)`;
+      if (!entries.length) return { status: 'skipped', message: `⚠ ${rel} contains comments; add "${EXCLUDE_SUB}": true to "${EXCLUDE_KEY}" yourself.` };
+      const blank = blankJsonc(raw);
+      const close = blank.lastIndexOf('}');
+      let p = close - 1; while (p >= 0 && /\s/.test(blank[p])) p--;
+      const indent = (raw.match(/^([ \t]+)"/m) || [, '  '])[1];
+      const body = entries.map((e) => indent + e).join(',' + eol);
+      const comma = blank[p] === '{' || blank[p] === ',' ? '' : ',';
+      text = raw.slice(0, p + 1) + comma + eol + body + raw.slice(p + 1);
+    }
+    if (!DRY) { fs.mkdirSync(path.dirname(sp), { recursive: true }); fs.writeFileSync(sp, text); }
+    return { status: exists ? 'updated' : 'created', ignoreNote: note, message: `${exists ? 'Updated' : 'Created'} ${rel}: search includes git-ignored files so the "@" picker can find them. Reload Window to apply.${note}` };
+  }
+
+  // 3c. VS Code "@" picker: it is a file search that obeys .gitignore, so git-ignored generated files (.claude/agents, ...) are
+  // invisible. Add the minimal workspace settings that fix it. Only missing keys are added; user values are never changed.
+  const vscode = cfg.vscode_settings === false ? { status: 'off' } : applyVscodeSettings();
+  if (vscode.status === 'created') stats.created++;
+  else if (vscode.status === 'updated') stats.updated++;
+  else if (vscode.status === 'unchanged') stats.same++;
+  if (vscode.message) console.log(vscode.message);
+
   // 4. checks
   const problems = [];
   if (!DRY) {
@@ -678,12 +759,18 @@ function main() {
     }
     try {
       const gi = fs.readFileSync(path.join(TARGET, '.gitignore'), 'utf8');
-      if (/^\/?\.claude\/?\s*$/m.test(gi)) console.warn('⚠ .gitignore ignores .claude/ — remove that line if you want the config shared via git.');
+      if (/^\/?\.claude\/?\s*$/m.test(gi)) {
+        const fix = ['created', 'updated', 'unchanged'].includes(vscode.status)
+          ? 'init wrote search.useIgnoreFiles=false in .vscode/settings.json (Reload Window to apply)'
+          : 'set search.useIgnoreFiles=false in your VS Code settings (init did not write .vscode/settings.json)';
+        console.warn(`⚠ .gitignore ignores .claude/ — remove that line if you want the config shared via git.\n  The "@" picker will not list ignored files; ${fix}.`);
+      }
     } catch { /* no .gitignore */ }
   }
   if (missing.size) problems.push(`template uses undefined keys: ${[...missing].join(', ')}`);
 
   console.log(`${stats.created} created, ${stats.updated} updated, ${stats.same} unchanged.`);
+  console.log('"@" only mentions files. To run an agent, name it in chat or use /agents.');
   if (stats.updated && !DRY) console.log(`Previous versions of updated files were saved in .claude/.init-backup/${ts}/ (add it to .gitignore).`);
   if (kept.length) console.log(`Kept ${kept.length} file(s) you edited by hand (the template version differs): ${kept.join(', ')}\n  Merge from .claude/.init-backup/${ts}/<file>.template, or re-run with --force to overwrite them (a backup is made).`);
   if (problems.length) { console.error('✖ Checks failed:\n' + problems.map((p) => '  - ' + p).join('\n')); process.exit(1); }
