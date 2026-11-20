@@ -41,7 +41,9 @@
     ],
     "mobile": [
       "ui-ux-engineering",
-      "api-engineering"
+      "api-engineering",
+      "mobile-architecture",
+      "mobile-security"
     ],
     "fullstack": [
       "frontend-engineering",
@@ -195,8 +197,41 @@
     ],
     "ios": [
       "swift-development"
+    ],
+    "android": [
+      "android-kotlin-development"
+    ],
+    "compose": [
+      "android-kotlin-development"
+    ],
+    "jetpack": [
+      "android-kotlin-development"
+    ],
+    "swiftui": [
+      "swift-development"
     ]
   },
-  "deps": {},
+  "deps": {
+    "flutter-development": [
+      "mobile-architecture",
+      "mobile-security",
+      "mobile-release"
+    ],
+    "react-native-development": [
+      "mobile-architecture",
+      "mobile-security",
+      "mobile-release"
+    ],
+    "swift-development": [
+      "mobile-architecture",
+      "mobile-security",
+      "mobile-release"
+    ],
+    "android-kotlin-development": [
+      "mobile-architecture",
+      "mobile-security",
+      "mobile-release"
+    ]
+  },
   "domains": {}
 }

@@ -2,6 +2,13 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.13.0 - 2026-11-21
+
+- mobile (phase P2): new skills `android-kotlin-development`, `mobile-architecture`, `mobile-security`, `mobile-release`, each with `references/`; flutter, react-native and swift skills gain reference files (architecture, data/offline, native, performance/a11y, security, release)
+- routing: tokens `android`, `compose`, `jetpack`, `swiftui`; mobile framework skills depend on the three shared mobile skills; `type: mobile` adds mobile-architecture and mobile-security (expo sample: +219 always-loaded tokens, 3088 -> 3307)
+- evals: 23 mobile trigger cases (positive, negative, multi-skill); every skill has `references/SOURCES.md` with no verified sources yet, listing documentation names to verify
+- jvm-development description points Android projects to the new skill
+
 ## 1.12.0 - 2026-11-21
 
 - foundation for the skills expansion (no new skills yet; see docs/SKILLS-BLUEPRINT.md): `deps` in skill-map.json (transitive), optional `domains` config key, `lib/routing.mjs`

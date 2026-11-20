@@ -1,6 +1,6 @@
 ---
 name: swift-development
-description: "Use for Swift code: iOS/macOS apps (SwiftUI, UIKit), Swift Package Manager, Swift concurrency (async/await, actors), Xcode projects, and XCTest / Swift Testing. Detects Swift version and project type first."
+description: "Use for Swift code: iOS/macOS apps (SwiftUI, UIKit), SPM, Swift concurrency, SwiftData/Core Data, Keychain, push, Xcode builds, XCTest/Swift Testing, App Store builds. Detects Swift version and project type first."
 ---
 
 # Swift development
@@ -17,3 +17,13 @@ Detect first: Swift tools version (`Package.swift`) or Xcode project/workspace, 
 
 ## Verify
 SwiftLint if configured, then `swift build` / `swift test --filter Name` for packages, or `xcodebuild test -scheme <Scheme> -destination '<simulator>' -only-testing:<Target/Class>` for apps (narrowest first).
+
+## Read when
+| Concern | File |
+|---|---|
+| SwiftUI/UIKit, observation, architecture, concurrency, networking | [references/ui-architecture-concurrency.md](references/ui-architecture-concurrency.md) |
+| SwiftData/Core Data, Keychain, privacy manifests, data protection | [references/persistence-privacy.md](references/persistence-privacy.md) |
+| Push, background tasks, deep links, accessibility, localization | [references/background-push-a11y.md](references/background-push-a11y.md) |
+| Instruments, tests, build speed, signing, App Store release | [references/quality-release.md](references/quality-release.md) |
+
+Shared policy and checklists: `mobile-architecture`, `mobile-security`, `mobile-release`. APIs are gated by OS version: check the deployment target and Apple's documentation for it before using a newer API.

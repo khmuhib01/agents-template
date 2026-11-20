@@ -197,7 +197,7 @@ console.log('\n[catalog]');
   const coreSkills = fs.readdirSync(path.join(HERE, 'core', 'skills'));
   const tplSkills = fs.readdirSync(path.join(HERE, 'templates', '.claude', 'skills'));
   const known = new Set([...coreSkills, ...tplSkills]);
-  const referenced = new Set([...map.always, ...Object.values(map.types).flat(), ...Object.values(map.stack).flat()]);
+  const referenced = new Set([...map.always, ...Object.values(map.types).flat(), ...Object.values(map.stack).flat(), ...Object.values(map.deps || {}).flat(), ...Object.values(map.domains || {}).flat()]);
   const dangling = [...referenced].filter((s) => !known.has(s));
   check(dangling.length === 0, `skill-map.json references only existing skills${dangling.length ? ': ' + dangling.join(', ') : ''}`);
   const fm = (f) => { const m = fs.readFileSync(f, 'utf8').match(/^---\r?\n([\s\S]*?)\r?\n---/); const o = {}; if (m) for (const l of m[1].split(/\r?\n/)) { const i = l.indexOf(':'); if (i > 0) o[l.slice(0, i).trim()] = l.slice(i + 1).trim().replace(/^"|"$/g, ''); } return o; };
@@ -661,6 +661,28 @@ console.log('\n[skill lint]');
   fs.writeFileSync(path.join(base, 'domains-warn', 'project.config.yml'), 'name: D\ntype: web\nstack: [react]\ndomains: [nonexistent]\nbranches: {working: a, production: main}\n');
   const w = spawnSync(process.execPath, [INIT, '--target', path.join(base, 'domains-warn'), '--dry-run'], { encoding: 'utf8' });
   check(w.status === 0 && /domain\(s\) matched no skill: nonexistent/.test(w.stderr), 'unknown domains warn but do not fail');
+}
+
+}
+
+if (on('mobile routing')) {
+console.log('\n[mobile routing]');
+{
+  const mk = (name, body) => { const d = path.join(base, 'mob-' + name); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'project.config.yml'), `name: M\n${body}\nbranches: {working: a, integration: "", production: main}\n`); return d; };
+  const shared = ['mobile-architecture', 'mobile-security', 'mobile-release'];
+  const fixtures = { flutter: ['type: mobile\nstack: [flutter]', 'flutter-development'], expo: ['type: mobile\nstack: [expo, typescript]', 'react-native-development'], android: ['type: mobile\nstack: [android]', 'android-kotlin-development'], ios: ['type: mobile\nstack: [swiftui]', 'swift-development'] };
+  for (const [k, [body, main]] of Object.entries(fixtures)) {
+    const d = mk(k, body); const r = run(d);
+    const have = new Set(fs.readdirSync(path.join(d, '.claude/skills')));
+    check(r.status === 0 && have.has(main) && shared.every((s) => have.has(s)), `${k}: installs ${main} plus the shared mobile skills`);
+    check(fs.existsSync(path.join(d, '.claude/skills', main, 'references')) && !fs.existsSync(path.join(d, '.claude/skills', main, 'evals')), `${k}: references are installed, evals are not`);
+    check(/0 created, 0 updated/.test(run(d).stdout), `${k}: re-run is idempotent`);
+  }
+  const web = mk('web', 'type: web\nstack: [laravel]'); run(web);
+  check(!fs.readdirSync(path.join(web, '.claude/skills')).some((s) => s.startsWith('mobile-') || s === 'android-kotlin-development'), 'web/laravel project gets no mobile skills');
+  const bare = mk('bare', 'type: mobile\nstack: [cobol]'); run(bare);
+  const hb = new Set(fs.readdirSync(path.join(bare, '.claude/skills')));
+  check(hb.has('mobile-architecture') && hb.has('mobile-security') && !hb.has('mobile-release'), 'mobile type with unmapped stack still gets architecture + security guidance');
 }
 
 }

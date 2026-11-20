@@ -1,6 +1,6 @@
 ---
 name: jvm-development
-description: "Use for Java and Kotlin code on the JVM: Spring Boot, Maven/Gradle builds, JPA/Hibernate, coroutines, JUnit 5 and Kotest. Detects JDK version, build tool and framework first."
+description: "Use for Java and Kotlin code on the JVM: Spring Boot, Maven/Gradle builds, JPA/Hibernate, coroutines, JUnit 5 and Kotest. Detects JDK version, build tool and framework first. Not for Android apps (android-kotlin-development)."
 ---
 
 # Java / Kotlin (JVM) development
