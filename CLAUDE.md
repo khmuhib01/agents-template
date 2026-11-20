@@ -17,7 +17,7 @@ node init.mjs --scaffold --target <dir>          # draft project.config.yml from
 node install-global.mjs [--antigravity|--all] [--dry-run]  # install global-skills/ into ~/.claude/skills
 ```
 
-There is no single-test runner: `test.mjs` is one script with named cases (`laravel-docker`, `mobile-no-docker`, `focused-skills`, a `forbid` case, an invalid-config case). To iterate on one, run `init.mjs --dry-run` against a temp dir with a config copied from that case.
+`node test.mjs --list` prints the section/case names; `node test.mjs --only <text>[,<text>]` runs only those whose name contains the text (e.g. `--only vscode`, `--only laravel-docker`).
 
 ## Architecture
 
