@@ -1,6 +1,7 @@
 ---
 name: commit
 description: Inspects working tree changes, stages relevant files safely, writes a Conventional Commit message, and creates a local Git commit. Triggered by /commit or requests to commit changes.
+disable-model-invocation: true
 ---
 
 # Git Commit Skill

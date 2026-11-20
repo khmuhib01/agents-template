@@ -1,6 +1,7 @@
 ---
 name: push
 description: Pushes the current branch to origin with upstream tracking and protects the production branch. Triggered by /push or requests to push code.
+disable-model-invocation: true
 ---
 
 # Git Push Skill

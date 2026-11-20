@@ -1,0 +1,13 @@
+{
+  "name": "agents-template",
+  "owner": {
+    "name": "khmuhib01"
+  },
+  "plugins": [
+    {
+      "name": "agents-template",
+      "source": "./",
+      "description": "Project setup generator: one config file -> AGENTS.md, CLAUDE.md and .claude/ for Claude Code, Codex and Antigravity."
+    }
+  ]
+}

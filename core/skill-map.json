@@ -22,7 +22,10 @@
     "technical-debt",
     "dependency-management",
     "system-design",
-    "performance-engineering"
+    "performance-engineering",
+    "deploy",
+    "framework-upgrade",
+    "project-init"
   ],
   "types": {
     "web": [

@@ -1,0 +1,305 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "claude-template project.config.yml",
+  "description": "Config read by init.mjs. Editors with a YAML language server can validate and autocomplete it via a '# yaml-language-server: $schema=...' comment on the first line. init.mjs also uses the property list to warn about unknown (mistyped) keys.",
+  "type": "object",
+  "required": [
+    "name",
+    "type",
+    "stack",
+    "branches"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Project name."
+    },
+    "description": {
+      "type": "string",
+      "description": "One sentence about the project."
+    },
+    "url": {
+      "type": "string",
+      "description": "Production or docs URL (optional)."
+    },
+    "type": {
+      "enum": [
+        "web",
+        "api",
+        "mobile",
+        "fullstack",
+        "cli",
+        "library",
+        "other"
+      ],
+      "description": "Project type; drives skill routing."
+    },
+    "stack": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "Free tokens matched against core/skill-map.json (laravel, react, python, ...)."
+    },
+    "package_manager": {
+      "type": "string",
+      "description": "composer, npm, pnpm, yarn, pip, uv, ..."
+    },
+    "run_in_docker": {
+      "type": "boolean",
+      "description": "Run project commands inside a container."
+    },
+    "docker": {
+      "type": "object",
+      "description": "Required when run_in_docker is true.",
+      "properties": {
+        "dir": {
+          "type": "string",
+          "description": "Folder holding docker-compose.yml."
+        },
+        "service": {
+          "type": "string",
+          "description": "Service to exec into."
+        },
+        "workdir_note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "test_command": {
+      "type": "string",
+      "description": "Leave empty if the project has no tests."
+    },
+    "branches": {
+      "type": "object",
+      "required": [
+        "working",
+        "production"
+      ],
+      "properties": {
+        "working": {
+          "type": "string",
+          "description": "Your day-to-day branch."
+        },
+        "integration": {
+          "type": "string",
+          "description": "Empty string if you merge straight to production."
+        },
+        "production": {
+          "type": "string",
+          "description": "Protected branch."
+        }
+      },
+      "additionalProperties": false
+    },
+    "deploy": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "manual",
+            "ci"
+          ]
+        },
+        "scope": {
+          "type": "string",
+          "description": "The only server path that may be touched."
+        },
+        "target": {
+          "type": "string"
+        },
+        "needs_approval": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "commit_attribution": {
+      "type": "boolean",
+      "description": "false: never add Co-Authored-By / Generated-with lines (also enforced by the guard-bash hook)."
+    },
+    "docs_language": {
+      "type": "string"
+    },
+    "docs_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tracked docs that /doc-sync may update."
+    },
+    "layout": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "'path/: what it is' lines."
+    },
+    "local_only": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Git-ignored paths that must never be committed or read."
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Project-specific rules in plain words."
+    },
+    "model": {
+      "type": "string",
+      "description": "Default model written to settings.json (overrides model_profile)."
+    },
+    "model_profile": {
+      "enum": [
+        "economy",
+        "balanced",
+        "quality"
+      ],
+      "description": "Which model each agent runs on."
+    },
+    "deny_heavy": {
+      "type": "boolean",
+      "description": "Deny Read on vendor/, node_modules/, dist/, logs, minified and map files."
+    },
+    "allow_safe_commands": {
+      "type": "boolean",
+      "description": "git status/diff/log and the test command run without a prompt."
+    },
+    "protect_secrets": {
+      "type": "boolean",
+      "description": "Deny Read on .env and local_only paths; installs the guard-secrets hook."
+    },
+    "skills_mode": {
+      "enum": [
+        "all",
+        "focused"
+      ],
+      "description": "focused installs only skills routed for this type/stack."
+    },
+    "token_budget": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "0 = off. init warns when the always-loaded context is over this many tokens."
+    },
+    "forbid": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Words that must not appear in generated files."
+    },
+    "agents_mirror": {
+      "type": "boolean",
+      "description": ".agents/ links for Antigravity/Gemini and Codex."
+    },
+    "codex_mirror": {
+      "type": "boolean",
+      "description": ".codex/ links for Codex."
+    },
+    "hooks": {
+      "type": "boolean",
+      "description": "Install .claude/hooks and register them in settings.json."
+    },
+    "format_command": {
+      "type": "string",
+      "description": "Run after every Write/Edit with the file path appended."
+    },
+    "big_file_kb": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "guard-read: block whole-file reads above this size; 0 disables."
+    },
+    "context_nudge_kb": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "context-nudge: warn when the transcript passes this size; 0 disables."
+    },
+    "packages": {
+      "type": "object",
+      "description": "Monorepo: name -> package. init writes a small CLAUDE.md into each package folder and routes skills for the union of all stacks. The folder must already exist.",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "path"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Relative folder inside the project, e.g. apps/web."
+          },
+          "type": {
+            "enum": [
+              "web",
+              "api",
+              "mobile",
+              "fullstack",
+              "cli",
+              "library",
+              "other"
+            ],
+            "description": "Defaults to the root type."
+          },
+          "stack": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "test_command": {
+            "type": "string",
+            "description": "Run from the repo root (the docker exec prefix is added when run_in_docker is true)."
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "statusline": {
+      "type": "boolean",
+      "description": "Opt-in: install a status line (model, folder, branch, context %, cost). Never replaces a status line you set yourself."
+    },
+    "session_context": {
+      "type": "boolean",
+      "description": "Opt-in: SessionStart hook that gives Claude the git branch/status/last commits up front (saves a tool call; adds a few hundred tokens)."
+    },
+    "mcp_allow": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Only these .mcp.json servers are enabled (enabledMcpjsonServers; enableAllProjectMcpServers false)."
+    },
+    "mcp_deny": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Deny every tool of these MCP servers (permissions.deny mcp__<name>)."
+    }
+  },
+  "additionalProperties": false
+}

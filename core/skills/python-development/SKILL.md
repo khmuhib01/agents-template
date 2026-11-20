@@ -18,5 +18,15 @@ Detect first: Python version (`.python-version`, `pyproject.toml`), dependency t
 - Flask: app factory, blueprints, config objects.
 - Scripts and data: stream large files instead of loading them whole; never `eval` or unpickle untrusted data; `subprocess` with list args and no `shell=True` on user input.
 
+## Common pitfalls
+- Mutable default arguments (`def f(x=[])`) are shared between calls; use `None` and create inside. Closures in loops bind late.
+- Bare `except:` or a broad `except Exception: pass` hides real failures; catch the specific error and log or re-raise.
+- Datetimes: keep them timezone-aware (`datetime.now(timezone.utc)`); `utcnow()` is deprecated since 3.12. Pass `encoding="utf-8"` to `open()` (Windows defaults differ).
+- Async: a blocking call inside `async def` stalls the whole loop (use `asyncio.to_thread` or an async library); a missing `await` only produces a "coroutine was never awaited" warning.
+- FastAPI: plain `def` endpoints run in a threadpool, `async def` on the event loop. Use `response_model` so extra fields never leak. Pydantic v1 and v2 differ (`model_validate`/`model_dump` vs `parse_obj`/`dict`): check the installed major.
+- Django: fix N+1 with `select_related`/`prefetch_related`; use `F()` and `transaction.atomic` for concurrent updates; never edit an applied migration.
+- Do not `pip install` into the global interpreter; use the project's venv or `uv`, and respect `requires-python`.
+- pytest: use fixtures and `tmp_path`/`monkeypatch`, `parametrize` for tables, and no shared mutable state between tests.
+
 ## Verify
 Formatter, linter, type checker, then `pytest -q` (narrowest first).

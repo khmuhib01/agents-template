@@ -2,8 +2,11 @@
 // claude-template init — reads project.config.yml and generates AGENTS.md, CLAUDE.md and .claude/ for a project.
 // Zero dependencies. Usage:
 //   node init.mjs [--target DIR] [--config FILE] [--dry-run]   generate / update (safe to re-run)
+//   node init.mjs --check [--target DIR]                       exit 1 if generated files are out of date (CI); writes nothing
+//   node init.mjs --force                                      overwrite files you edited by hand (a backup is made)
 //   node init.mjs --scaffold [--target DIR]                    write a draft project.config.yml from detected stack
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -21,7 +24,9 @@ if (has('--help') || has('-h')) {
 const TEMPLATE_VERSION = fs.readFileSync(path.join(HERE, 'VERSION'), 'utf8').trim();
 const TARGET = path.resolve(opt('--target', process.cwd()));
 const CONFIG = path.resolve(opt('--config', path.join(TARGET, 'project.config.yml')));
-const DRY = has('--dry-run');
+const CHECK = has('--check');
+const FORCE = has('--force');
+const DRY = has('--dry-run') || CHECK;
 
 // ---------------------------------------------------------------- YAML subset
 function stripComment(line) {
@@ -47,45 +52,81 @@ function splitTop(s) {
   if (cur.trim() !== '') out.push(cur);
   return out.map((x) => x.trim()).filter((x) => x !== '');
 }
-function scalar(s) {
+function yerr(no, msg) { return new Error(`line ${no}: ${msg}`); }
+function scalar(s, no) {
   s = s.trim();
   if (s === '') return '';
-  if ((s[0] === '"' && s.endsWith('"') && s.length > 1) || (s[0] === "'" && s.endsWith("'") && s.length > 1)) return s.slice(1, -1);
+  const c = s[0];
+  if (c === '|' || c === '>') throw yerr(no, 'block scalars ("|" and ">") are not supported; use a quoted one-line string or a list');
+  if (c === '&' || c === '*' || c === '!') throw yerr(no, 'anchors, aliases and tags (&, *, !) are not supported; repeat the value instead');
+  if (c === '"' || c === "'") {
+    if (s.length < 2 || !s.endsWith(c)) throw yerr(no, `unterminated quoted string, or text after the closing quote: ${s}`);
+    return s.slice(1, -1);
+  }
   if (s === 'true') return true;
   if (s === 'false') return false;
   if (s === 'null' || s === '~') return '';
   if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s);
-  if (s[0] === '[' && s.endsWith(']')) return splitTop(s.slice(1, -1)).map(scalar);
-  if (s[0] === '{' && s.endsWith('}')) {
+  if (c === '[') {
+    if (!s.endsWith(']')) throw yerr(no, `unclosed "[" (multi-line lists are not supported; put it on one line or use "- item" lines): ${s}`);
+    return splitTop(s.slice(1, -1)).map((x) => scalar(x, no));
+  }
+  if (c === '{') {
+    if (!s.endsWith('}')) throw yerr(no, `unclosed "{" (multi-line maps are not supported; put it on one line or nest the keys): ${s}`);
     const o = {};
-    for (const part of splitTop(s.slice(1, -1))) { const i = part.indexOf(':'); o[part.slice(0, i).trim()] = scalar(part.slice(i + 1)); }
+    for (const part of splitTop(s.slice(1, -1))) {
+      const i = part.indexOf(':');
+      if (i <= 0) throw yerr(no, `inline map entries must look like "key: value", got "${part}"`);
+      o[part.slice(0, i).trim()] = scalar(part.slice(i + 1), no);
+    }
     return o;
   }
   return s;
 }
 function parseYaml(text) {
-  const lines = text.split(/\r?\n/).map(stripComment).filter((l) => l.trim() !== '')
-    .map((l) => ({ indent: l.match(/^ */)[0].length, text: l.trim() }));
+  const lines = [];
+  text.replace(/^﻿/, '').split(/\r?\n/).forEach((raw, i) => {
+    const no = i + 1;
+    const body = stripComment(raw);
+    if (body.trim() === '') return;
+    if (/^ *\t/.test(body)) throw yerr(no, 'tabs are not allowed for indentation; use spaces (2 per level)');
+    if (lines.length === 0 && body.trim() === '---') return;
+    lines.push({ no, indent: body.match(/^ */)[0].length, text: body.trim() });
+  });
   let pos = 0;
   const list = (indent) => {
     const arr = [];
-    while (pos < lines.length && lines[pos].indent === indent && lines[pos].text.startsWith('-')) { arr.push(scalar(lines[pos].text.slice(1))); pos++; }
+    while (pos < lines.length && lines[pos].indent === indent && lines[pos].text.startsWith('-')) {
+      const l = lines[pos];
+      const rest = l.text.slice(1).trim();
+      if (rest === '') throw yerr(l.no, 'empty list item; nested structures under "-" are not supported');
+      arr.push(scalar(rest, l.no)); pos++;
+    }
     return arr;
   };
   const map = (indent) => {
     const obj = {};
     while (pos < lines.length && lines[pos].indent === indent) {
-      const m = lines[pos].text.match(/^([A-Za-z0-9_.-]+):(?:\s+(.*))?$/);
-      if (!m) throw new Error(`Cannot parse line: "${lines[pos].text}"`);
+      const l = lines[pos];
+      const m = l.text.match(/^([A-Za-z0-9_.-]+):(?:\s+(.*))?$/);
+      if (!m) {
+        const hint = l.text.startsWith('-') ? 'unexpected list item (indent it under its key)' : l.text.startsWith('<<') ? 'merge keys ("<<") are not supported' : 'expected "key: value" (keys use letters, digits, _ . -; a space is required after ":")';
+        throw yerr(l.no, `cannot parse "${l.text}": ${hint}`);
+      }
+      if (Object.hasOwn(obj, m[1])) throw yerr(l.no, `duplicate key "${m[1]}"`);
       pos++;
-      if (m[2] !== undefined && m[2] !== '') obj[m[1]] = scalar(m[2]);
-      else if (pos < lines.length && lines[pos].indent > indent) obj[m[1]] = lines[pos].text.startsWith('-') ? list(lines[pos].indent) : map(lines[pos].indent);
+      const next = lines[pos];
+      if (m[2] !== undefined && m[2] !== '') obj[m[1]] = scalar(m[2], l.no);
+      else if (next && next.indent > indent) obj[m[1]] = next.text.startsWith('-') ? list(next.indent) : map(next.indent);
+      else if (next && next.indent === indent && next.text.startsWith('-')) obj[m[1]] = list(indent);
       else obj[m[1]] = '';
     }
-    if (pos < lines.length && lines[pos].indent > indent) throw new Error(`Bad indentation near: "${lines[pos].text}"`);
+    if (pos < lines.length && lines[pos].indent > indent) throw yerr(lines[pos].no, `bad indentation near "${lines[pos].text}"`);
     return obj;
   };
-  return lines.length ? map(lines[0].indent) : {};
+  const out = lines.length ? map(lines[0].indent) : {};
+  if (pos < lines.length) throw yerr(lines[pos].no, `inconsistent indentation near "${lines[pos].text}"`);
+  return out;
 }
 
 // ---------------------------------------------------------------- scaffold (detect stack)
@@ -162,7 +203,8 @@ function scaffold() {
   const type = [...stack].some((s) => ['expo', 'reactnative', 'flutter', 'ios'].includes(s)) ? 'mobile' : (hasLaravelOrApi && frontend) ? 'fullstack' : (hasLaravelOrApi && !stack.has('blade') && !stack.has('livewire') && !stack.has('inertia')) ? 'api' : frontend || stack.has('blade') ? 'web' : 'other';
   void backendOnly;
 
-  const yml = `# Draft generated by "init.mjs --scaffold". Review every line (marked TODO) before running init.
+  const yml = `# yaml-language-server: $schema=https://raw.githubusercontent.com/khmuhib01/agents-template/main/project.config.schema.json
+# Draft generated by "init.mjs --scaffold". Review every line (marked TODO) before running init.
 name: ${path.basename(TARGET)}        # TODO
 description: ""                       # TODO one sentence
 url: ""
@@ -201,6 +243,7 @@ local_only:
 notes:                                # TODO project-specific rules
   - ""
 
+skills_mode: focused                  # focused = only skills routed for this type/stack (fewer tokens); all = every skill
 forbid: []
 agents_mirror: true
 codex_mirror: true
@@ -233,6 +276,11 @@ function buildContext(c) {
   const d = { ...c };
   d.stack = toArr(c.stack);
   d.stack_list = d.stack.join(', ');
+  const rawPk = c.packages && typeof c.packages === 'object' && !Array.isArray(c.packages) ? c.packages : {};
+  d.packages = Object.entries(rawPk).map(([key, p]) => ({ key, path: String((p && p.path) || '').replace(/\\/g, '/').replace(/\/+$/, ''), stack: toArr(p && p.stack).map(String), type: String((p && p.type) || c.type), test_command: String((p && p.test_command) || ''), notes: toArr(p && p.notes).map(String) }));
+  d.packages = d.packages.filter((p) => { const ok = !p.path || fs.existsSync(path.join(TARGET, p.path)); if (!ok) console.warn(`⚠ packages.${p.key}: folder "${p.path}" does not exist; package ignored`); return ok; });
+  d.stack = [...new Set([...d.stack, ...d.packages.flatMap((p) => p.stack)])]; // routing and deny rules see every package's stack
+  d.packages_list = bullets(d.packages.map((p) => `\`${p.path}/\` (${p.stack.join(', ') || 'no stack'})${p.test_command ? `, tests: \`${p.test_command}\`` : ''}`));
   const b = c.branches || {};
   d.branch_flow = b.integration ? `${b.working} → ${b.integration} → ${b.production}` : `${b.working} → ${b.production}`;
 
@@ -304,12 +352,17 @@ function allowRules(ctx) {
 }
 
 // Hooks: scripts live in core/hooks and are copied to .claude/hooks; project values go in .claude/hooks/config.json.
-const HOOK_SCRIPTS = ['guard-bash', 'guard-secrets', 'format'];
+const HOOK_SCRIPTS = ['guard-bash', 'guard-secrets', 'guard-read', 'context-nudge', 'session-context', 'format'];
+const STATUSLINE_CMD = 'node "$CLAUDE_PROJECT_DIR/.claude/hooks/statusline.mjs"';
+const numOpt = (v, dflt) => (v === undefined || v === '' ? dflt : Number(v));
 const hookCommand = (script) => `node "$CLAUDE_PROJECT_DIR/.claude/hooks/${script}.mjs"`;
 function desiredHooks(cfg) {
   if (cfg.hooks === false) return [];
   const list = [{ event: 'PreToolUse', matcher: 'Bash', script: 'guard-bash' }];
   if (cfg.protect_secrets !== false) list.push({ event: 'PreToolUse', matcher: 'Write|Edit|MultiEdit|NotebookEdit', script: 'guard-secrets' });
+  if (numOpt(cfg.big_file_kb, 100) > 0) list.push({ event: 'PreToolUse', matcher: 'Read', script: 'guard-read' });
+  if (numOpt(cfg.context_nudge_kb, 400) > 0) list.push({ event: 'UserPromptSubmit', script: 'context-nudge' });
+  if (cfg.session_context === true) list.push({ event: 'SessionStart', matcher: 'startup|clear', script: 'session-context' });
   if (truthy(cfg.format_command)) list.push({ event: 'PostToolUse', matcher: 'Write|Edit|MultiEdit', script: 'format' });
   return list;
 }
@@ -320,7 +373,30 @@ function hooksConfig(cfg) {
     blockAttribution: !cfg.commit_attribution,
     localOnly: toArr(cfg.local_only).map(String),
     formatCommand: truthy(cfg.format_command) ? String(cfg.format_command) : '',
+    bigFileKb: numOpt(cfg.big_file_kb, 100),
+    contextNudgeKb: numOpt(cfg.context_nudge_kb, 400),
   };
+}
+// statusline: opt-in, never replaces a status line you configured yourself.
+function mergeStatusLine(settings, on) {
+  const ours = settings.statusLine && String(settings.statusLine.command || '').includes('.claude/hooks/statusline.mjs');
+  if (on) {
+    if (!settings.statusLine || ours) settings.statusLine = { type: 'command', command: STATUSLINE_CMD };
+    else console.warn('⚠ statusline: true, but settings.json already has a different statusLine; left unchanged.');
+  } else if (ours) delete settings.statusLine;
+}
+// MCP: mcp_allow limits which .mcp.json servers are enabled; mcp_deny blocks a server's tools. Both are additive.
+function mergeMcp(settings, cfg) {
+  const allow = toArr(cfg.mcp_allow).map(String);
+  const deny = toArr(cfg.mcp_deny).map(String);
+  if (allow.length) {
+    settings.enabledMcpjsonServers = [...new Set([...(settings.enabledMcpjsonServers || []), ...allow])];
+    if (settings.enableAllProjectMcpServers === undefined) settings.enableAllProjectMcpServers = false;
+  }
+  if (deny.length) {
+    settings.permissions = settings.permissions || {};
+    settings.permissions.deny = [...new Set([...(settings.permissions.deny || []), ...deny.map((n) => `mcp__${n}`)])];
+  }
 }
 // Adds our hook entries, drops our stale ones, and leaves every other hook untouched.
 function mergeHooks(settings, desired) {
@@ -342,18 +418,55 @@ function mergeHooks(settings, desired) {
   if (Object.keys(hooks).length) settings.hooks = hooks; else delete settings.hooks;
 }
 
+// model_profile: which model each agent runs on. 'balanced' keeps the model written in the agent file.
+const MODEL_PROFILES = {
+  economy: { main: 'sonnet', agents: { '*': 'sonnet', 'git-manager': 'haiku' } },
+  balanced: { main: 'sonnet', agents: {} },
+  quality: { main: 'opus', agents: { architect: 'opus', planner: 'opus', debugger: 'opus', 'security-reviewer': 'opus' } },
+};
+function applyModelProfile(name, text, profile) {
+  const rule = MODEL_PROFILES[profile].agents;
+  const model = rule[name] || rule['*'];
+  if (!model) return text;
+  const nl = text.includes('\r\n') ? '\r\n' : '\n';
+  const fmEnd = text.indexOf(nl + '---', 3);
+  if (!text.startsWith('---') || fmEnd < 0) return text;
+  let fm = text.slice(0, fmEnd);
+  fm = /^model:.*$/m.test(fm) ? fm.replace(/^model:.*$/m, `model: ${model}`) : fm + nl + `model: ${model}`;
+  return fm + text.slice(fmEnd);
+}
+
+// Typos in config keys are otherwise silently ignored. The JSON schema is the list of known keys.
+function warnUnknownKeys(cfg) {
+  let known;
+  try { known = Object.keys(JSON.parse(fs.readFileSync(path.join(HERE, 'project.config.schema.json'), 'utf8')).properties); } catch { return; }
+  const dist = (a, b) => { const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]); for (let j = 1; j <= b.length; j++) d[0][j] = j; for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; };
+  for (const k of Object.keys(cfg).filter((x) => !known.includes(x))) {
+    const near = known.map((n) => [n, dist(k, n)]).sort((x, y) => x[1] - y[1])[0];
+    console.warn(`⚠ unknown config key "${k}" is ignored${near && near[1] <= 3 ? ` (did you mean "${near[0]}"?)` : ''}`);
+  }
+}
+
+// Skills routed for a type + stack tokens (shared by the project-level routing and per-package CLAUDE.md files).
+function focusSkills(map, installed, type, stack) {
+  const focus = new Set(toArr(map.types[type]));
+  const unmatched = [];
+  for (const token of stack.map(norm)) {
+    let hit = false;
+    for (const [key, skills] of Object.entries(map.stack)) {
+      if (token === key || (token.startsWith(key) && /^(\d*|js)$/.test(token.slice(key.length)))) { skills.forEach((x) => focus.add(x)); hit = true; }
+    }
+    if (!hit) unmatched.push(token);
+  }
+  return { focus: new Set([...focus].filter((x) => installed.has(x))), unmatched };
+}
+const installedSkills = () => new Set([...fs.readdirSync(path.join(HERE, 'core', 'skills')), ...fs.readdirSync(path.join(HERE, 'templates', '.claude', 'skills'))]);
+
 function skillRouting(d) {
   const map = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));
   const installed = new Set([...fs.readdirSync(path.join(HERE, 'core', 'skills')), ...fs.readdirSync(path.join(HERE, 'templates', '.claude', 'skills'))]);
-  const focus = new Set(toArr(map.types[d.type]));
-  d.unmatched_stack = [];
-  for (const token of d.stack.map(norm)) {
-    let hit = false;
-    for (const [key, skills] of Object.entries(map.stack)) {
-      if (token === key || (token.startsWith(key) && /^(\d*|js)$/.test(token.slice(key.length)))) { skills.forEach((s) => focus.add(s)); hit = true; }
-    }
-    if (!hit) d.unmatched_stack.push(token);
-  }
+  const { focus, unmatched } = focusSkills(map, installed, d.type, d.stack);
+  d.unmatched_stack = unmatched;
   const always = map.always.filter((s) => installed.has(s));
   const focusList = [...focus].filter((s) => installed.has(s) && !always.includes(s));
   d.routed_set = new Set([...always, ...focusList]);
@@ -370,16 +483,36 @@ function skillRouting(d) {
 const stats = { created: 0, updated: 0, same: 0 };
 const ts = new Date().toISOString().replace(/[:.]/g, '-');
 const rendered = [];
+// Hand-edit protection: init records a hash of every generated file in HASH_FILE. If a file no longer matches the hash
+// init wrote last time, you edited it: keep your version (the new template version is saved next to the backups) unless --force.
+const HASH_FILE = '.claude/.template-hashes.json';
+const UNTRACKED = new Set(['.claude/settings.json', '.claude/CONFIGURATION.MANIFEST.JSON', '.claude/.template-version', '.claude/hooks/config.json', HASH_FILE]);
+const digest = (b) => crypto.createHash('sha256').update(Buffer.from(b).toString('utf8').replace(/\r/g, '')).digest('hex');
+let prevHashes = {};
+const newHashes = {};
+const kept = [];
 function put(dst, data, isRendered) {
   const rel = path.relative(TARGET, dst);
+  const key = rel.split(path.sep).join('/');
+  const track = !UNTRACKED.has(key);
   const buf = Buffer.from(data);
+  const h = digest(buf);
   let status = 'created';
   if (fs.existsSync(dst)) {
-    if (Buffer.compare(fs.readFileSync(dst), buf) === 0) { stats.same++; if (isRendered) rendered.push(dst); return; }
+    const cur = fs.readFileSync(dst);
+    if (Buffer.compare(cur, buf) === 0 || digest(cur) === h) { stats.same++; if (track) newHashes[key] = h; if (isRendered) rendered.push(dst); return; }
+    if (track && !FORCE && prevHashes[key] && digest(cur) !== prevHashes[key]) {
+      kept.push(key);
+      newHashes[key] = prevHashes[key];
+      if (!DRY) { const tp = path.join(TARGET, '.claude', '.init-backup', ts, rel + '.template'); fs.mkdirSync(path.dirname(tp), { recursive: true }); fs.writeFileSync(tp, buf); }
+      if (isRendered) rendered.push(dst);
+      return;
+    }
     status = 'updated';
     if (!DRY) { const bk = path.join(TARGET, '.claude', '.init-backup', ts, rel); fs.mkdirSync(path.dirname(bk), { recursive: true }); fs.copyFileSync(dst, bk); }
   }
   stats[status]++;
+  if (track) newHashes[key] = h;
   if (DRY) console.log(`  ${status.padEnd(7)} ${rel}`);
   else { fs.mkdirSync(path.dirname(dst), { recursive: true }); fs.writeFileSync(dst, buf); }
   if (isRendered) rendered.push(dst);
@@ -390,21 +523,35 @@ function walk(dir) {
 
 function main() {
   if (!fs.existsSync(CONFIG)) { console.error(`✖ Config not found: ${CONFIG}\n  Create it from project.config.example.yml, or run: node init.mjs --scaffold --target "${TARGET}"`); process.exit(1); }
-  const cfg = parseYaml(fs.readFileSync(CONFIG, 'utf8'));
+  let cfg;
+  try { cfg = parseYaml(fs.readFileSync(CONFIG, 'utf8')); } catch (e) { console.error(`✖ ${path.basename(CONFIG)}: ${e.message}`); process.exit(1); }
   const errors = [];
   for (const k of ['name', 'type', 'stack']) if (!truthy(cfg[k])) errors.push(`missing required key: ${k}`);
   if (!(cfg.branches && cfg.branches.working && cfg.branches.production)) errors.push('missing required keys: branches.working and branches.production');
   const TYPES = Object.keys(JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8')).types);
   if (cfg.type && !TYPES.includes(cfg.type)) errors.push(`type must be ${TYPES.join(' | ')} (got "${cfg.type}")`);
+  if (cfg.model_profile !== undefined && !Object.keys(MODEL_PROFILES).includes(String(cfg.model_profile))) errors.push(`model_profile must be ${Object.keys(MODEL_PROFILES).join(' | ')} (got "${cfg.model_profile}")`);
+  for (const k of ['mcp_allow', 'mcp_deny']) for (const n of toArr(cfg[k])) if (!/^[\w.-]+$/.test(String(n))) errors.push(`${k}: "${n}" is not a valid MCP server name (letters, digits, _ . -)`);
+  for (const k of ['token_budget', 'big_file_kb', 'context_nudge_kb']) if (cfg[k] !== undefined && cfg[k] !== '' && !(Number.isFinite(Number(cfg[k])) && Number(cfg[k]) >= 0)) errors.push(`${k} must be a number >= 0 (got "${cfg[k]}")`);
+  if (cfg.packages !== undefined && cfg.packages !== '' && (typeof cfg.packages !== 'object' || Array.isArray(cfg.packages))) errors.push('packages must be a map of name -> {path, stack, ...} (see project.config.example.yml)');
+  else for (const [key, p] of Object.entries(cfg.packages || {})) {
+    const pp = String((p && p.path) || '').replace(/\\/g, '/');
+    if (!pp) errors.push(`packages.${key}.path is required`);
+    else if (path.isAbsolute(pp) || /^[a-zA-Z]:/.test(pp) || pp.split('/').includes('..') || /^\.?\/?\.claude(\/|$)/.test(pp)) errors.push(`packages.${key}.path must be a relative folder inside the project (got "${pp}")`);
+    if (p && p.type && !TYPES.includes(p.type)) errors.push(`packages.${key}.type must be ${TYPES.join(' | ')} (got "${p.type}")`);
+  }
   if (cfg.run_in_docker && !(cfg.docker && cfg.docker.service)) errors.push('run_in_docker is true but docker.service is missing');
   if (errors.length) { console.error('✖ Config problems:\n' + errors.map((e) => '  - ' + e).join('\n')); process.exit(1); }
 
+  warnUnknownKeys(cfg);
+  try { prevHashes = JSON.parse(fs.readFileSync(path.join(TARGET, HASH_FILE), 'utf8')); } catch { prevHashes = {}; }
   const ctx = buildContext(cfg);
   console.log(`${DRY ? '[dry-run] ' : ''}Generating for "${cfg.name}" → ${TARGET}`);
 
   // 1. core (generic, always overwritten from the template)
   // skills_mode: all (default) installs every skill; focused installs only the ones routed for this type/stack.
   const focused = cfg.skills_mode === 'focused';
+  const profile = String(cfg.model_profile || 'balanced');
   const wanted = (rel) => !focused || ctx.routed_set.has(rel.split(path.sep)[0]);
   if (ctx.unmatched_stack.length) console.warn(`⚠ stack token(s) matched no skill: ${ctx.unmatched_stack.join(', ')} (check spelling, or map them in core/skill-map.json)`);
   for (const sub of ['skills', 'agents', 'rules']) {
@@ -412,16 +559,36 @@ function main() {
     for (const f of walk(base)) {
       const rel = path.relative(base, f);
       if (sub === 'skills' && !wanted(rel)) continue;
-      put(path.join(TARGET, '.claude', sub, rel), fs.readFileSync(f));
+      const buf = sub === 'agents' ? Buffer.from(applyModelProfile(rel.replace(/.md$/i, ''), fs.readFileSync(f, 'utf8'), profile)) : fs.readFileSync(f);
+      put(path.join(TARGET, '.claude', sub, rel), buf);
     }
   }
   // 1b. hooks (only the scripts this config needs, plus their shared lib and config)
   const hookList = desiredHooks(cfg);
-  if (hookList.length) {
+  if (hookList.length || cfg.statusline === true) {
     const hbase = path.join(HERE, 'core', 'hooks');
-    const names = new Set(['lib', ...hookList.map((h) => h.script)]);
+    const names = new Set(['lib', ...hookList.map((h) => h.script), ...(cfg.statusline === true ? ['statusline'] : [])]);
     for (const n of names) put(path.join(TARGET, '.claude', 'hooks', `${n}.mjs`), fs.readFileSync(path.join(hbase, `${n}.mjs`)));
     put(path.join(TARGET, '.claude', 'hooks', 'config.json'), JSON.stringify(hooksConfig(cfg), null, 2) + '\n');
+  }
+  // 1c. monorepo: a small CLAUDE.md inside each package folder (Claude Code reads nested CLAUDE.md files when it works there)
+  if (ctx.packages.length) {
+    const map = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));
+    const installed = installedSkills();
+    for (const p of ctx.packages) {
+      const dir = path.join(TARGET, p.path);
+      const mine = [...focusSkills(map, installed, 'library', p.stack).focus].filter((x) => !map.always.includes(x)); // stack-specific only; 'library' adds no type skills
+      const prefix = ctx.exec_prefix ? ctx.exec_prefix + ' ' : '';
+      const lines = [
+        `# ${p.key} (\`${p.path}/\`)`, '',
+        'Package context; the root CLAUDE.md and .claude/ rules still apply. Generated from project.config.yml.', '',
+        `Type ${p.type}; stack: ${p.stack.join(', ') || 'see root'}.`,
+        ...(p.test_command ? [`Tests: \`${prefix}${p.test_command}\``] : []),
+        ...(mine.length ? [`Skills for this package: ${mine.map((x) => '\`' + x + '\`').join(', ')}.`] : []),
+        ...(p.notes.length ? ['', ...p.notes.map((n) => '- ' + n)] : []),
+      ];
+      put(path.join(dir, 'CLAUDE.md'), lines.join('\n') + '\n');
+    }
   }
   // 2. templates (rendered with the config)
   const tbase = path.join(HERE, 'templates');
@@ -440,7 +607,7 @@ function main() {
   const agentNames = fs.readdirSync(path.join(HERE, 'core', 'agents')).map((f) => f.replace(/\.md$/i, '')).sort();
   put(path.join(TARGET, '.claude', 'CONFIGURATION.MANIFEST.JSON'), JSON.stringify({
     name: cfg.name, generatedBy: 'claude-template', templateVersion: TEMPLATE_VERSION, skillsMode: focused ? 'focused' : 'all', type: cfg.type, stack: ctx.stack, branches: ctx.branches,
-    runInDocker: Boolean(cfg.run_in_docker), testCommand: ctx.test_cmd_full, skills: skillNames, agents: agentNames, hooks: hookList.map((h) => h.script),
+    runInDocker: Boolean(cfg.run_in_docker), testCommand: ctx.test_cmd_full, skills: skillNames, agents: agentNames, hooks: hookList.map((h) => h.script), packages: ctx.packages.map((p) => p.path),
   }, null, 2) + '\n');
 
   const stampPath = path.join(TARGET, '.claude', '.template-version');
@@ -453,12 +620,14 @@ function main() {
   if (fs.existsSync(settingsPath)) { try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch { settingsOk = false; console.warn('⚠ .claude/settings.json is not valid JSON; left untouched.'); } }
   if (settingsOk) {
     settings.$schema = settings.$schema || 'https://json.schemastore.org/claude-code-settings.json';
-    settings.model = settings.model || cfg.model || 'sonnet';
+    settings.model = settings.model || cfg.model || MODEL_PROFILES[profile].main;
     settings.permissions = settings.permissions || {};
     const deny = denyRules(cfg, ctx);
     if (deny.length) settings.permissions.deny = [...new Set([...(settings.permissions.deny || []), ...deny])];
     if (cfg.allow_safe_commands !== false) settings.permissions.allow = [...new Set([...(settings.permissions.allow || []), ...allowRules(ctx)])];
     mergeHooks(settings, hookList);
+    mergeStatusLine(settings, cfg.statusline === true);
+    mergeMcp(settings, cfg);
     put(settingsPath, JSON.stringify(settings, null, 2) + '\n');
   }
 
@@ -516,7 +685,57 @@ function main() {
 
   console.log(`${stats.created} created, ${stats.updated} updated, ${stats.same} unchanged.`);
   if (stats.updated && !DRY) console.log(`Previous versions of updated files were saved in .claude/.init-backup/${ts}/ (add it to .gitignore).`);
+  if (kept.length) console.log(`Kept ${kept.length} file(s) you edited by hand (the template version differs): ${kept.join(', ')}\n  Merge from .claude/.init-backup/${ts}/<file>.template, or re-run with --force to overwrite them (a backup is made).`);
   if (problems.length) { console.error('✖ Checks failed:\n' + problems.map((p) => '  - ' + p).join('\n')); process.exit(1); }
+  if (CHECK) {
+    if (stats.created || stats.updated) { console.error(`✖ ${stats.created + stats.updated} generated file(s) are out of date. Run: node ${path.join(HERE, 'init.mjs')} --target "${TARGET}"`); process.exit(1); }
+    console.log('✔ Generated files are in sync with project.config.yml and the template.');
+    return;
+  }
+  if (!DRY) {
+    const sorted = Object.fromEntries(Object.keys(newHashes).sort().map((k) => [k, newHashes[k]]));
+    const hp = path.join(TARGET, HASH_FILE);
+    const text = JSON.stringify(sorted, null, 2) + '\n';
+    if (!fs.existsSync(hp) || fs.readFileSync(hp, 'utf8') !== text) { fs.mkdirSync(path.dirname(hp), { recursive: true }); fs.writeFileSync(hp, text); }
+  }
+  // Always-loaded context: what every session pays before the first prompt. Descriptions of model-invocable skills count;
+  // manual-only skills (disable-model-invocation: true) are not listed to the model, so they cost nothing.
+  const tplSkills = new Set(fs.readdirSync(path.join(tbase, '.claude', 'skills')));
+  const frontmatter = (f) => { const m = fs.readFileSync(f, 'utf8').match(/^---\r?\n([\s\S]*?)\r?\n---/); return m ? m[1] : ''; };
+  const skillMeta = (name) => {
+    for (const dir of [path.join(HERE, 'core', 'skills'), path.join(tbase, '.claude', 'skills')]) {
+      const f = path.join(dir, name, 'SKILL.md');
+      if (!fs.existsSync(f)) continue;
+      const fm = frontmatter(f);
+      const d = fm.match(/^description:\s*(.*)$/m);
+      return { manual: /^disable-model-invocation:\s*true/m.test(fm), chars: name.length + (d ? d[1].length : 0) };
+    }
+    return { manual: true, chars: 0 };
+  };
+  const descTokens = (names) => Math.round(names.reduce((n, name) => { const m = skillMeta(name); return n + (m.manual ? 0 : m.chars); }, 0) / 4);
+  const nowTok = descTokens(skillNames);
+  const invocable = skillNames.filter((n) => !skillMeta(n).manual).length;
+  console.log(`Skills: ${skillNames.length} installed, ${invocable} model-invocable (~${nowTok} tokens of descriptions in every session).`);
+  if (!focused) {
+    const fNames = skillNames.filter((n) => ctx.routed_set.has(n) || tplSkills.has(n));
+    const fTok = descTokens(fNames);
+    if (fNames.length < skillNames.length) console.log(`  skills_mode: focused would install ${fNames.length} (~${fTok} tokens, saves ~${nowTok - fTok}).`);
+  }
+  if (!DRY) {
+    const claudeDir = path.join(TARGET, '.claude');
+    const size = (f) => (fs.existsSync(f) ? fs.statSync(f).size : 0);
+    const mdIn = (d) => (fs.existsSync(d) ? fs.readdirSync(d).filter((f) => f.endsWith('.md')).map((f) => path.join(d, f)) : []);
+    const instrTok = Math.round([path.join(TARGET, 'CLAUDE.md'), path.join(claudeDir, 'CLAUDE.md')].reduce((n, f) => n + size(f), 0) / 4);
+    const alwaysRule = (f) => !/^paths:/m.test(frontmatter(f)); // rules with a paths: frontmatter load only when matching files are touched
+    const rulesTok = Math.round(mdIn(path.join(claudeDir, 'rules')).filter(alwaysRule).reduce((n, f) => n + size(f), 0) / 4);
+    const skillsDir = path.join(claudeDir, 'skills');
+    const skillsTok = descTokens(fs.existsSync(skillsDir) ? fs.readdirSync(skillsDir) : []);
+    const agentsTok = Math.round(mdIn(path.join(claudeDir, 'agents')).reduce((n, f) => { const d = frontmatter(f).match(/^description:\s*(.*)$/m); return n + path.basename(f).length + (d ? d[1].length : 0); }, 0) / 4);
+    const total = instrTok + rulesTok + skillsTok + agentsTok;
+    console.log(`Always-loaded context: ~${total} tokens (instructions ~${instrTok}, rules ~${rulesTok}, skill descriptions ~${skillsTok}, agent descriptions ~${agentsTok}).`);
+    const budget = numOpt(cfg.token_budget, 0);
+    if (budget > 0 && total > budget) console.warn(`⚠ always-loaded context (~${total} tokens) is over token_budget (${budget}). Try skills_mode: focused, fewer rules, or shorter notes.`);
+  }
   console.log('✔ Done. Checks passed (no placeholders left, no forbidden terms).');
 }
 

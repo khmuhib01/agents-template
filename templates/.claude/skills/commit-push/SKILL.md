@@ -1,6 +1,7 @@
 ---
 name: commit-push
 description: Inspects the working tree, stages changes safely, commits with a Conventional Commit message, and pushes to origin with upstream tracking. Triggered by /commit-push or requests to commit and push together.
+disable-model-invocation: true
 ---
 
 # Git Commit & Push Skill
