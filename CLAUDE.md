@@ -11,7 +11,7 @@ Plain Node 18+ ES modules, **zero dependencies** (keep it that way — e.g. `ini
 ## Commands
 
 ```bash
-node test.mjs                                    # full smoke suite (what CI runs, Node 20)
+node test.mjs                                    # full smoke suite (what CI runs: Node 18 and 22 on Linux, macOS and Windows)
 node init.mjs --target <dir> [--config FILE] [--dry-run]   # generate/update a project
 node init.mjs --scaffold --target <dir>          # draft project.config.yml from detected stack
 node install-global.mjs [--antigravity|--all] [--dry-run]  # install global-skills/ into ~/.claude/skills
