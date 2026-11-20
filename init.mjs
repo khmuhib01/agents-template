@@ -303,6 +303,45 @@ function allowRules(ctx) {
   return rules;
 }
 
+// Hooks: scripts live in core/hooks and are copied to .claude/hooks; project values go in .claude/hooks/config.json.
+const HOOK_SCRIPTS = ['guard-bash', 'guard-secrets', 'format'];
+const hookCommand = (script) => `node "$CLAUDE_PROJECT_DIR/.claude/hooks/${script}.mjs"`;
+function desiredHooks(cfg) {
+  if (cfg.hooks === false) return [];
+  const list = [{ event: 'PreToolUse', matcher: 'Bash', script: 'guard-bash' }];
+  if (cfg.protect_secrets !== false) list.push({ event: 'PreToolUse', matcher: 'Write|Edit|MultiEdit|NotebookEdit', script: 'guard-secrets' });
+  if (truthy(cfg.format_command)) list.push({ event: 'PostToolUse', matcher: 'Write|Edit|MultiEdit', script: 'format' });
+  return list;
+}
+function hooksConfig(cfg) {
+  const b = cfg.branches || {};
+  return {
+    protectedBranches: [...new Set([b.production, b.integration].filter(Boolean).map(String))],
+    blockAttribution: !cfg.commit_attribution,
+    localOnly: toArr(cfg.local_only).map(String),
+    formatCommand: truthy(cfg.format_command) ? String(cfg.format_command) : '',
+  };
+}
+// Adds our hook entries, drops our stale ones, and leaves every other hook untouched.
+function mergeHooks(settings, desired) {
+  const hooks = settings.hooks && typeof settings.hooks === 'object' ? settings.hooks : {};
+  const ours = (cmd) => HOOK_SCRIPTS.some((s) => String(cmd || '').includes(`.claude/hooks/${s}.mjs`));
+  const want = new Set(desired.map((d) => hookCommand(d.script)));
+  for (const ev of Object.keys(hooks)) {
+    if (!Array.isArray(hooks[ev])) continue;
+    hooks[ev] = hooks[ev]
+      .map((g) => (Array.isArray(g.hooks) ? { ...g, hooks: g.hooks.filter((h) => !(ours(h.command) && !want.has(h.command))) } : g))
+      .filter((g) => !Array.isArray(g.hooks) || g.hooks.length);
+    if (!hooks[ev].length) delete hooks[ev];
+  }
+  for (const d of desired) {
+    const cmd = hookCommand(d.script);
+    const list = (hooks[d.event] = Array.isArray(hooks[d.event]) ? hooks[d.event] : []);
+    if (!list.some((g) => Array.isArray(g.hooks) && g.hooks.some((h) => h.command === cmd))) list.push({ matcher: d.matcher, hooks: [{ type: 'command', command: cmd }] });
+  }
+  if (Object.keys(hooks).length) settings.hooks = hooks; else delete settings.hooks;
+}
+
 function skillRouting(d) {
   const map = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));
   const installed = new Set([...fs.readdirSync(path.join(HERE, 'core', 'skills')), ...fs.readdirSync(path.join(HERE, 'templates', '.claude', 'skills'))]);
@@ -376,6 +415,14 @@ function main() {
       put(path.join(TARGET, '.claude', sub, rel), fs.readFileSync(f));
     }
   }
+  // 1b. hooks (only the scripts this config needs, plus their shared lib and config)
+  const hookList = desiredHooks(cfg);
+  if (hookList.length) {
+    const hbase = path.join(HERE, 'core', 'hooks');
+    const names = new Set(['lib', ...hookList.map((h) => h.script)]);
+    for (const n of names) put(path.join(TARGET, '.claude', 'hooks', `${n}.mjs`), fs.readFileSync(path.join(hbase, `${n}.mjs`)));
+    put(path.join(TARGET, '.claude', 'hooks', 'config.json'), JSON.stringify(hooksConfig(cfg), null, 2) + '\n');
+  }
   // 2. templates (rendered with the config)
   const tbase = path.join(HERE, 'templates');
   const needsIntegration = [/skills[\\/](merge-to-dev|merge-to-main|ship)[\\/]/];
@@ -393,7 +440,7 @@ function main() {
   const agentNames = fs.readdirSync(path.join(HERE, 'core', 'agents')).map((f) => f.replace(/\.md$/i, '')).sort();
   put(path.join(TARGET, '.claude', 'CONFIGURATION.MANIFEST.JSON'), JSON.stringify({
     name: cfg.name, generatedBy: 'claude-template', templateVersion: TEMPLATE_VERSION, skillsMode: focused ? 'focused' : 'all', type: cfg.type, stack: ctx.stack, branches: ctx.branches,
-    runInDocker: Boolean(cfg.run_in_docker), testCommand: ctx.test_cmd_full, skills: skillNames, agents: agentNames,
+    runInDocker: Boolean(cfg.run_in_docker), testCommand: ctx.test_cmd_full, skills: skillNames, agents: agentNames, hooks: hookList.map((h) => h.script),
   }, null, 2) + '\n');
 
   const stampPath = path.join(TARGET, '.claude', '.template-version');
@@ -411,6 +458,7 @@ function main() {
     const deny = denyRules(cfg, ctx);
     if (deny.length) settings.permissions.deny = [...new Set([...(settings.permissions.deny || []), ...deny])];
     if (cfg.allow_safe_commands !== false) settings.permissions.allow = [...new Set([...(settings.permissions.allow || []), ...allowRules(ctx)])];
+    mergeHooks(settings, hookList);
     put(settingsPath, JSON.stringify(settings, null, 2) + '\n');
   }
 

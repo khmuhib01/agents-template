@@ -58,3 +58,5 @@ protect_secrets: true         # true: settings.json denies Read on .env and ever
 forbid: []                    # words that must NOT appear in generated files (e.g. another project's name)
 agents_mirror: true             # default true: .agents/{rules,skills,agents} link to .claude/ (Antigravity/Gemini, Codex); false disables
 codex_mirror: true              # default true: .codex/{rules,skills,agents} link to .claude/ (Codex); false disables
+hooks: true                   # default true: install .claude/hooks (guard-bash, guard-secrets) and register them in settings.json; false disables
+format_command: ""            # optional: run after every Write/Edit with the file path appended, e.g. "npx prettier --write" or "vendor/bin/pint"
