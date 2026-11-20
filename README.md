@@ -13,6 +13,8 @@ node <path-to>/agents-template/init.mjs              # generate
 
 Re-run `init.mjs` any time: after editing the config, or after improving the template (it refreshes the generic parts in every project). Files it changes are first backed up to `.claude/.init-backup/<timestamp>/` (add that folder to `.gitignore`). `--dry-run` shows what would change.
 
+**`@` picker and agents.** The `@` picker in the VS Code extension is a file search that obeys `.gitignore`, and it only mentions files; it does not list agents. To run an agent, ask for it by name in chat or use `/agents`. If your `.gitignore` ignores `.claude/`, the agent files will not show up in the picker either, so `init.mjs` warns about it and, when `.vscode/` is itself git-ignored, merges `search.useIgnoreFiles: false` and `search.useParentIgnoreFiles: false` into `.vscode/settings.json` (existing settings are kept; a non-plain-JSON file is left alone). Reload the window afterwards.
+
 Works on Windows, macOS and Linux (CI tests all three). Requires Node 18+ and git. No dependencies.
 
 `--scaffold` detects PHP/Laravel, Node (React, Next, Vue, Nuxt, Express, Nest…), Python, Go, Rust, Ruby/Rails, Java/Kotlin, .NET, Flutter, Swift/iOS and React Native/Expo, each with its own skill. Any other project still works: set `stack` and `test_command` by hand.
