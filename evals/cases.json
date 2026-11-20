@@ -1,44 +1,426 @@
 [
-  { "prompt": "The checkout page throws a 500 error and a stack trace after the last release", "expect": ["bug-investigation"] },
-  { "prompt": "Why does the order total sometimes come out wrong? Find the root cause", "expect": ["bug-investigation"] },
-  { "prompt": "Review my pull request diff for bugs and regression risk", "expect": ["code-review"] },
-  { "prompt": "Do a security review of the login and file upload code", "expect": ["security-audit"] },
-  { "prompt": "Check the app for XSS, CSRF and injection problems", "expect": ["security-audit"] },
-  { "prompt": "The dashboard page loads slowly and the bundle size is huge", "expect": ["performance-engineering"] },
-  { "prompt": "This query is slow, find out why and tune it with an index", "expect": ["performance-engineering","mysql-engineering","postgresql-engineering","database-engineering"] },
-  { "prompt": "Refactor this class into smaller pieces without changing behavior", "expect": ["safe-refactoring"] },
-  { "prompt": "Write unit tests for the new invoice service and cover edge cases", "expect": ["test-engineering","testing-best-practices"] },
-  { "prompt": "The test suite has a flaky test that fails randomly on CI", "expect": ["testing-best-practices"] },
-  { "prompt": "Run the tests, lint and the build and tell me the results", "expect": ["test"] },
-  { "prompt": "Write the README setup guide and an ADR for the caching decision", "expect": ["technical-documentation"] },
-  { "prompt": "Design the module boundaries and compare two architecture options", "expect": ["system-design"] },
-  { "prompt": "Add a new REST endpoint with pagination and versioning", "expect": ["api-engineering"] },
-  { "prompt": "Integrate a third-party webhook and document the request response contract", "expect": ["api-engineering"] },
-  { "prompt": "Upgrade the framework to the next major version", "expect": ["framework-upgrade"] },
-  { "prompt": "Add a package and check its license and known vulnerabilities", "expect": ["dependency-management"] },
-  { "prompt": "Set up Docker, a CI pipeline and a rollback plan", "expect": ["devops-engineering"] },
-  { "prompt": "Audit the whole codebase for architecture, performance and quality health", "expect": ["audit"] },
-  { "prompt": "Find and rank the technical debt and duplicated fragile code", "expect": ["technical-debt"] },
-  { "prompt": "I just joined, map the stack, architecture and commands of this unfamiliar repo", "expect": ["project-intelligence"] },
-  { "prompt": "React component keeps re-rendering because of a useEffect that sets state", "expect": ["react-development"] },
-  { "prompt": "Server component or client component for this Next.js App Router page", "expect": ["nextjs-development"] },
-  { "prompt": "Pinia store state is not reactive in my Vue 3 component", "expect": ["vue-development"] },
-  { "prompt": "Fix this TypeScript strict-mode error and replace any with proper generics", "expect": ["typescript-development"] },
-  { "prompt": "Eloquent query has an N+1 problem in my Laravel controller", "expect": ["laravel-best-practices"] },
-  { "prompt": "Add a Laravel form request with validation and a policy", "expect": ["laravel-best-practices"] },
-  { "prompt": "Express route middleware for auth and error handling", "expect": ["nodejs-development"] },
-  { "prompt": "FastAPI endpoint with pydantic models and pytest", "expect": ["python-development"] },
-  { "prompt": "Expo screen with react navigation crashes on Android", "expect": ["react-native-development"] },
-  { "prompt": "Tailwind responsive layout with dark mode utility classes", "expect": ["tailwindcss-development"] },
-  { "prompt": "Polish the UI spacing, typography, empty and loading states and accessibility", "expect": ["ui-ux-engineering"] },
-  { "prompt": "InnoDB deadlock and online DDL on a huge MySQL table", "expect": ["mysql-engineering"] },
-  { "prompt": "Postgres JSONB GIN index and lock-safe migration", "expect": ["postgresql-engineering"] },
-  { "prompt": "Design the schema and write a migration with the right indexes", "expect": ["database-engineering"] },
-  { "prompt": "Go goroutine leak and context cancellation", "expect": ["go-development"] },
-  { "prompt": "Rust borrow checker error with lifetimes", "expect": ["rust-development"] },
-  { "prompt": "Flutter widget rebuilds too often with setState", "expect": ["flutter-development"] },
-  { "prompt": "SwiftUI view update and Swift concurrency actor issue", "expect": ["swift-development"] },
-  { "prompt": ".NET controller with Entity Framework and async await", "expect": ["dotnet-development"] },
-  { "prompt": "Spring Boot service with Kotlin coroutines", "expect": ["jvm-development"] },
-  { "prompt": "Rails model validation and ActiveRecord callbacks", "expect": ["ruby-development"] }
+  {
+    "prompt": "The checkout page throws a 500 error and a stack trace after the last release",
+    "expect": [
+      "bug-investigation"
+    ]
+  },
+  {
+    "prompt": "Why does the order total sometimes come out wrong? Find the root cause",
+    "expect": [
+      "bug-investigation"
+    ]
+  },
+  {
+    "prompt": "Review my pull request diff for bugs and regression risk",
+    "expect": [
+      "code-review"
+    ]
+  },
+  {
+    "prompt": "Do a security review of the login and file upload code",
+    "expect": [
+      "security-audit"
+    ]
+  },
+  {
+    "prompt": "Check the app for XSS, CSRF and injection problems",
+    "expect": [
+      "security-audit"
+    ]
+  },
+  {
+    "prompt": "The dashboard page loads slowly and the bundle size is huge",
+    "expect": [
+      "performance-engineering"
+    ]
+  },
+  {
+    "prompt": "This query is slow, find out why and tune it with an index",
+    "expect": [
+      "performance-engineering",
+      "mysql-engineering",
+      "postgresql-engineering",
+      "database-engineering"
+    ]
+  },
+  {
+    "prompt": "Refactor this class into smaller pieces without changing behavior",
+    "expect": [
+      "safe-refactoring"
+    ]
+  },
+  {
+    "prompt": "Write unit tests for the new invoice service and cover edge cases",
+    "expect": [
+      "test-engineering",
+      "testing-best-practices"
+    ]
+  },
+  {
+    "prompt": "The test suite has a flaky test that fails randomly on CI",
+    "expect": [
+      "testing-best-practices"
+    ]
+  },
+  {
+    "prompt": "Run the tests, lint and the build and tell me the results",
+    "expect": [
+      "test"
+    ]
+  },
+  {
+    "prompt": "Write the README setup guide and an ADR for the caching decision",
+    "expect": [
+      "technical-documentation"
+    ]
+  },
+  {
+    "prompt": "Design the module boundaries and compare two architecture options",
+    "expect": [
+      "system-design"
+    ]
+  },
+  {
+    "prompt": "Add a new REST endpoint with pagination and versioning",
+    "expect": [
+      "api-engineering"
+    ]
+  },
+  {
+    "prompt": "Integrate a third-party webhook and document the request response contract",
+    "expect": [
+      "api-engineering"
+    ]
+  },
+  {
+    "prompt": "Upgrade the framework to the next major version",
+    "expect": [
+      "framework-upgrade"
+    ]
+  },
+  {
+    "prompt": "Add a package and check its license and known vulnerabilities",
+    "expect": [
+      "dependency-management"
+    ]
+  },
+  {
+    "prompt": "Set up Docker, a CI pipeline and a rollback plan",
+    "expect": [
+      "devops-engineering"
+    ]
+  },
+  {
+    "prompt": "Audit the whole codebase for architecture, performance and quality health",
+    "expect": [
+      "audit"
+    ]
+  },
+  {
+    "prompt": "Find and rank the technical debt and duplicated fragile code",
+    "expect": [
+      "technical-debt"
+    ]
+  },
+  {
+    "prompt": "I just joined, map the stack, architecture and commands of this unfamiliar repo",
+    "expect": [
+      "project-intelligence"
+    ]
+  },
+  {
+    "prompt": "React component keeps re-rendering because of a useEffect that sets state",
+    "expect": [
+      "react-development"
+    ]
+  },
+  {
+    "prompt": "Server component or client component for this Next.js App Router page",
+    "expect": [
+      "nextjs-development"
+    ]
+  },
+  {
+    "prompt": "Pinia store state is not reactive in my Vue 3 component",
+    "expect": [
+      "vue-development"
+    ]
+  },
+  {
+    "prompt": "Fix this TypeScript strict-mode error and replace any with proper generics",
+    "expect": [
+      "typescript-development"
+    ]
+  },
+  {
+    "prompt": "Eloquent query has an N+1 problem in my Laravel controller",
+    "expect": [
+      "laravel-best-practices"
+    ]
+  },
+  {
+    "prompt": "Add a Laravel form request with validation and a policy",
+    "expect": [
+      "laravel-best-practices"
+    ]
+  },
+  {
+    "prompt": "Express route middleware for auth and error handling",
+    "expect": [
+      "nodejs-development"
+    ]
+  },
+  {
+    "prompt": "FastAPI endpoint with pydantic models and pytest",
+    "expect": [
+      "python-development"
+    ]
+  },
+  {
+    "prompt": "Expo screen with react navigation crashes on Android",
+    "expect": [
+      "react-native-development"
+    ]
+  },
+  {
+    "prompt": "Tailwind responsive layout with dark mode utility classes",
+    "expect": [
+      "tailwindcss-development"
+    ]
+  },
+  {
+    "prompt": "Polish the UI spacing, typography, empty and loading states and accessibility",
+    "expect": [
+      "ui-ux-engineering"
+    ]
+  },
+  {
+    "prompt": "InnoDB deadlock and online DDL on a huge MySQL table",
+    "expect": [
+      "mysql-engineering"
+    ]
+  },
+  {
+    "prompt": "Postgres JSONB GIN index and lock-safe migration",
+    "expect": [
+      "postgresql-engineering"
+    ]
+  },
+  {
+    "prompt": "Design the schema and write a migration with the right indexes",
+    "expect": [
+      "database-engineering"
+    ]
+  },
+  {
+    "prompt": "Go goroutine leak and context cancellation",
+    "expect": [
+      "go-development"
+    ]
+  },
+  {
+    "prompt": "Rust borrow checker error with lifetimes",
+    "expect": [
+      "rust-development"
+    ]
+  },
+  {
+    "prompt": "Flutter widget rebuilds too often with setState",
+    "expect": [
+      "flutter-development"
+    ]
+  },
+  {
+    "prompt": "SwiftUI view update and Swift concurrency actor issue",
+    "expect": [
+      "swift-development"
+    ]
+  },
+  {
+    "prompt": ".NET controller with Entity Framework and async await",
+    "expect": [
+      "dotnet-development"
+    ]
+  },
+  {
+    "prompt": "Spring Boot service with Kotlin coroutines",
+    "expect": [
+      "jvm-development"
+    ]
+  },
+  {
+    "prompt": "Rails model validation and ActiveRecord callbacks",
+    "expect": [
+      "ruby-development"
+    ]
+  },
+  {
+    "prompt": "my useEffect keeps re-rendering the component in a loop",
+    "expect": [
+      "react-development"
+    ]
+  },
+  {
+    "prompt": "add server components and a route handler in the next app router",
+    "expect": [
+      "nextjs-development"
+    ]
+  },
+  {
+    "prompt": "how do I type this generic function so the return type is inferred",
+    "expect": [
+      "typescript-development"
+    ]
+  },
+  {
+    "prompt": "write a FastAPI endpoint with pydantic validation and pytest tests",
+    "expect": [
+      "python-development"
+    ]
+  },
+  {
+    "prompt": "goroutine leak and channel deadlock in my service",
+    "expect": [
+      "go-development"
+    ]
+  },
+  {
+    "prompt": "borrow checker error: value moved while borrowed",
+    "expect": [
+      "rust-development"
+    ]
+  },
+  {
+    "prompt": "spring boot bean wiring fails at startup",
+    "expect": [
+      "jvm-development"
+    ]
+  },
+  {
+    "prompt": "EF core migration fails on the nullable column",
+    "expect": [
+      "dotnet-development"
+    ]
+  },
+  {
+    "prompt": "rails active record N+1 and a slow scope",
+    "expect": [
+      "ruby-development"
+    ]
+  },
+  {
+    "prompt": "swiftui view not updating when the observable object changes",
+    "expect": [
+      "swift-development"
+    ]
+  },
+  {
+    "prompt": "flutter widget rebuilds too much, use a better state management",
+    "expect": [
+      "flutter-development"
+    ]
+  },
+  {
+    "prompt": "expo app crashes on android after adding a native module",
+    "expect": [
+      "react-native-development"
+    ]
+  },
+  {
+    "prompt": "the vue composable loses reactivity when I destructure props",
+    "expect": [
+      "vue-development"
+    ]
+  },
+  {
+    "prompt": "tailwind classes are getting too long, extract a component layer",
+    "expect": [
+      "tailwindcss-development"
+    ]
+  },
+  {
+    "prompt": "slow query on a big mysql table, add the right index and read explain",
+    "expect": [
+      "mysql-engineering"
+    ]
+  },
+  {
+    "prompt": "postgres query planner ignores my index, look at the explain analyze",
+    "expect": [
+      "postgresql-engineering"
+    ]
+  },
+  {
+    "prompt": "design the REST endpoints and error format for the orders API",
+    "expect": [
+      "api-engineering"
+    ]
+  },
+  {
+    "prompt": "set up a dockerfile and ci pipeline for the node service",
+    "expect": [
+      "devops-engineering"
+    ]
+  },
+  {
+    "prompt": "upgrade laravel 8 to laravel 11 safely",
+    "expect": [
+      "framework-upgrade"
+    ]
+  },
+  {
+    "prompt": "update outdated npm packages and check for breaking changes",
+    "expect": [
+      "dependency-management"
+    ]
+  },
+  {
+    "prompt": "refactor this 400 line function without changing behaviour",
+    "expect": [
+      "safe-refactoring"
+    ]
+  },
+  {
+    "prompt": "write unit tests for the payment service and cover the edge cases",
+    "expect": [
+      "test-engineering"
+    ]
+  },
+  {
+    "prompt": "we need an architecture for a multi-tenant notification system",
+    "expect": [
+      "system-design"
+    ]
+  },
+  {
+    "prompt": "list the tech debt in this module and what to fix first",
+    "expect": [
+      "technical-debt"
+    ]
+  },
+  {
+    "prompt": "write the readme and an onboarding guide for new developers",
+    "expect": [
+      "technical-documentation"
+    ]
+  },
+  {
+    "prompt": "improve the layout, spacing and accessibility of the signup form",
+    "expect": [
+      "ui-ux-engineering"
+    ]
+  },
+  {
+    "prompt": "express middleware order is wrong and the auth check is skipped",
+    "expect": [
+      "nodejs-development"
+    ]
+  },
+  {
+    "prompt": "the page flickers and layout shifts while images load",
+    "expect": [
+      "performance-engineering"
+    ]
+  }
 ]

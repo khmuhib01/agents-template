@@ -2,6 +2,22 @@
 
 One config file per project → generates `AGENTS.md`, `CLAUDE.md` and `.claude/` (rules, skills, agents) for that project.
 
+## Quick start (3 steps)
+
+1. `node <path-to>/agents-template/init.mjs --scaffold` in your project: drafts `project.config.yml` from the detected stack.
+2. Open `project.config.yml` and check `name`, `type`, `stack`, `test_command`, `branches` (the rest is optional).
+3. `node <path-to>/agents-template/init.mjs`: generates everything. Re-run any time; `--dry-run` previews.
+
+The smallest valid config is `name`, `type`, `stack` and `branches.{working,production}`. Every other key has a default.
+
+## What it saves, and what is not measured
+
+`node bench.mjs` generates sample projects and compares the always-loaded context (re-sent each session) against an unoptimized setup built from the same files. Current result: about **12-17% less static context** (roughly 650-820 tokens per session, out of ~4.5-5.5K). That is small on its own.
+
+The larger savings are behavioural and are **not measured here**: `model_profile: economy` (cheaper models for agents), `guard-read` (blocks whole-file reads of big files), `deny_heavy` (never opens `node_modules`, `vendor`, logs), and the `/compact` nudge. Their effect depends on how you work. Real API cost also depends on prompt caching and conversation length. If you measure a before/after on a real project, please share it.
+
+Also not verified yet: installing the plugin through `claude plugin install` (the manual `install-global.mjs` path is the tested one), and use by anyone other than the author. `evals/run.mjs` (70 prompts, written by the author) guards skill-description quality offline; it does not measure how a real model triggers skills (`evals/live.mjs` does, and costs money).
+
 ## Use it in a new project
 
 ```bash

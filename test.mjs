@@ -601,6 +601,15 @@ console.log('\n[vscode settings]');
 
 }
 
+if (on('bench')) {
+  console.log('\n[bench]');
+  const br = spawnSync(process.execPath, [path.join(HERE, 'bench.mjs'), '--json'], { encoding: 'utf8' });
+  check(br.status === 0, 'bench.mjs runs');
+  let rows = [];
+  try { rows = JSON.parse(br.stdout); } catch { /* reported below */ }
+  check(rows.length === 3 && rows.every((r) => r.saved > 0 && r.optimized > 0), 'generated always-loaded context is smaller than the unoptimized setup for every sample');
+}
+
 if (on('invalid config')) {
 console.log('\n[invalid config]');
 const inv = path.join(base, 'invalid');

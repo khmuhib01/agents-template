@@ -2,6 +2,12 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.10.0 - 2026-11-20
+
+- bench.mjs: reproducible static-context benchmark (generated vs unoptimized setup)
+- evals: 70 prompts (was 42); technical-debt skill now matches "tech debt"
+- internal: init.mjs split into lib/ modules; CI and pre-commit keep plugin files in sync
+
 ## 1.9.2 - 2026-11-20
 
 - feat: write .vscode/settings.json so the @ picker finds git-ignored files (6e52b7b)
