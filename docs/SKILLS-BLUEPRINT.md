@@ -1,6 +1,6 @@
 # agents-template — Skills Expansion Blueprint (Phase 1: audit + plan)
 
-Status: **approved (D1-D5 recommended options). P1.0 to P4 implemented, P5 tooling implemented (stacked branches feat/foundation-p1-0, feat/mobile-a-p2, feat/seo-php-p3, feat/seo-b-p4, feat/live-eval-p5); P5 paid runs not yet executed, P6 pending.** Nothing in `core/`, `templates/`, `lib/`, `init.mjs` or tests was changed by this phase.
+Status: **approved (D1-D5 recommended options). P1.0 to P4 implemented, P5 tooling implemented (stacked branches feat/foundation-p1-0, feat/mobile-a-p2, feat/seo-php-p3, feat/seo-b-p4, feat/live-eval-p5); P5 pilot recorded (5 scenarios x 2 arms x 1 run, no difference between arms); P6 implemented on feat/fullstack-product-p6. Remaining: a larger evaluation, the deferred agents routing and reference source verification.** Nothing in `core/`, `templates/`, `lib/`, `init.mjs` or tests was changed by this phase.
 Baseline audited: `VERSION 1.11.0`, branch `dev`, `node test.mjs` passes, `node evals/run.mjs` 70/70, `node bench.mjs` runs.
 
 Conventions used below: **[E]** = evidence read in the repo, **[I]** = inference/recommendation, **[U]** = uncertainty to confirm before building.

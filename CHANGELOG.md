@@ -2,6 +2,13 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.17.0 - 2026-11-21
+
+- full-stack and product skills (phase P6), all opt-in through `domains`, no change for existing projects: `saas-multitenancy`, `payments-billing`, `realtime-systems`, `event-driven-architecture`, `search-engineering`, `product-discovery`, `prd-requirements`, `product-delivery`, `production-readiness` (each with references and SOURCES.md; payments never uses live credentials, product stages wait for approval)
+- `build` mentions an optional full lifecycle (discovery -> PRD -> delivery plan -> build -> readiness) with approval at every stage
+- offline trigger eval now models focused mode: opt-in domain skills only compete in cases that name the domain (`domains` field) or one of their skills; 14 more cases (149 total)
+- `audit` description reworded (the "Not for" clause had made it rank for diff reviews)
+
 ## 1.16.0 - 2026-11-21
 
 - live evaluation tooling (phase P5), no results recorded yet: `evals/live.mjs` runs v2 cases with repeats, per-skill recall/precision, `--type/--stack/--domains` realism, `--max-calls` cap and `--out`; `evals/scenarios.mjs` runs 5 task scenarios (SEO regression, Product JSON-LD, Expo token storage, WordPress plugin security, React 18 version gate) with deterministic graders; `evals/report.mjs` builds `evals/REPORT.md`

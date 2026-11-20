@@ -717,7 +717,7 @@ console.log('\n[live and scenario evals]');
   const sum = lib.summarize([{ case: { expect: ['a'] }, got: ['a'], forbidden: [] }, { case: { expect: ['a'] }, got: [], forbidden: [], ok: false }, { case: { not: ['x'] }, got: ['x'], forbidden: ['x'], ok: false }]);
   check(sum.per.a.tp === 1 && sum.per.a.fn === 1 && sum.per.x.fp === 1 && sum.per.a.recall === 0.5, 'summary counts per-skill tp/fn/fp and recall');
   const dry = spawnSync(process.execPath, [path.join(HERE, 'evals/live.mjs'), '--dry-run', '--suite', 'all', '--repeats', '2', '--type', 'mobile', '--stack', 'flutter'], { encoding: 'utf8', env: { ...process.env, ANTHROPIC_API_KEY: '' } });
-  check(dry.status === 0 && /API calls: 270/.test(dry.stdout), 'live eval dry-run counts suite x repeats and sends nothing');
+  check(dry.status === 0 && new RegExp(`API calls: ${all.length * 2}\\b`).test(dry.stdout), 'live eval dry-run counts suite x repeats and sends nothing');
   const capped = spawnSync(process.execPath, [path.join(HERE, 'evals/live.mjs'), '--suite', 'all', '--repeats', '3'], { encoding: 'utf8', env: { ...process.env, ANTHROPIC_API_KEY: 'x' } });
   check(capped.status === 2 && /exceed --max-calls/.test(capped.stderr), 'live eval refuses a run above --max-calls before any API call');
 
@@ -744,6 +744,28 @@ console.log('\n[live and scenario evals]');
   check(/unevaluated/.test(buildReport([])), 'report says "unevaluated" when no live results exist');
   const rep = buildReport([{ kind: 'trigger', date: '2026-01-01', model: 'm', suite: 'all', repeats: 1, skillsListed: 5, tokens: { fresh: 1, cacheWrite: 2, cacheRead: 3, out: 4 }, summary: { calls: 10, passed: 9, passRate: 0.9, per: { a: { tp: 9, fn: 1, fp: 0, recall: 0.9, precision: 1 } } }, failures: [] }, { kind: 'scenarios', date: '2026-01-01', model: 'm', runsPerCell: 1, budgetPerRunUsd: 1, runs: [{ scenario: 's', arm: 'skills', run: 1, pass: true, cost: 0.5, turns: 3, graders: [{ category: 'security', pass: true }] }] }]);
   check(/9 \(90%\)/.test(rep) && /\| s \| skills \| 1 \| 1\/1/.test(rep) && /security \| skills \| 1\/1/.test(rep), 'report renders trigger and scenario results with counts');
+}
+
+}
+
+if (on('fullstack product domains')) {
+console.log('\n[fullstack product domains]');
+{
+  const mk = (name, body) => { const d = path.join(base, 'p6-' + name); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'project.config.yml'), `name: P\n${body}\nbranches: {working: a, integration: "", production: main}\n`); return d; };
+  const skills = (d) => new Set(fs.readdirSync(path.join(d, '.claude/skills')));
+  const map = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));
+  const dom = ['saas', 'payments', 'realtime', 'events', 'search', 'product'];
+  check(dom.every((d) => (map.domains[d] || []).length > 0), 'domains saas, payments, realtime, events, search and product are mapped');
+  for (const d of dom) {
+    const dir = mk(d, `type: api\nstack: [node]\ndomains: [${d}]`); const r = run(dir); const have = skills(dir);
+    const want = [...map.domains[d], ...map.domains[d].flatMap((s) => map.deps[s] || [])];
+    check(r.status === 0 && !/matched no skill/.test(r.stderr) && want.every((s) => have.has(s)), `domain "${d}" installs ${map.domains[d].join(', ')} and their dependencies`);
+  }
+  const plain = mk('plain', 'type: api\nstack: [node]'); run(plain);
+  const all = new Set(dom.flatMap((d) => map.domains[d]));
+  check(![...skills(plain)].some((s) => all.has(s)), 'projects without domains do not get saas/payments/realtime/events/search/product skills');
+  const build = fs.readFileSync(path.join(HERE, 'core/skills/build/SKILL.md'), 'utf8');
+  check(/Full lifecycle/.test(build) && /disable-model-invocation:\s*true/.test(build) && /explicit approval/.test(build), 'build keeps manual-only and approval gates and mentions the lifecycle stages');
 }
 
 }

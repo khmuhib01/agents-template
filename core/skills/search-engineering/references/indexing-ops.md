@@ -1,0 +1,12 @@
+# Indexing pipelines and operations
+
+- **Document design:** denormalize what search needs (title, text, facets, tenant ID, visibility fields, timestamps), keep IDs to the source records, keep documents small, store display fields only if needed (otherwise fetch from the database by ID).
+- **Sync strategies:** (1) synchronous index on write (simple, couples latency and availability), (2) async via queue/outbox after commit (recommended; see `event-driven-architecture`), (3) change data capture, (4) periodic full rebuild as safety net. Handle deletes and visibility changes (unpublish, permission changes) explicitly. Idempotent upsert by document ID with a version so out-of-order updates are ignored.
+- **Backfill/reindex:** build a new index with the new mapping from a snapshot or paged source reads, dual-write or catch up changes during the build, verify counts and sample queries, swap an alias atomically, keep the old index for rollback, then delete it (with approval).
+- **Consistency:** search is eventually consistent; show critical read-your-write cases from the database or wait for refresh; monitor index lag (time between DB write and searchable).
+- **Security:** document-level security via filters built from the user's tenant and roles; never trust client-supplied filters for authorization; separate indexes per tenant only when isolation requires it (cost trade-off); protect the engine's network endpoints and API keys; use search-only keys in browsers with restricted filters (signed/tenant-bound tokens) if searching from the client.
+- **Scaling and cost:** shard and replica counts sized from data and query load (avoid over-sharding), memory/disk sizing, cache hot queries, limit deep pagination and expensive aggregations, timeouts and circuit breakers so search failure degrades gracefully (fallback to database search or a friendly error).
+- **Observability:** indexing throughput and failures, lag, query latency percentiles, zero-result rate, error rate, cluster health, slow query logs.
+- **Testing:** unit tests for document builders (visibility, tenant, escaping), integration tests against a real engine in a container (indexing, filters, authorization, deletes), relevance regression suite, reindex rehearsal on staging.
+- **Operations:** snapshots/backups of the index or the ability to rebuild within an agreed time, upgrade procedure, mapping change process, runbooks.
+- **Privacy:** do not index secrets or unnecessary personal data; honor deletion requests by removing documents; consider retention for query logs.

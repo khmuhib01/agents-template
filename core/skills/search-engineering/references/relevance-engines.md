@@ -1,0 +1,12 @@
+# Relevance and engine choice
+
+- **Start simple:** `LIKE '%x%'` does not scale and ranks poorly; database full-text (PostgreSQL `tsvector`/GIN with ranking, MySQL FULLTEXT) handles many internal and small-catalog searches with no new infrastructure. Move to a dedicated engine when you need typo tolerance, facets at scale, fast autocomplete, multi-language analyzers, synonyms or large volumes.
+- **Engine trade-offs (verify current capabilities):** Elasticsearch/OpenSearch (powerful, flexible, operationally heavy), Meilisearch/Typesense (simple, fast, good defaults, smaller feature surface, memory-based sizing), managed services (less ops, cost and lock-in). Consider licensing terms, hosting, backup, upgrade path and team skills.
+- **Analysis:** tokenization, lowercasing, stemming/lemmatization per language, stop words, synonyms, accent folding, n-grams/edge n-grams for prefix matching, language detection; keep index-time and query-time analysis consistent.
+- **Ranking:** field weights (title above body), recency or popularity boosts with caps, exact/phrase match boosts, business rules (in stock first) applied transparently; avoid stacking boosts until results are unexplainable. Use the engine's explain tooling.
+- **Typo tolerance and autocomplete:** edit-distance fuzziness limited by term length, prefix queries, suggest-as-you-type from an optimized field or suggester, debounce on client, cache popular prefixes, protect against heavy queries.
+- **Facets and filters:** keyword (non-analyzed) fields for facets, bounded cardinality, counts consistent with filters, price ranges; pagination with search-after/cursor for deep paging.
+- **Semantic/vector search:** embeddings with a vector index can improve recall for natural-language queries; combine with keyword search (hybrid); costs, model choice, embedding drift and privacy need evaluation; add only with a measured benefit.
+- **Query understanding:** normalize input, handle empty/short queries, zero-result fallbacks and "did you mean", log queries (privacy-aware) to find failures.
+- **Evaluation:** build a judgment list (query, expected documents or graded relevance), run it in CI against a test index, track metrics per change; A/B test in production when traffic allows; look at zero-result and low-click queries.
+- **Internationalization:** per-language fields or indexes, mixed-language content, RTL and CJK tokenization needs specialized analyzers.
