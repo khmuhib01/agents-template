@@ -1,7 +1,7 @@
 {
   "name": "agents-template",
   "generatedBy": "claude-template",
-  "templateVersion": "1.19.0",
+  "templateVersion": "1.20.0",
   "skillsMode": "focused",
   "type": "cli",
   "stack": [
@@ -110,5 +110,9 @@
       "Bash(git branch --show-current)",
       "Bash(node test.mjs:*)"
     ]
+  },
+  "managedMcp": {
+    "enabled": [],
+    "enableAllSet": false
   }
 }

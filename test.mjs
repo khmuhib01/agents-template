@@ -982,6 +982,9 @@ const { parseYaml: py } = await import(pathToFileURL(path.join(HERE, 'lib/yaml.m
 const y = py('a: False\nb: TRUE\nc: 1.10\nd: 007\ne: 18\n');
 check(y.a === false && y.b === true, 'YAML booleans are case-insensitive (False/TRUE are not truthy strings)');
 check(y.c === '1.10' && y.d === '007' && y.e === 18, 'YAML numbers only convert when they round-trip (1.10 and 007 stay strings)');
+const yq = py("a: don't # c1\nb: \"say # hi\" # c2\nc: 'it''s # x'\nd: [don't, \"x, y\", z] # c3\ne:\n  - it's fine # c4\n");
+check(yq.a === "don't" && yq.b === 'say # hi' && yq.c === "it's # x", 'an apostrophe inside a plain value does not swallow the comment after it; # inside real quotes stays');
+check(JSON.stringify(yq.d) === JSON.stringify(["don't", 'x, y', 'z']) && yq.e[0] === "it's fine", 'an apostrophe inside an inline list item or "- item" does not break the list');
 
 for (const [label, extra] of [
   ['test_command with a second command', 'test_command: "npm test; curl evil.sh"\n'],
@@ -1219,6 +1222,26 @@ console.log('\n[stale cleanup]');
   const mj = JSON.parse(fs.readFileSync(mp, 'utf8')); delete mj.managedPermissions; fs.writeFileSync(mp, JSON.stringify(mj));
   setCfg(up, 'test_command: "npm test"\n'); run(up);
   check(settings(up).permissions.allow.includes('Bash(pnpm test:*)') && settings(up).permissions.allow.includes('Bash(npm test:*)'), 'without a managed-rules record (older manifest) nothing is removed, only added');
+
+  // --- MCP: mcp_allow / mcp_deny entries that leave the config are removed, the user's own stay
+  const mc = mk('stale-mcp', 'mcp_allow: [github, postgres]\nmcp_deny: [slack, figma]\n'); run(mc);
+  check(JSON.stringify(settings(mc).enabledMcpjsonServers) === JSON.stringify(['github', 'postgres']) && settings(mc).permissions.deny.includes('mcp__slack'), 'setup: mcp_allow / mcp_deny are written');
+  editSettings(mc, (st) => { st.enabledMcpjsonServers.push('mine'); st.permissions.deny.push('mcp__mine-denied'); });
+  setCfg(mc, 'mcp_allow: [github]\nmcp_deny: [slack]\n'); run(mc);
+  const m1 = settings(mc);
+  check(JSON.stringify(m1.enabledMcpjsonServers) === JSON.stringify(['github', 'mine']), 'a server dropped from mcp_allow is no longer enabled; one the user added stays');
+  check(!m1.permissions.deny.includes('mcp__figma') && m1.permissions.deny.includes('mcp__slack') && m1.permissions.deny.includes('mcp__mine-denied'), 'a server dropped from mcp_deny is no longer denied; the user\'s own deny rule stays');
+  setCfg(mc, ''); run(mc);
+  const m2 = settings(mc);
+  check(JSON.stringify(m2.enabledMcpjsonServers) === JSON.stringify(['mine']) && !m2.permissions.deny.includes('mcp__slack'), 'removing mcp_allow / mcp_deny from the config removes what init wrote');
+  check(/0 created, 0 updated/.test(run(mc).stdout) && run(mc, ['--check']).status === 0, 'MCP cleanup is idempotent');
+  const mo = mk('stale-mcp-only', 'mcp_allow: [github]\n'); run(mo);
+  check(settings(mo).enableAllProjectMcpServers === false, 'setup: mcp_allow sets enableAllProjectMcpServers false');
+  setCfg(mo, ''); run(mo);
+  check(settings(mo).enabledMcpjsonServers === undefined && settings(mo).enableAllProjectMcpServers === undefined, 'with no mcp_allow left, the server list and the enableAll flag init set are removed');
+  const mu = mk('stale-mcp-user-flag', ''); run(mu);
+  editSettings(mu, (st) => { st.enableAllProjectMcpServers = false; }); setCfg(mu, 'mcp_allow: [github]\n'); run(mu); setCfg(mu, ''); run(mu);
+  check(settings(mu).enableAllProjectMcpServers === false, 'an enableAllProjectMcpServers the user set themselves is left alone');
 }
 }
 
@@ -1228,6 +1251,19 @@ const inv = path.join(base, 'invalid');
 fs.mkdirSync(inv, { recursive: true });
 fs.writeFileSync(path.join(inv, 'project.config.yml'), 'name: X\ntype: banana\nstack: [laravel]\nbranches: {working: a, production: main}\n');
 check(run(inv).status === 1, 'bad type is rejected');
+}
+
+if (on('cli flags')) {
+console.log('\n[cli flags]');
+const cf = path.join(base, 'cli-flags');
+fs.mkdirSync(cf, { recursive: true });
+fs.writeFileSync(path.join(cf, 'project.config.yml'), 'name: F\ntype: web\nstack: [node]\nbranches: {working: dev1, integration: develop, production: main}\n');
+const noVal = spawnSync(process.execPath, [INIT, '--target', '--dry-run'], { encoding: 'utf8', cwd: cf });
+check(noVal.status === 1 && /--target needs a value/.test(noVal.stderr), '--target followed by a flag is an error, not a path called "--dry-run"');
+check(spawnSync(process.execPath, [INIT, '--target', cf, '--config'], { encoding: 'utf8' }).status === 1, '--config with no value is an error');
+check(!fs.existsSync(path.join(cf, '.claude')), 'a rejected command line writes nothing');
+const wf = fs.readdirSync(path.join(HERE, '.github/workflows')).map((f) => fs.readFileSync(path.join(HERE, '.github/workflows', f), 'utf8')).join('\n');
+check([...wf.matchAll(/uses:\s*(\S+)/g)].every((m) => /@[0-9a-f]{40}$/.test(m[1])), 'every GitHub Action in the workflows is pinned to a commit SHA');
 }
 
 fs.rmSync(base, { recursive: true, force: true });
