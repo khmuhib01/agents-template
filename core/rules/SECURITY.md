@@ -9,7 +9,7 @@ always_on: true
 - Enforce authentication and authorization on the server boundary, not in the UI.
 - Parameterized queries and framework escaping only; never concatenate input into SQL, shell commands or HTML.
 - Uploads: validate content, size, type, storage location and ownership; do not trust the extension.
-- Secrets live in environment/config stores; never commit, log, print or paste them into examples.
+- Secrets live in environment/config stores; never commit, log, print or paste them into examples. Do not read `.env` or other secret files through shell commands either; ask the user.
 - Apply CSRF, CORS, rate limiting, secure cookies/sessions and security headers as the stack supports.
 - Do not leak stack traces, tokens or internal ids to clients.
 - Check provenance, known vulnerabilities and license before adding a dependency.
