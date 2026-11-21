@@ -1,0 +1,1167 @@
+{
+  "kind": "scenarios",
+  "date": "2026-11-21",
+  "model": "sonnet",
+  "runsPerCell": 3,
+  "budgetPerRunUsd": 0.5,
+  "runs": [
+    {
+      "scenario": "simple-typo-readme",
+      "arm": "orchestrated",
+      "run": 1,
+      "pass": true,
+      "cost": 0.085924,
+      "turns": 6,
+      "seconds": 12.8,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "typos-gone",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "fixed-words-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-typo-readme",
+      "arm": "routed",
+      "run": 1,
+      "pass": true,
+      "cost": 0.003447,
+      "turns": 6,
+      "seconds": 7.8,
+      "calls": 1,
+      "models": "haiku",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "typos-gone",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "fixed-words-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-explain-dedupe",
+      "arm": "orchestrated",
+      "run": 1,
+      "pass": true,
+      "cost": 0.092617,
+      "turns": 6,
+      "seconds": 16.2,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "explain-exists",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-first",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-linear",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "mentions-key",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-explain-dedupe",
+      "arm": "routed",
+      "run": 1,
+      "pass": true,
+      "cost": 0.003331,
+      "turns": 3,
+      "seconds": 9.2,
+      "calls": 1,
+      "models": "haiku",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "explain-exists",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-first",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-linear",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "mentions-key",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-rename-function",
+      "arm": "orchestrated",
+      "run": 1,
+      "pass": true,
+      "cost": 0.123395,
+      "turns": 17,
+      "seconds": 22.6,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "old-name-gone",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-name-gone-tests",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "new-name-defined",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-rename-function",
+      "arm": "routed",
+      "run": 1,
+      "pass": true,
+      "cost": 0.009268,
+      "turns": 17,
+      "seconds": 34.2,
+      "calls": 2,
+      "models": "haiku",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "old-name-gone",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-name-gone-tests",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "new-name-defined",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-fix-offbyone",
+      "arm": "orchestrated",
+      "run": 1,
+      "pass": true,
+      "cost": 0.095074,
+      "turns": 9,
+      "seconds": 14.1,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "visible-test-untouched",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-fix-offbyone",
+      "arm": "routed",
+      "run": 1,
+      "pass": true,
+      "cost": 0.00491,
+      "turns": 9,
+      "seconds": 19.5,
+      "calls": 1,
+      "models": "haiku",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "visible-test-untouched",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-changelog-entry",
+      "arm": "orchestrated",
+      "run": 1,
+      "pass": true,
+      "cost": 0.088644,
+      "turns": 6,
+      "seconds": 13.1,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "entry-under-unreleased",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "older-entries-kept",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-heading-style",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-changelog-entry",
+      "arm": "routed",
+      "run": 1,
+      "pass": true,
+      "cost": 0.006601,
+      "turns": 6,
+      "seconds": 25.3,
+      "calls": 2,
+      "models": "haiku",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "entry-under-unreleased",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "older-entries-kept",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-heading-style",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-typo-readme",
+      "arm": "orchestrated",
+      "run": 2,
+      "pass": true,
+      "cost": 0.086551,
+      "turns": 6,
+      "seconds": 12.8,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "typos-gone",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "fixed-words-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-typo-readme",
+      "arm": "routed",
+      "run": 2,
+      "pass": true,
+      "cost": 0.00345,
+      "turns": 6,
+      "seconds": 9.5,
+      "calls": 1,
+      "models": "haiku",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "typos-gone",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "fixed-words-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-explain-dedupe",
+      "arm": "orchestrated",
+      "run": 2,
+      "pass": true,
+      "cost": 0.092988,
+      "turns": 6,
+      "seconds": 15.4,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "explain-exists",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-first",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-linear",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "mentions-key",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-explain-dedupe",
+      "arm": "routed",
+      "run": 2,
+      "pass": true,
+      "cost": 0.003306,
+      "turns": 3,
+      "seconds": 8.4,
+      "calls": 1,
+      "models": "haiku",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "explain-exists",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-first",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-linear",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "mentions-key",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-rename-function",
+      "arm": "orchestrated",
+      "run": 2,
+      "pass": true,
+      "cost": 0.115315,
+      "turns": 14,
+      "seconds": 21.1,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "old-name-gone",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-name-gone-tests",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "new-name-defined",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-rename-function",
+      "arm": "routed",
+      "run": 2,
+      "pass": true,
+      "cost": 0.009803,
+      "turns": 18,
+      "seconds": 34.8,
+      "calls": 2,
+      "models": "haiku",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "old-name-gone",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-name-gone-tests",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "new-name-defined",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-fix-offbyone",
+      "arm": "orchestrated",
+      "run": 2,
+      "pass": true,
+      "cost": 0.095736,
+      "turns": 9,
+      "seconds": 14.4,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "visible-test-untouched",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-fix-offbyone",
+      "arm": "routed",
+      "run": 2,
+      "pass": true,
+      "cost": 0.004882,
+      "turns": 8,
+      "seconds": 19.9,
+      "calls": 1,
+      "models": "haiku",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "visible-test-untouched",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-changelog-entry",
+      "arm": "orchestrated",
+      "run": 2,
+      "pass": true,
+      "cost": 0.089397,
+      "turns": 6,
+      "seconds": 13.9,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "entry-under-unreleased",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "older-entries-kept",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-heading-style",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-changelog-entry",
+      "arm": "routed",
+      "run": 2,
+      "pass": true,
+      "cost": 0.006166,
+      "turns": 7,
+      "seconds": 17.9,
+      "calls": 2,
+      "models": "haiku",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "entry-under-unreleased",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "older-entries-kept",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-heading-style",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-typo-readme",
+      "arm": "orchestrated",
+      "run": 3,
+      "pass": true,
+      "cost": 0.085571,
+      "turns": 6,
+      "seconds": 12.6,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "typos-gone",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "fixed-words-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-typo-readme",
+      "arm": "routed",
+      "run": 3,
+      "pass": true,
+      "cost": 0.003462,
+      "turns": 6,
+      "seconds": 9.3,
+      "calls": 1,
+      "models": "haiku",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "typos-gone",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "fixed-words-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-explain-dedupe",
+      "arm": "orchestrated",
+      "run": 3,
+      "pass": true,
+      "cost": 0.090922,
+      "turns": 6,
+      "seconds": 14.7,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "explain-exists",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-first",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-linear",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "mentions-key",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-explain-dedupe",
+      "arm": "routed",
+      "run": 3,
+      "pass": true,
+      "cost": 0.003406,
+      "turns": 3,
+      "seconds": 8.9,
+      "calls": 1,
+      "models": "haiku",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "explain-exists",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-first",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-linear",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "mentions-key",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-rename-function",
+      "arm": "orchestrated",
+      "run": 3,
+      "pass": true,
+      "cost": 0.113234,
+      "turns": 12,
+      "seconds": 20.3,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "old-name-gone",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-name-gone-tests",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "new-name-defined",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-rename-function",
+      "arm": "routed",
+      "run": 3,
+      "pass": true,
+      "cost": 0.007941,
+      "turns": 16,
+      "seconds": 28.7,
+      "calls": 2,
+      "models": "haiku",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "old-name-gone",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-name-gone-tests",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "new-name-defined",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-fix-offbyone",
+      "arm": "orchestrated",
+      "run": 3,
+      "pass": true,
+      "cost": 0.092888,
+      "turns": 9,
+      "seconds": 14.5,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "visible-test-untouched",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-fix-offbyone",
+      "arm": "routed",
+      "run": 3,
+      "pass": true,
+      "cost": 0.005162,
+      "turns": 8,
+      "seconds": 18.8,
+      "calls": 1,
+      "models": "haiku",
+      "level": "simple",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "visible-test-untouched",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-changelog-entry",
+      "arm": "orchestrated",
+      "run": 3,
+      "pass": true,
+      "cost": 0.088591,
+      "turns": 6,
+      "seconds": 13.2,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "entry-under-unreleased",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "older-entries-kept",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-heading-style",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-changelog-entry",
+      "arm": "routed",
+      "run": 3,
+      "pass": true,
+      "cost": 0.006487,
+      "turns": 7,
+      "seconds": 23.1,
+      "calls": 2,
+      "models": "haiku",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "entry-under-unreleased",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "older-entries-kept",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-heading-style",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    }
+  ]
+}

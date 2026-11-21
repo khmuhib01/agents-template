@@ -93,14 +93,18 @@ export function prepare(scenario, arm, initPath) {
     const r = spawnSync(process.execPath, [initPath, '--target', work], { encoding: 'utf8' });
     if (r.status !== 0) throw new Error(`init failed: ${r.stderr}`);
   }
-  if (arm === 'orchestrated') { // the driver needs a clean tree with at least one commit; it adds no template files (candidate C = fixture + driver)
+  if (arm === 'routed') { // cheap-first: orchestrated, but the model comes from model_routing in the project config (EVAL_ROUTING="simple=a,medium=b,complex=c,escalate=d")
+    const spec = Object.fromEntries((process.env.EVAL_ROUTING || 'simple=haiku,medium=haiku,complex=sonnet,escalate=sonnet').split(',').map((kv) => kv.split('=')));
+    fs.writeFileSync(path.join(work, 'project.config.yml'), `name: ${scenario.id}\ntype: cli\nmodel_routing:\n  enabled: true\n${Object.entries(spec).map(([k, v]) => `  ${k}: ${v}`).join('\n')}\n`);
+  }
+  if (arm === 'orchestrated' || arm === 'routed') { // the driver needs a clean tree with at least one commit; it adds no template files (candidate C = fixture + driver)
     spawnSync('git', ['add', '-A'], { cwd: work });
     spawnSync('git', ['-c', 'user.name=eval', '-c', 'user.email=eval@example.invalid', 'commit', '-q', '-m', 'fixture'], { cwd: work });
   }
   return work;
 }
 
-export const ARMS = ['baseline', 'skills', 'orchestrated'];
+export const ARMS = ['baseline', 'skills', 'orchestrated', 'routed'];
 
 // Validates a scenario's graders without any model: the bare fixture must NOT pass everything, fixture + solution must pass everything.
 export function checkScenario(scenario) {

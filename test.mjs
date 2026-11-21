@@ -427,6 +427,14 @@ console.log('\n[orchestrate]');
       const x = orch(rt('route-esc2', ROUTE + '  escalate: m-esc\n'), 'route-esc2', bad, ['--goal', 'add a button component', '--model', 'mine', ...T]);
       check(x.calls.every((c) => modelOf(c) === 'mine') && !/model_escalated/.test(x.events), 'routing: an explicit --model is never escalated away from');
     }
+    { // the eval `routed` arm: a committed fixture with model_routing in its project config, configurable via EVAL_ROUTING
+      const lib = await import(pathToFileURL(path.join(HERE, 'evals', 'scenario-lib.mjs')).href);
+      const sc = lib.loadScenario('simple-typo-readme');
+      const w = lib.prepare(sc, 'routed', path.join(HERE, 'init.mjs'));
+      const cfg = fs.readFileSync(path.join(w, 'project.config.yml'), 'utf8');
+      check(lib.ARMS.includes('routed') && /model_routing:\n  enabled: true/.test(cfg) && /simple: haiku/.test(cfg) && /escalate: sonnet/.test(cfg) && sh(w, 'git', ['status', '--porcelain']).stdout.trim() === '', 'evals: the routed arm writes model_routing into the fixture and leaves a clean committed tree');
+      fs.rmSync(w, { recursive: true, force: true });
+    }
     const rtm = await import(pathToFileURL(path.join(HERE, 'lib', 'routing-tasks.mjs')).href);
     const lv = (g, f) => rtm.classifyTask(g, { files: f }).level;
     check(lv('fix a typo in the README') === 'simple' && lv('explain what this function does') === 'simple' && lv('add an endpoint to list invoices') === 'medium' && lv('rotate the payment webhook secret') === 'complex' && lv('rename a variable', 9) === 'complex' && lv('tidy two modules', 2) === 'medium', 'classifier: simple / medium / complex goals');

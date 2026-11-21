@@ -174,6 +174,37 @@ With 3 run(s) per cell, small differences between arms are noise; a skill earns 
 
 With 2 run(s) per cell, small differences between arms are noise; a skill earns the label "evaluated" only with repeated runs recorded here.
 
+### 2026-11-21, sonnet, 3 run(s) per scenario and arm, cap $0.5/run
+
+| Scenario | Arm | Runs | Passed all graders | Mean cost | Mean turns |
+|---|---|---|---|---|---|
+| simple-changelog-entry | orchestrated | 3 | 3/3 (100%) | $0.089 | 6.0 |
+| simple-changelog-entry | routed | 3 | 3/3 (100%) | $0.006 | 6.7 |
+| simple-explain-dedupe | orchestrated | 3 | 3/3 (100%) | $0.092 | 6.0 |
+| simple-explain-dedupe | routed | 3 | 3/3 (100%) | $0.003 | 3.0 |
+| simple-fix-offbyone | orchestrated | 3 | 3/3 (100%) | $0.095 | 9.0 |
+| simple-fix-offbyone | routed | 3 | 3/3 (100%) | $0.005 | 8.3 |
+| simple-rename-function | orchestrated | 3 | 3/3 (100%) | $0.117 | 14.3 |
+| simple-rename-function | routed | 3 | 3/3 (100%) | $0.009 | 17.0 |
+| simple-typo-readme | orchestrated | 3 | 3/3 (100%) | $0.086 | 6.0 |
+| simple-typo-readme | routed | 3 | 3/3 (100%) | $0.003 | 6.0 |
+
+| Arm | Runs | Passed all graders | Mean cost | Cost per passing run | Mean turns | Mean seconds |
+|---|---|---|---|---|---|---|
+| orchestrated | 15 | 15/15 (100%) | $0.096 | $0.096 | 8.3 | 15.4 |
+| routed | 15 | 15/15 (100%) | $0.005 | $0.005 | 8.2 | 18.4 |
+
+| Category | Arm | Graders passed |
+|---|---|---|
+| correctness | orchestrated | 39/39 (100%) |
+| correctness | routed | 39/39 (100%) |
+| docs | orchestrated | 12/12 (100%) |
+| docs | routed | 12/12 (100%) |
+| test_quality | orchestrated | 3/3 (100%) |
+| test_quality | routed | 3/3 (100%) |
+
+With 3 run(s) per cell, small differences between arms are noise; a skill earns the label "evaluated" only with repeated runs recorded here.
+
 ### 2026-11-21, haiku, 5 run(s) per scenario and arm, cap $0.3/run
 
 | Scenario | Arm | Runs | Passed all graders | Mean cost | Mean turns |
