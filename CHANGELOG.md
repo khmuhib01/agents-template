@@ -2,6 +2,17 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.18.1 - 2026-11-21
+
+Config hardening, found by a read-only audit. Re-run `init.mjs` in existing projects; a config that now fails validation prints exactly which line to change.
+
+- `test_command` and `format_command` must be one plain command (no `;` `&` `|` `` ` `` `$` `<` `>` or newline) and must not start with a shell, downloader or privilege tool. `test_command` becomes an auto-approved `Bash(...:*)` permission and `format_command` runs through a shell on every edit, so an unchecked config line was a way to run any command without a prompt. `docker.dir` and `docker.service` are limited to safe characters. The `format` hook re-checks the command at run time.
+- YAML: `False` / `TRUE` are booleans (they were truthy strings, so `protect_secrets: False` was silently ignored); `1.10` and `007` stay strings instead of becoming `1.1` and `7`.
+- a failed post-write check (placeholder, `forbid`) now still saves `.template-hashes.json`, so the next run no longer mistakes untouched files for hand edits and writes needless `.init-backup` copies.
+- `--check` ignores the machine-local `.vscode/settings.json` (it reported false drift on a fresh checkout); the VS Code step is skipped when `git check-ignore` fails for a reason other than "not ignored".
+- `packages.<x>.path: "."` is rejected (it overwrote the root `CLAUDE.md` and broke idempotency).
+- tests: 15 new checks, 12 of which fail without the fixes, plus a budget gate in the `bench` section: always-loaded context must stay at or below the measured value plus about 10% (3800 / 3850 / 6700 tokens for the three samples).
+
 ## 1.18.0 - 2026-11-21
 
 - new global command `/agent-update` (plugin: `/agents-template:agent-update`): pulls the template when it is a git clone, compares the project's `.claude/.template-version` with `VERSION`, lists the newer changelog entries, dry-runs, asks, then runs `init.mjs`. It never commits or pushes.
