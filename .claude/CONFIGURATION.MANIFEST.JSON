@@ -1,7 +1,7 @@
 {
   "name": "agents-template",
   "generatedBy": "claude-template",
-  "templateVersion": "1.19.0",
+  "templateVersion": "1.19.1",
   "skillsMode": "focused",
   "type": "cli",
   "stack": [

@@ -2,6 +2,11 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.19.1 - 2026-11-21
+
+- `--target`, `--config` (and any value flag) with no value now stop with `✖ --target needs a value` instead of taking the next flag as the value. `node init.mjs --target --dry-run` used to look for a folder named `--dry-run`.
+- tests: 3 new checks, all fail without the change.
+
 ## 1.19.0 - 2026-11-21
 
 Stale cleanup. init used to only add, so what it generated earlier and no longer generates stayed forever.

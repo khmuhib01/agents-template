@@ -1230,6 +1230,17 @@ fs.writeFileSync(path.join(inv, 'project.config.yml'), 'name: X\ntype: banana\ns
 check(run(inv).status === 1, 'bad type is rejected');
 }
 
+if (on('cli flags')) {
+console.log('\n[cli flags]');
+const cf = path.join(base, 'cli-flags');
+fs.mkdirSync(cf, { recursive: true });
+fs.writeFileSync(path.join(cf, 'project.config.yml'), 'name: F\ntype: web\nstack: [node]\nbranches: {working: dev1, integration: develop, production: main}\n');
+const noVal = spawnSync(process.execPath, [INIT, '--target', '--dry-run'], { encoding: 'utf8', cwd: cf });
+check(noVal.status === 1 && /--target needs a value/.test(noVal.stderr), '--target followed by a flag is an error, not a path called "--dry-run"');
+check(spawnSync(process.execPath, [INIT, '--target', cf, '--config'], { encoding: 'utf8' }).status === 1, '--config with no value is an error');
+check(!fs.existsSync(path.join(cf, '.claude')), 'a rejected command line writes nothing');
+}
+
 fs.rmSync(base, { recursive: true, force: true });
 if (LIST) { fs.rmSync(base, { recursive: true, force: true }); process.exit(0); }
 console.log(failed ? `\n${failed} check(s) FAILED` : '\nAll checks passed');
