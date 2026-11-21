@@ -373,6 +373,31 @@ console.log('\n[orchestrate]');
 }
 }
 
+if (on('eval arms')) {
+console.log('\n[eval arms]');
+{
+  // The scenario runner's baseline and orchestrated arms against a fake claude: no network, no cost.
+  const FAKE = path.join(HERE, 'test-helpers', 'fake-claude.mjs');
+  const sol = path.join(HERE, 'evals', 'scenarios', 'migration-lock-safety', 'solution');
+  const files = {};
+  for (const f of walk(sol)) files[path.relative(sol, f).split(path.sep).join('/')] = fs.readFileSync(f, 'utf8');
+  const plan = JSON.stringify({ summary: 's', acceptance_criteria: ['migrations added'], steps: [{ title: 't' }], risks: [] });
+  const dir = path.join(base, 'evalarms'); fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'script.json'), JSON.stringify([{ result: 'done', cost: 0.07, turns: 6, write: files }, { result: plan, cost: 0.05, turns: 4 }, { result: 'done', cost: 0.06, turns: 5, write: files }]));
+  const out = path.join(dir, 'results', 'r.json');
+  const r = spawnSync(process.execPath, [path.join(HERE, 'evals', 'scenarios.mjs'), '--scenario', 'migration-lock-safety', '--arms', 'baseline,orchestrated', '--runs', '1', '--out', out], { encoding: 'utf8', env: { ...process.env, CLAUDE_BIN: FAKE, FAKE_SCRIPT: path.join(dir, 'script.json'), FAKE_STATE: path.join(dir, 'state') } });
+  const res = fs.existsSync(out) ? JSON.parse(fs.readFileSync(out, 'utf8')) : { runs: [] };
+  const b = res.runs.find((x) => x.arm === 'baseline'); const o = res.runs.find((x) => x.arm === 'orchestrated');
+  check(r.status === 0 && res.runs.length === 2 && b && b.pass && Math.abs(b.cost - 0.07) < 1e-9 && typeof b.seconds === 'number', `baseline arm records cost, turns and seconds from the CLI output${r.status ? '\n' + r.stderr + r.stdout : ''}`);
+  check(o && o.pass && Math.abs(o.cost - 0.11) < 1e-9 && o.turns === 9 && o.calls === 2 && o.orchState === 'completed', 'orchestrated arm records cost, turns and calls from the driver ledger and still grades with the scenario graders');
+  const rep = spawnSync(process.execPath, [path.join(HERE, 'evals', 'report.mjs'), '--results', path.dirname(out), '--out', path.join(dir, 'REPORT.md')], { encoding: 'utf8' });
+  const text = fs.existsSync(path.join(dir, 'REPORT.md')) ? fs.readFileSync(path.join(dir, 'REPORT.md'), 'utf8') : '';
+  check(rep.status === 0 && /\| orchestrated \| 1 \| 1\/1/.test(text) && /Cost per passing run/.test(text), 'report has a per-arm table with cost per passing run');
+  const bad = spawnSync(process.execPath, [path.join(HERE, 'evals', 'scenarios.mjs'), '--dry-run', '--arms', 'bogus'], { encoding: 'utf8' });
+  check(bad.status === 2 && /unknown arm/.test(bad.stderr), 'an unknown arm name is rejected');
+}
+}
+
 if (on('context tool')) {
 console.log('\n[context tool]');
 {
