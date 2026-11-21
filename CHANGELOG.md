@@ -2,6 +2,18 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.22.0 - 2026-11-22
+
+Fixes two bugs from the 1.21.0 audit.
+
+- **install-global ownership (bug in 1.21.0):** an existing skill with the same content was marked as installed by this tool, and `--uninstall` then deleted the whole folder. Ownership is now a manifest, `<skills>/.agent-template.json`, with the sha256 of the SKILL.md written. A skill is ours only if the folder did not exist (or held only temp files) or you adopted it with `--force`. Update replaces a managed skill only while it is unmodified; a modified one is kept unless `--force` (backup first). `--uninstall` removes managed, unmodified skills with nothing else in the folder; it never touches an unmanaged skill, even with `--force`. Files are written via temp file + rename; an interrupted install is completed on the next run. `--update` is accepted (it is the default); backups are always made, so there is no separate `--backup`.
+- Migration: the `.agent-template` marker files from 1.21.0 are not trusted (some were written for skills you own). Run `node install-global.mjs --force` once to adopt the installed global skills (backed up), or leave them alone.
+- **orchestrate budget when a call reports no cost:** the cost was counted as 0, so the cost cap did not limit anything. New `--budget-policy strict|balanced|best-effort` (default `balanced`): balanced reserves the per-call cap for such a call, strict stops scheduling once a cost is unknown, best-effort keeps the old behavior. `spent` stays provider-reported only; reservations and a cost above the per-call cap (`overspend`) are shown separately. Still not a hard provider limit: the CLI checks its cap between turns. Old ledgers keep working.
+- **model routing and complexity** (orchestrate.mjs only, opt-in): `lib/routing-tasks.mjs` classifies a goal as simple/medium/complex with fixed rules (no model call) and suggests agents; `--profile auto` maps it to tiny/small/medium (default stays `small`). Optional `model_routing` config (`enabled`, `simple`, `medium`, `complex`, `fallback`; no model ids built in, validated by init and the schema). Explicit `--model` always wins; a fallback model is tried once, as a counted call, only when the failure is about the model. The ledger records level, agents, model and its source.
+- `evals/report.mjs` prints Credit Reduction (%) on cost per passing run next to the success rate, from recorded runs only. `node bench.mjs` prints the agents invoked under the delegation policy against all-four-every-time, over `evals/routing-cases.json` (a policy count, not cost). Recorded results so far show the skills and orchestrated arms costing more than baseline.
+- README: budget policy, routing, hook failure behavior and limits.
+- tests: install-global rewritten for scenarios A-I (ownership, dry-run, update, edited file, uninstall, interrupted install, idempotence); 6 budget-policy checks.
+
 ## 1.21.0 - 2026-11-21
 
 Safer global install, fail-closed guards.

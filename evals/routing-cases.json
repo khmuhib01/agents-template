@@ -1,0 +1,16 @@
+[
+  { "goal": "explain what this function does", "level": "simple" },
+  { "goal": "fix a typo in the README", "level": "simple" },
+  { "goal": "rename the helper and update the comment", "level": "simple" },
+  { "goal": "update the changelog for the new flag", "level": "simple" },
+  { "goal": "add an endpoint that lists invoices", "level": "medium" },
+  { "goal": "add a button component with a loading state", "level": "medium" },
+  { "goal": "add a database table and query for tags", "level": "medium" },
+  { "goal": "refactor the report builder into smaller functions", "level": "medium" },
+  { "goal": "fix the failing parser test and add a regression test", "level": "medium" },
+  { "goal": "add oauth login with permission checks", "level": "complex" },
+  { "goal": "rotate the payment webhook secret and handle refunds", "level": "complex" },
+  { "goal": "redesign the architecture of billing into separate services", "level": "complex" },
+  { "goal": "migrate the schema to multi-tenant isolation", "level": "complex" },
+  { "goal": "harden the file upload against injection and csrf", "level": "complex" }
+]

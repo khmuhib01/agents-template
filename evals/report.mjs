@@ -42,6 +42,15 @@ export function buildReport(results) {
           const secs = xs.filter((x) => typeof x.seconds === 'number');
           L.push(`| ${a} | ${xs.length} | ${ok}/${xs.length} (${pct(ok, xs.length)}) | $${(total / xs.length).toFixed(3)} | ${ok ? '$' + (total / ok).toFixed(3) : 'n/a (no passing run)'} | ${(xs.reduce((n, x) => n + x.turns, 0) / xs.length).toFixed(1)} | ${secs.length ? (secs.reduce((n, x) => n + x.seconds, 0) / secs.length).toFixed(1) : 'not recorded'} |`);
         }
+        // Credit Reduction (%) = (baseline cost - arm cost) / baseline cost x 100, on cost per passing run so a cheap failure never counts as a saving.
+        // Only measured costs from the recorded runs; token counts and cached tokens are not recorded by the scenario runner (turns and seconds are).
+        if (arms.includes('baseline')) {
+          const cpp = (arm) => { const xs = r.runs.filter((x) => x.arm === arm); const ok = xs.filter((x) => x.pass).length; return ok ? xs.reduce((n, x) => n + x.cost, 0) / ok : null; };
+          const rate = (arm) => { const xs = r.runs.filter((x) => x.arm === arm); return xs.filter((x) => x.pass).length / xs.length; };
+          const base = cpp('baseline');
+          L.push('', '| Arm | Success rate vs baseline | Credit reduction vs baseline (cost per passing run) |', '|---|---|---|');
+          for (const a of arms.filter((x) => x !== 'baseline')) { const c = cpp(a); L.push(`| ${a} | ${(rate(a) * 100).toFixed(0)}% vs ${(rate('baseline') * 100).toFixed(0)}% | ${base && c ? ((base - c) / base * 100).toFixed(1) + '% (negative = costs more)' : 'n/a (an arm has no passing run)'} |`); }
+        }
       }
       const byCat = {};
       for (const x of r.runs) for (const g of x.graders) { const k = `${g.category}|${x.arm}`; byCat[k] = byCat[k] || [0, 0]; byCat[k][1]++; if (g.pass) byCat[k][0]++; }
