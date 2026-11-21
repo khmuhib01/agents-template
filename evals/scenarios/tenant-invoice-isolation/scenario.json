@@ -1,0 +1,94 @@
+{
+  "title": "Add invoice lookup, pay and CSV export without leaking across tenants",
+  "type": "api",
+  "stack": [
+    "node"
+  ],
+  "domains": [
+    "saas"
+  ],
+  "tags": [
+    "saas",
+    "security"
+  ],
+  "prompt": "In src/invoices.mjs add three methods to the invoice service: getInvoice(ctx, id), markPaid(ctx, id) (sets status to 'paid') and exportCsv(ctx) (header id,customer,amount,status, one line per invoice). Keep list and create unchanged. Add a node --test test. Don't add dependencies and don't change src/db.mjs.",
+  "graders": [
+    {
+      "id": "own-invoices-work",
+      "category": "correctness",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-tenant.mjs",
+        "own-works"
+      ]
+    },
+    {
+      "id": "no-cross-tenant-read",
+      "category": "security",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-tenant.mjs",
+        "no-cross-read"
+      ]
+    },
+    {
+      "id": "no-cross-tenant-write",
+      "category": "security",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-tenant.mjs",
+        "no-cross-write"
+      ]
+    },
+    {
+      "id": "csv-only-own-tenant",
+      "category": "security",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-tenant.mjs",
+        "csv-scoped"
+      ]
+    },
+    {
+      "id": "list-unchanged",
+      "category": "correctness",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-tenant.mjs",
+        "list-unchanged"
+      ]
+    },
+    {
+      "id": "tests-pass",
+      "category": "test_quality",
+      "type": "command",
+      "cmd": [
+        "node",
+        "--test"
+      ]
+    },
+    {
+      "id": "test-file-added",
+      "category": "test_quality",
+      "type": "exists",
+      "path": "test"
+    },
+    {
+      "id": "db-untouched",
+      "category": "correctness",
+      "type": "unchanged",
+      "path": "src/db.mjs"
+    },
+    {
+      "id": "package-untouched",
+      "category": "docs",
+      "type": "unchanged",
+      "path": "package.json"
+    }
+  ]
+}

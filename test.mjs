@@ -227,6 +227,14 @@ console.log('\n[skill routing eval]');
 
 }
 
+if (on('context tool')) {
+console.log('\n[context tool]');
+{
+  const r = spawnSync(process.execPath, [path.join(HERE, 'evals', 'context.mjs')], { encoding: 'utf8' });
+  check(r.status === 0 && /always-routed description tokens: \d+/.test(r.stdout), 'evals/context.mjs reports always-routed description tokens');
+}
+}
+
 if (on('stack matrix')) {
 console.log('\n[stack matrix]');
 {

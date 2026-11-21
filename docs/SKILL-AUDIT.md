@@ -130,11 +130,11 @@ Not confirmed: Kafka docs (redirect stub), PCI SAQ documents (list did not load)
 Pilot of 5 scenarios x 2 arms x 1 run (Sonnet): every scenario passed in both arms; skills arm cost more in the recorded cells ($0.224 vs $0.094, $0.093 vs $0.062, $0.080 vs $0.058, $0.146 vs $0.106, $0.116 vs $0.090). With one run per cell this is noise, and it shows no skill benefit. Trigger accuracy against a live model is not measured.
 
 ## 3. Smallest changes that reduce context cost (proposals, not applied)
-1. Measure per-skill description tokens and move rarely useful `always` skills (`technical-debt`, `performance-engineering`, `system-design`, `audit`) to type/stack routing, then check with `bench.mjs` and the 149 trigger cases. Needs evidence first.
+1. Measured (`node evals/context.mjs`, `docs/EVALUATION-PLAN.md`): always-routed descriptions are 770 tokens; moving five candidates out would save about 270 tokens, roughly $0.001 per session. Recommendation: leave `always` as is.
 2. Add "Not for" clauses to the groups in 2.3.
 3. Add negative and ambiguous cases for the 29 skills lacking them.
 4. Add `frontend-engineering` positive cases.
-5. Harder scenarios that discriminate between arms before claiming any benefit.
+5. Three harder scenarios added (payments webhook, tenant isolation, migration safety); graders validated offline, **not yet run**. See `docs/EVALUATION-PLAN.md` for the proposed paid run and cost estimate.
 
 ## 4. Acceptance check against the brief's Phase 1
 | Criterion | Status |
