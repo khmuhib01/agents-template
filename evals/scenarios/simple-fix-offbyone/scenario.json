@@ -1,0 +1,29 @@
+{
+  "title": "Fix a single-file off-by-one bug",
+  "type": "cli",
+  "stack": [
+    "node"
+  ],
+  "tags": [
+    "bug",
+    "simple"
+  ],
+  "prompt": "`npm test` fails. Fix the bug in src/range.js. Do not change the tests.",
+  "graders": [
+    {
+      "id": "tests-pass",
+      "category": "correctness",
+      "type": "command",
+      "cmd": [
+        "node",
+        "--test"
+      ]
+    },
+    {
+      "id": "visible-test-untouched",
+      "category": "test_quality",
+      "type": "unchanged",
+      "path": "test/range.test.js"
+    }
+  ]
+}

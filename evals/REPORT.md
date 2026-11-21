@@ -174,6 +174,42 @@ With 3 run(s) per cell, small differences between arms are noise; a skill earns 
 
 With 2 run(s) per cell, small differences between arms are noise; a skill earns the label "evaluated" only with repeated runs recorded here.
 
+### 2026-11-21, haiku, 5 run(s) per scenario and arm, cap $0.3/run
+
+| Scenario | Arm | Runs | Passed all graders | Mean cost | Mean turns |
+|---|---|---|---|---|---|
+| simple-changelog-entry | baseline | 5 | 5/5 (100%) | $0.003 | 3.0 |
+| simple-explain-dedupe | baseline | 5 | 5/5 (100%) | $0.003 | 3.2 |
+| simple-fix-offbyone | baseline | 5 | 5/5 (100%) | $0.005 | 8.8 |
+| simple-rename-function | baseline | 5 | 5/5 (100%) | $0.006 | 13.6 |
+| simple-typo-readme | baseline | 5 | 5/5 (100%) | $0.003 | 5.6 |
+
+| Category | Arm | Graders passed |
+|---|---|---|
+| correctness | baseline | 65/65 (100%) |
+| docs | baseline | 20/20 (100%) |
+| test_quality | baseline | 5/5 (100%) |
+
+With 5 run(s) per cell, small differences between arms are noise; a skill earns the label "evaluated" only with repeated runs recorded here.
+
+### 2026-11-21, sonnet, 5 run(s) per scenario and arm, cap $0.3/run
+
+| Scenario | Arm | Runs | Passed all graders | Mean cost | Mean turns |
+|---|---|---|---|---|---|
+| simple-changelog-entry | baseline | 5 | 5/5 (100%) | $0.045 | 3.0 |
+| simple-explain-dedupe | baseline | 5 | 5/5 (100%) | $0.049 | 3.0 |
+| simple-fix-offbyone | baseline | 5 | 5/5 (100%) | $0.049 | 5.2 |
+| simple-rename-function | baseline | 5 | 5/5 (100%) | $0.070 | 10.6 |
+| simple-typo-readme | baseline | 5 | 5/5 (100%) | $0.046 | 3.4 |
+
+| Category | Arm | Graders passed |
+|---|---|---|
+| correctness | baseline | 65/65 (100%) |
+| docs | baseline | 20/20 (100%) |
+| test_quality | baseline | 5/5 (100%) |
+
+With 5 run(s) per cell, small differences between arms are noise; a skill earns the label "evaluated" only with repeated runs recorded here.
+
 ### 2026-11-21, sonnet, 2 run(s) per scenario and arm, cap $0.4/run
 
 | Scenario | Arm | Runs | Passed all graders | Mean cost | Mean turns |

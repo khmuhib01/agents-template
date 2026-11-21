@@ -1,0 +1,824 @@
+{
+  "kind": "scenarios",
+  "date": "2026-11-21",
+  "model": "haiku",
+  "runsPerCell": 5,
+  "budgetPerRunUsd": 0.3,
+  "runs": [
+    {
+      "scenario": "simple-typo-readme",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.0031918300000000005,
+      "turns": 4,
+      "seconds": 8.2,
+      "graders": [
+        {
+          "id": "typos-gone",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "fixed-words-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-explain-dedupe",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.0032476100000000006,
+      "turns": 3,
+      "seconds": 11.5,
+      "graders": [
+        {
+          "id": "explain-exists",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-first",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-linear",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "mentions-key",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-rename-function",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.00628317,
+      "turns": 15,
+      "seconds": 21.7,
+      "graders": [
+        {
+          "id": "old-name-gone",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-name-gone-tests",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "new-name-defined",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-fix-offbyone",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.0047497,
+      "turns": 9,
+      "seconds": 14.1,
+      "graders": [
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "visible-test-untouched",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-changelog-entry",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.0031633800000000004,
+      "turns": 3,
+      "seconds": 7.4,
+      "graders": [
+        {
+          "id": "entry-under-unreleased",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "older-entries-kept",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-heading-style",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-typo-readme",
+      "arm": "baseline",
+      "run": 2,
+      "pass": true,
+      "cost": 0.00332991,
+      "turns": 6,
+      "seconds": 7.8,
+      "graders": [
+        {
+          "id": "typos-gone",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "fixed-words-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-explain-dedupe",
+      "arm": "baseline",
+      "run": 2,
+      "pass": true,
+      "cost": 0.00371894,
+      "turns": 4,
+      "seconds": 9.5,
+      "graders": [
+        {
+          "id": "explain-exists",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-first",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-linear",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "mentions-key",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-rename-function",
+      "arm": "baseline",
+      "run": 2,
+      "pass": true,
+      "cost": 0.004726890000000001,
+      "turns": 7,
+      "seconds": 16.9,
+      "graders": [
+        {
+          "id": "old-name-gone",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-name-gone-tests",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "new-name-defined",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-fix-offbyone",
+      "arm": "baseline",
+      "run": 2,
+      "pass": true,
+      "cost": 0.00483283,
+      "turns": 10,
+      "seconds": 15.2,
+      "graders": [
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "visible-test-untouched",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-changelog-entry",
+      "arm": "baseline",
+      "run": 2,
+      "pass": true,
+      "cost": 0.0031927900000000005,
+      "turns": 3,
+      "seconds": 7.8,
+      "graders": [
+        {
+          "id": "entry-under-unreleased",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "older-entries-kept",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-heading-style",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-typo-readme",
+      "arm": "baseline",
+      "run": 3,
+      "pass": true,
+      "cost": 0.003363370000000001,
+      "turns": 6,
+      "seconds": 8.5,
+      "graders": [
+        {
+          "id": "typos-gone",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "fixed-words-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-explain-dedupe",
+      "arm": "baseline",
+      "run": 3,
+      "pass": true,
+      "cost": 0.0033098700000000003,
+      "turns": 3,
+      "seconds": 9.5,
+      "graders": [
+        {
+          "id": "explain-exists",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-first",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-linear",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "mentions-key",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-rename-function",
+      "arm": "baseline",
+      "run": 3,
+      "pass": true,
+      "cost": 0.00617876,
+      "turns": 16,
+      "seconds": 18.3,
+      "graders": [
+        {
+          "id": "old-name-gone",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-name-gone-tests",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "new-name-defined",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-fix-offbyone",
+      "arm": "baseline",
+      "run": 3,
+      "pass": true,
+      "cost": 0.00473267,
+      "turns": 9,
+      "seconds": 16.6,
+      "graders": [
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "visible-test-untouched",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-changelog-entry",
+      "arm": "baseline",
+      "run": 3,
+      "pass": true,
+      "cost": 0.0031346200000000003,
+      "turns": 3,
+      "seconds": 7.7,
+      "graders": [
+        {
+          "id": "entry-under-unreleased",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "older-entries-kept",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-heading-style",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-typo-readme",
+      "arm": "baseline",
+      "run": 4,
+      "pass": true,
+      "cost": 0.00332734,
+      "turns": 6,
+      "seconds": 7.7,
+      "graders": [
+        {
+          "id": "typos-gone",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "fixed-words-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-explain-dedupe",
+      "arm": "baseline",
+      "run": 4,
+      "pass": true,
+      "cost": 0.0031486899999999996,
+      "turns": 3,
+      "seconds": 7,
+      "graders": [
+        {
+          "id": "explain-exists",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-first",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-linear",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "mentions-key",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-rename-function",
+      "arm": "baseline",
+      "run": 4,
+      "pass": true,
+      "cost": 0.00631595,
+      "turns": 15,
+      "seconds": 21.5,
+      "graders": [
+        {
+          "id": "old-name-gone",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-name-gone-tests",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "new-name-defined",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-fix-offbyone",
+      "arm": "baseline",
+      "run": 4,
+      "pass": true,
+      "cost": 0.00499063,
+      "turns": 10,
+      "seconds": 15.9,
+      "graders": [
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "visible-test-untouched",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-changelog-entry",
+      "arm": "baseline",
+      "run": 4,
+      "pass": true,
+      "cost": 0.0031579000000000004,
+      "turns": 3,
+      "seconds": 7.2,
+      "graders": [
+        {
+          "id": "entry-under-unreleased",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "older-entries-kept",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-heading-style",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-typo-readme",
+      "arm": "baseline",
+      "run": 5,
+      "pass": true,
+      "cost": 0.00332414,
+      "turns": 6,
+      "seconds": 8.2,
+      "graders": [
+        {
+          "id": "typos-gone",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "fixed-words-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-explain-dedupe",
+      "arm": "baseline",
+      "run": 5,
+      "pass": true,
+      "cost": 0.0031602099999999997,
+      "turns": 3,
+      "seconds": 8.1,
+      "graders": [
+        {
+          "id": "explain-exists",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-first",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "says-linear",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "mentions-key",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "source-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-rename-function",
+      "arm": "baseline",
+      "run": 5,
+      "pass": true,
+      "cost": 0.00631739,
+      "turns": 15,
+      "seconds": 20.5,
+      "graders": [
+        {
+          "id": "old-name-gone",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-name-gone-tests",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "new-name-defined",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-fix-offbyone",
+      "arm": "baseline",
+      "run": 5,
+      "pass": true,
+      "cost": 0.0038748600000000004,
+      "turns": 6,
+      "seconds": 10.8,
+      "graders": [
+        {
+          "id": "tests-pass",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "visible-test-untouched",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "simple-changelog-entry",
+      "arm": "baseline",
+      "run": 5,
+      "pass": true,
+      "cost": 0.0032013700000000003,
+      "turns": 3,
+      "seconds": 9.2,
+      "graders": [
+        {
+          "id": "entry-under-unreleased",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "older-entries-kept",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-heading-style",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    }
+  ]
+}

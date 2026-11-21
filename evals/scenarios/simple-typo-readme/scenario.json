@@ -1,0 +1,41 @@
+{
+  "title": "Fix spelling mistakes in a README",
+  "type": "cli",
+  "stack": [
+    "node"
+  ],
+  "tags": [
+    "docs",
+    "simple"
+  ],
+  "prompt": "Fix the spelling mistakes in README.md. Change nothing else.",
+  "graders": [
+    {
+      "id": "typos-gone",
+      "category": "docs",
+      "type": "not_contains",
+      "path": "README.md",
+      "pattern": "recieve|seperate|occured|definately"
+    },
+    {
+      "id": "fixed-words-present",
+      "category": "correctness",
+      "type": "contains",
+      "path": "README.md",
+      "pattern": "(?=[\\s\\S]*receive)(?=[\\s\\S]*separate)(?=[\\s\\S]*occurred)(?=[\\s\\S]*definitely)"
+    },
+    {
+      "id": "rest-untouched",
+      "category": "correctness",
+      "type": "contains",
+      "path": "README.md",
+      "pattern": "Run `npm test` to verify\\."
+    },
+    {
+      "id": "source-untouched",
+      "category": "correctness",
+      "type": "unchanged",
+      "path": "src/index.js"
+    }
+  ]
+}

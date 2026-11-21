@@ -425,6 +425,16 @@ console.log('\n[orchestrate]');
     check(lv('fix a typo in the README') === 'simple' && lv('explain what this function does') === 'simple' && lv('add an endpoint to list invoices') === 'medium' && lv('rotate the payment webhook secret') === 'complex' && lv('rename a variable', 9) === 'complex' && lv('tidy two modules', 2) === 'medium', 'classifier: simple / medium / complex goals');
     check(JSON.stringify(rtm.selectAgents('fix typo', 'simple')) === '[]' && rtm.selectAgents('redesign the architecture of billing', 'complex').join() === 'planner,architect,security-reviewer,code-reviewer' && rtm.selectAgents('add an endpoint', 'medium').length === 0, 'agent selection: none for simple/medium work; planner, architect, security and review only when the goal justifies them');
     check(rtm.routingProblems({ enabled: true, simple: 'a b' }).length === 1 && rtm.routingProblems({ typo: 1 }).length === 1 && rtm.routingProblems(ROUTE && { enabled: true, simple: 'x', fallback: 'y' }).length === 0, 'model_routing validation rejects bad ids and unknown keys');
+    { // evals/routing-ab.mjs composes measured per-scenario means; checked with synthetic numbers
+      const ab = await import(pathToFileURL(path.join(HERE, 'evals', 'routing-ab.mjs')).href);
+      const cheap = { a: { n: 2, p: 1, cost: 0.01 }, b: { n: 2, p: 0.5, cost: 0.01 }, only: { n: 1, p: 1, cost: 1 } };
+      const strong = { a: { n: 2, p: 1, cost: 0.1 }, b: { n: 2, p: 1, cost: 0.1 } };
+      const r1 = ab.compose(cheap, strong, (id) => (id === 'a' ? 'simple' : 'complex'));
+      check(r1.rows.length === 2 && Math.abs(r1.reduction - 45) < 0.01 && r1.routed.rate === 1, 'routing-ab: only simple goals go to the cheap model; scenarios measured on one model are ignored');
+      const r2 = ab.compose(cheap, strong, () => 'simple');
+      check(r2.routed.rate === 0.75 && Math.abs(r2.reduction - 86.667) < 0.01 && Math.abs(r2.reductionEscalated - 65) < 0.01, 'routing-ab: a cheap model that fails more shows its lower success, and escalation is modeled separately');
+      check(ab.compose({}, strong, () => 'simple').reduction === null, 'routing-ab: no comparable scenarios gives no number, not zero');
+    }
     const rc = JSON.parse(fs.readFileSync(path.join(HERE, 'evals', 'routing-cases.json'), 'utf8'));
     check(rc.length >= 12 && rc.every((c) => rtm.classifyTask(c.goal).level === c.level), 'classifier: every labeled case in evals/routing-cases.json gets its expected level');
     const bad = fs.mkdtempSync(path.join(os.tmpdir(), 'mr-')); fs.writeFileSync(path.join(bad, 'project.config.yml'), 'name: S\ntype: web\nbranches: {working: x, production: main}\nmodel_routing:\n  complex: "a;b"\n');

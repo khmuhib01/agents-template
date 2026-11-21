@@ -1,0 +1,1 @@
+`dedupe` removes duplicate items from an array. Each item is reduced to a key (the item itself, or `keyFn(item)`); a Set remembers the keys seen so far. The first item with a given key is kept, later ones are dropped, and the original order is preserved. Time complexity is O(n) for n items.

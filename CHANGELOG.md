@@ -2,6 +2,14 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.22.1 - 2026-11-22
+
+Eval tooling only; generated projects are unchanged.
+
+- 5 simple scenarios in `evals/scenarios/` (typo, explain a function, rename across files, one-file off-by-one fix, changelog entry), each with deterministic graders and a reference solution (`node evals/scenarios.mjs --check` is green for all 13).
+- `node evals/routing-ab.mjs --cheap a.json --strong b.json`: offline, composes recorded runs into "routed vs all strong model" using the classifier, with an optional modeled escalation column.
+- Paid result (25 runs per model, 5 scenarios x 5 runs, $1.39 total): `haiku` and `sonnet` both passed 25 of 25; haiku cost about $0.004 and sonnet about $0.052 per run. The classifier sent only 2 of the 5 to the cheap model (typo, explain; the other three were classified medium), so the routed total is 34% cheaper per passing task at the same success rate. Sending all 5 to haiku would have been about 92% cheaper, but that is not what the router does.
+
 ## 1.22.0 - 2026-11-22
 
 Fixes two bugs from the 1.21.0 audit.
