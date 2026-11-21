@@ -13,7 +13,8 @@ run(() => {
   const abs = path.resolve(input.cwd || root, file);
   const rel = path.relative(root, abs).split(path.sep).join('/');
   if (!fs.existsSync(abs) || rel.startsWith('..') || /(^|\/)(node_modules|vendor)\//.test(rel)) process.exit(0);
-  if (/["`$\r\n]/.test(abs)) process.exit(0); // never splice odd paths into a shell command
+  if (/["`$\\\r\n]/.test(abs)) process.exit(0); // never splice odd paths into a shell command
+  if (/[;&|`$<>\\\r\n]/.test(cfg.formatCommand)) process.exit(0); // config is validated at init; re-check in case it was edited since
   const r = spawnSync(`${cfg.formatCommand} "${abs}"`, { shell: true, cwd: root, encoding: 'utf8', timeout: 60000 });
   if (r.status !== 0) {
     process.stderr.write(`format_command failed (exit ${r.status}) on ${rel}: ${String(r.stderr || r.stdout || '').slice(0, 500)}\n`);
