@@ -1,0 +1,95 @@
+{
+  "title": "Handle charge.refunded in a payment webhook (retries, signatures)",
+  "type": "api",
+  "stack": [
+    "node"
+  ],
+  "domains": [
+    "payments"
+  ],
+  "tags": [
+    "payments",
+    "security"
+  ],
+  "prompt": "Add handling for the `charge.refunded` webhook event in src/webhook.mjs: reduce the customer's balance by the refunded amount and mark the invoice as refunded. Keep the existing exports and behavior of invoice.paid. Add a node --test test for the new event. Don't add dependencies.",
+  "graders": [
+    {
+      "id": "refund-applied",
+      "category": "correctness",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-webhook.mjs",
+        "refund-works"
+      ]
+    },
+    {
+      "id": "refund-idempotent-on-redelivery",
+      "category": "correctness",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-webhook.mjs",
+        "refund-idempotent"
+      ]
+    },
+    {
+      "id": "refund-rejects-bad-signature",
+      "category": "security",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-webhook.mjs",
+        "refund-bad-signature"
+      ]
+    },
+    {
+      "id": "paid-and-unknown-events-unchanged",
+      "category": "correctness",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-webhook.mjs",
+        "paid-still-works"
+      ]
+    },
+    {
+      "id": "tests-pass",
+      "category": "test_quality",
+      "type": "command",
+      "cmd": [
+        "node",
+        "--test"
+      ]
+    },
+    {
+      "id": "tests-added",
+      "category": "test_quality",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-tests-added.mjs"
+      ]
+    },
+    {
+      "id": "exports-preserved",
+      "category": "correctness",
+      "type": "contains",
+      "path": "src/webhook.mjs",
+      "pattern": "export function handleWebhook[\\s\\S]*export function verifySignature|export function verifySignature[\\s\\S]*export function handleWebhook"
+    },
+    {
+      "id": "no-secret-logging",
+      "category": "security",
+      "type": "not_contains",
+      "path": "src",
+      "pattern": "console\\.\\w+\\([^)]*(secret|rawBody|signature)"
+    },
+    {
+      "id": "package-untouched",
+      "category": "docs",
+      "type": "unchanged",
+      "path": "package.json"
+    }
+  ]
+}
