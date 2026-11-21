@@ -72,6 +72,7 @@ node install-global.mjs --codex    # or pick: --claude --codex --antigravity, or
 - The script rewrites the template path inside the skills to wherever you cloned it, so the folder can be anywhere, but it must stay on the PC (the skills run `init.mjs` from it).
 - Restart the agent afterwards, then in any project: `/agent-setup-scaffold` → edit `project.config.yml` → `/agent-init`.
 - After `git pull` in the template (or editing `global-skills/`), run `install-global.mjs` again. `--dry-run` shows what would be written.
+- To bring an existing project up to the latest template, open it in Claude Code and run `/agent-update`: it pulls the template, compares versions, shows the changelog entries and a dry-run, asks, then runs `init.mjs`. (Plugin: `/agents-template:agent-update`.)
 
 ## What init creates in a project
 
@@ -167,7 +168,7 @@ claude plugin marketplace add khmuhib01/agents-template
 claude plugin install agents-template@agents-template
 ```
 
-You get `/agents-template:agent-setup-scaffold` and `/agents-template:agent-init`; they run `init.mjs` from the plugin folder. The plugin files (`skills/`, `.claude-plugin/`) are generated from `global-skills/` and `VERSION` by `node build-plugin.mjs`; `test.mjs` fails if they are stale, so run it after changing either. Checked once on Linux with Claude Code 2.1.329 (install, scaffold and init all worked); report any issue on other systems.
+You get `/agents-template:agent-setup-scaffold`, `/agents-template:agent-init` and `/agents-template:agent-update`; they run `init.mjs` from the plugin folder. The plugin files (`skills/`, `.claude-plugin/`) are generated from `global-skills/` and `VERSION` by `node build-plugin.mjs`; `test.mjs` fails if they are stale, so run it after changing either. Checked once on Linux with Claude Code 2.1.329 (install, scaffold and init all worked); report any issue on other systems.
 
 ## Live skill-trigger eval (costs money)
 
