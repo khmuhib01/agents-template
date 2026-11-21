@@ -2,6 +2,16 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.22.2 - 2026-11-22
+
+Classifier fixes found with a second labeled set (`evals/routing-heldout.json`, 20 goals written before the change). Affects `orchestrate.mjs --profile auto` and `model_routing` only.
+
+- A short goal with no positive cue was rated `simple` ("write tests for the invoice calculator" went to the cheapest model). Now `simple` needs a cue (typo, grammar, rename, explain, changelog, copyright, ...) or a bug fix naming exactly one file; anything else is `medium`.
+- `JWT`, token, session, password, login, SSO/SAML/MFA, CORS, SSRF, SQL and signature work is now `complex` (a JWT refresh-token task was rated medium).
+- Building words (`implement`, `endpoint`, `page`, `schema`, `export`, ...) and spread words (`everywhere`, `across`, `all`, `modules`) keep a goal out of `simple`; a file name such as `src/page.js` no longer counts as one.
+- Before: held-out 17/20 correct, 1 false-simple, 1 missed complex. After: 20/20, 0 and 0. The set is no longer held-out now that I tuned against it, so that number is a regression check, not an estimate of accuracy on new goals. A test requires zero false-simple and zero missed complex over all 34 labeled goals.
+- Effect on the recorded simple-scenario runs (haiku and sonnet both 25/25): 3 of 5 are now routed to the cheap model instead of 2, so the routed total is 51% cheaper per passing task instead of 34%. The 8 earlier security/database scenarios are unchanged (none goes to the cheap model).
+
 ## 1.22.1 - 2026-11-22
 
 Eval tooling only; generated projects are unchanged.

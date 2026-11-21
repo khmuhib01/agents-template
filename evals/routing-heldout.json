@@ -1,0 +1,22 @@
+[
+  { "goal": "fix the indentation in the docker-compose file", "level": "simple" },
+  { "goal": "update the copyright year in the footer", "level": "simple" },
+  { "goal": "what does the retry helper in utils.js do", "level": "simple" },
+  { "goal": "rename the variable tmp to buffer in parser.js", "level": "simple" },
+  { "goal": "add a changelog line for the new flag", "level": "simple" },
+  { "goal": "fix the off-by-one in pagination in src/page.js", "level": "simple" },
+  { "goal": "correct the grammar in CONTRIBUTING.md", "level": "simple" },
+  { "goal": "add pagination to the users list endpoint", "level": "medium" },
+  { "goal": "add a settings page with a dark mode toggle", "level": "medium" },
+  { "goal": "refactor the order service to use async/await across modules", "level": "medium" },
+  { "goal": "add a unique index and a query on emails", "level": "medium" },
+  { "goal": "write tests for the invoice calculator", "level": "medium" },
+  { "goal": "implement CSV export for reports", "level": "medium" },
+  { "goal": "rename the helper everywhere in src and test", "level": "medium" },
+  { "goal": "implement JWT refresh token rotation", "level": "complex" },
+  { "goal": "migrate the monolith database to per-tenant schemas", "level": "complex" },
+  { "goal": "fix the SQL injection in the search endpoint", "level": "complex" },
+  { "goal": "set up the production deployment pipeline with rollback", "level": "complex" },
+  { "goal": "design the event-driven architecture for order processing", "level": "complex" },
+  { "goal": "fix the bug in src/auth.js where sessions never expire", "level": "complex" }
+]

@@ -437,6 +437,12 @@ console.log('\n[orchestrate]');
     }
     const rc = JSON.parse(fs.readFileSync(path.join(HERE, 'evals', 'routing-cases.json'), 'utf8'));
     check(rc.length >= 12 && rc.every((c) => rtm.classifyTask(c.goal).level === c.level), 'classifier: every labeled case in evals/routing-cases.json gets its expected level');
+    { // safety invariant over both labeled sets: nothing that is not simple is ever sent down as simple, and no complex goal is rated lower
+      const sets = ['routing-cases', 'routing-heldout'].flatMap((f) => JSON.parse(fs.readFileSync(path.join(HERE, 'evals', `${f}.json`), 'utf8')));
+      const got = sets.map((c) => ({ ...c, got: rtm.classifyTask(c.goal).level }));
+      check(got.filter((c) => c.got === 'simple' && c.level !== 'simple').length === 0 && got.filter((c) => c.level === 'complex' && c.got !== 'complex').length === 0, `classifier: no false-simple and no missed complex over ${sets.length} labeled goals`);
+      check(rtm.classifyTask('write tests for the invoice calculator').level === 'medium' && rtm.classifyTask('implement JWT refresh token rotation').level === 'complex', 'classifier: a short goal with no positive cue is medium, not simple; token/JWT work is complex');
+    }
     const bad = fs.mkdtempSync(path.join(os.tmpdir(), 'mr-')); fs.writeFileSync(path.join(bad, 'project.config.yml'), 'name: S\ntype: web\nbranches: {working: x, production: main}\nmodel_routing:\n  complex: "a;b"\n');
     check(run(bad).status === 1 && !fs.existsSync(path.join(bad, 'AGENTS.md')), 'init rejects an invalid model_routing before writing anything'); fs.rmSync(bad, { recursive: true, force: true });
   }
