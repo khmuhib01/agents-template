@@ -1,0 +1,1125 @@
+{
+  "kind": "scenarios",
+  "date": "2026-11-21",
+  "model": "sonnet",
+  "runsPerCell": 3,
+  "budgetPerRunUsd": 1,
+  "runs": [
+    {
+      "scenario": "payments-webhook-refund",
+      "arm": "baseline",
+      "run": 1,
+      "pass": false,
+      "cost": 0.0776485,
+      "turns": 9,
+      "graders": [
+        {
+          "id": "refund-applied",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-idempotent-on-redelivery",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-rejects-bad-signature",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "paid-and-unknown-events-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-file-added",
+          "category": "test_quality",
+          "pass": false,
+          "detail": ""
+        },
+        {
+          "id": "exports-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-secret-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "payments-webhook-refund",
+      "arm": "skills",
+      "run": 1,
+      "pass": false,
+      "cost": 0.10427469999999998,
+      "turns": 8,
+      "graders": [
+        {
+          "id": "refund-applied",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-idempotent-on-redelivery",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-rejects-bad-signature",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "paid-and-unknown-events-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-file-added",
+          "category": "test_quality",
+          "pass": false,
+          "detail": ""
+        },
+        {
+          "id": "exports-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-secret-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "tenant-invoice-isolation",
+      "arm": "baseline",
+      "run": 1,
+      "pass": false,
+      "cost": 0.0774387,
+      "turns": 8,
+      "graders": [
+        {
+          "id": "own-invoices-work",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-read",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-write",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "csv-only-own-tenant",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "list-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-file-added",
+          "category": "test_quality",
+          "pass": false,
+          "detail": ""
+        },
+        {
+          "id": "db-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "tenant-invoice-isolation",
+      "arm": "skills",
+      "run": 1,
+      "pass": false,
+      "cost": 0.1067891,
+      "turns": 9,
+      "graders": [
+        {
+          "id": "own-invoices-work",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-read",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-write",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "csv-only-own-tenant",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "list-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-file-added",
+          "category": "test_quality",
+          "pass": false,
+          "detail": ""
+        },
+        {
+          "id": "db-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "migration-lock-safety",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.07610390000000002,
+      "turns": 12,
+      "graders": [
+        {
+          "id": "new-migration-added",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "adds-status-column",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "column-not-null-default-pending",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "index-built-concurrently",
+          "category": "performance",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "runner-transaction-rules",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "down-migrations-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0001-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0002-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "migration-lock-safety",
+      "arm": "skills",
+      "run": 1,
+      "pass": true,
+      "cost": 0.100983,
+      "turns": 12,
+      "graders": [
+        {
+          "id": "new-migration-added",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "adds-status-column",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "column-not-null-default-pending",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "index-built-concurrently",
+          "category": "performance",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "runner-transaction-rules",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "down-migrations-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0001-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0002-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "payments-webhook-refund",
+      "arm": "baseline",
+      "run": 2,
+      "pass": false,
+      "cost": 0.08039110000000001,
+      "turns": 9,
+      "graders": [
+        {
+          "id": "refund-applied",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-idempotent-on-redelivery",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-rejects-bad-signature",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "paid-and-unknown-events-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-file-added",
+          "category": "test_quality",
+          "pass": false,
+          "detail": ""
+        },
+        {
+          "id": "exports-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-secret-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "payments-webhook-refund",
+      "arm": "skills",
+      "run": 2,
+      "pass": false,
+      "cost": 0.10332670000000001,
+      "turns": 9,
+      "graders": [
+        {
+          "id": "refund-applied",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-idempotent-on-redelivery",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-rejects-bad-signature",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "paid-and-unknown-events-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-file-added",
+          "category": "test_quality",
+          "pass": false,
+          "detail": ""
+        },
+        {
+          "id": "exports-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-secret-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "tenant-invoice-isolation",
+      "arm": "baseline",
+      "run": 2,
+      "pass": false,
+      "cost": 0.0782084,
+      "turns": 8,
+      "graders": [
+        {
+          "id": "own-invoices-work",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-read",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-write",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "csv-only-own-tenant",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "list-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-file-added",
+          "category": "test_quality",
+          "pass": false,
+          "detail": ""
+        },
+        {
+          "id": "db-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "tenant-invoice-isolation",
+      "arm": "skills",
+      "run": 2,
+      "pass": false,
+      "cost": 0.10003949999999999,
+      "turns": 8,
+      "graders": [
+        {
+          "id": "own-invoices-work",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-read",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-write",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "csv-only-own-tenant",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "list-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-file-added",
+          "category": "test_quality",
+          "pass": false,
+          "detail": ""
+        },
+        {
+          "id": "db-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "migration-lock-safety",
+      "arm": "baseline",
+      "run": 2,
+      "pass": true,
+      "cost": 0.083167,
+      "turns": 10,
+      "graders": [
+        {
+          "id": "new-migration-added",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "adds-status-column",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "column-not-null-default-pending",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "index-built-concurrently",
+          "category": "performance",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "runner-transaction-rules",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "down-migrations-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0001-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0002-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "migration-lock-safety",
+      "arm": "skills",
+      "run": 2,
+      "pass": true,
+      "cost": 0.09789629999999999,
+      "turns": 8,
+      "graders": [
+        {
+          "id": "new-migration-added",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "adds-status-column",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "column-not-null-default-pending",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "index-built-concurrently",
+          "category": "performance",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "runner-transaction-rules",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "down-migrations-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0001-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0002-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "payments-webhook-refund",
+      "arm": "baseline",
+      "run": 3,
+      "pass": false,
+      "cost": 0.0775149,
+      "turns": 8,
+      "graders": [
+        {
+          "id": "refund-applied",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-idempotent-on-redelivery",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-rejects-bad-signature",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "paid-and-unknown-events-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-file-added",
+          "category": "test_quality",
+          "pass": false,
+          "detail": ""
+        },
+        {
+          "id": "exports-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-secret-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "payments-webhook-refund",
+      "arm": "skills",
+      "run": 3,
+      "pass": false,
+      "cost": 0.1018201,
+      "turns": 8,
+      "graders": [
+        {
+          "id": "refund-applied",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-idempotent-on-redelivery",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-rejects-bad-signature",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "paid-and-unknown-events-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-file-added",
+          "category": "test_quality",
+          "pass": false,
+          "detail": ""
+        },
+        {
+          "id": "exports-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-secret-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "tenant-invoice-isolation",
+      "arm": "baseline",
+      "run": 3,
+      "pass": false,
+      "cost": 0.09830320000000001,
+      "turns": 9,
+      "graders": [
+        {
+          "id": "own-invoices-work",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-read",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-write",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "csv-only-own-tenant",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "list-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-file-added",
+          "category": "test_quality",
+          "pass": false,
+          "detail": ""
+        },
+        {
+          "id": "db-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "tenant-invoice-isolation",
+      "arm": "skills",
+      "run": 3,
+      "pass": false,
+      "cost": 0.1001704,
+      "turns": 8,
+      "graders": [
+        {
+          "id": "own-invoices-work",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-read",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-write",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "csv-only-own-tenant",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "list-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-file-added",
+          "category": "test_quality",
+          "pass": false,
+          "detail": ""
+        },
+        {
+          "id": "db-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "migration-lock-safety",
+      "arm": "baseline",
+      "run": 3,
+      "pass": true,
+      "cost": 0.0688163,
+      "turns": 7,
+      "graders": [
+        {
+          "id": "new-migration-added",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "adds-status-column",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "column-not-null-default-pending",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "index-built-concurrently",
+          "category": "performance",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "runner-transaction-rules",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "down-migrations-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0001-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0002-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "migration-lock-safety",
+      "arm": "skills",
+      "run": 3,
+      "pass": true,
+      "cost": 0.09963780000000001,
+      "turns": 8,
+      "graders": [
+        {
+          "id": "new-migration-added",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "adds-status-column",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "column-not-null-default-pending",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "index-built-concurrently",
+          "category": "performance",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "runner-transaction-rules",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "down-migrations-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0001-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0002-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    }
+  ]
+}

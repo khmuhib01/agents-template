@@ -52,3 +52,29 @@ With 1 run(s) per cell, small differences between arms are noise; a skill earns 
 
 With 1 run(s) per cell, small differences between arms are noise; a skill earns the label "evaluated" only with repeated runs recorded here.
 
+### 2026-11-21, sonnet, 3 run(s) per scenario and arm, cap $1/run
+
+| Scenario | Arm | Runs | Passed all graders | Mean cost | Mean turns |
+|---|---|---|---|---|---|
+| migration-lock-safety | baseline | 3 | 3/3 (100%) | $0.076 | 9.7 |
+| migration-lock-safety | skills | 3 | 3/3 (100%) | $0.100 | 9.3 |
+| payments-webhook-refund | baseline | 3 | 0/3 (0%) | $0.079 | 8.7 |
+| payments-webhook-refund | skills | 3 | 0/3 (0%) | $0.103 | 8.3 |
+| tenant-invoice-isolation | baseline | 3 | 0/3 (0%) | $0.085 | 8.3 |
+| tenant-invoice-isolation | skills | 3 | 0/3 (0%) | $0.102 | 8.3 |
+
+| Category | Arm | Graders passed |
+|---|---|---|
+| correctness | baseline | 42/42 (100%) |
+| correctness | skills | 42/42 (100%) |
+| docs | baseline | 6/6 (100%) |
+| docs | skills | 6/6 (100%) |
+| performance | baseline | 3/3 (100%) |
+| performance | skills | 3/3 (100%) |
+| security | baseline | 15/15 (100%) |
+| security | skills | 15/15 (100%) |
+| test_quality | baseline | 6/12 (50%) |
+| test_quality | skills | 6/12 (50%) |
+
+With 3 run(s) per cell, small differences between arms are noise; a skill earns the label "evaluated" only with repeated runs recorded here.
+

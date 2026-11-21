@@ -134,7 +134,7 @@ Pilot of 5 scenarios x 2 arms x 1 run (Sonnet): every scenario passed in both ar
 2. Add "Not for" clauses to the groups in 2.3.
 3. Add negative and ambiguous cases for the 29 skills lacking them.
 4. Add `frontend-engineering` positive cases.
-5. Three harder scenarios added (payments webhook, tenant isolation, migration safety); graders validated offline, **not yet run**. See `docs/EVALUATION-PLAN.md` for the proposed paid run and cost estimate.
+5. Three harder scenarios added (payments webhook, tenant isolation, migration safety); run once with 3 runs per arm: no quality difference, skills arm about 28 percent more cost; see `docs/EVALUATION-PLAN.md`.
 
 ## 4. Acceptance check against the brief's Phase 1
 | Criterion | Status |

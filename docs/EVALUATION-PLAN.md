@@ -24,8 +24,27 @@ All five scenarios passed in both arms, so they cannot show a benefit or a harm 
 
 Limits [I]: a strong baseline model may still pass them (then they will not discriminate either); the graders are deterministic but encode one reasonable solution; the migration check is a static parse, not a database run. A naive attempt failing proves the graders are sensitive, not that the skills help.
 
-## 3. Proposed paid run (needs approval, not started)
-- Scope: the 3 new scenarios, arms `baseline` and `skills`, 3 runs each = **18 runs**. Command: `node evals/scenarios.mjs --scenario payments-webhook-refund,tenant-invoice-isolation,migration-lock-safety --runs 3 --out evals/results/<file>.json`.
-- Cost, **estimate only**: the pilot's mean cost per run was about $0.08 (baseline) and $0.13 (skills). These tasks write code and tests, so assume up to roughly double: about $2 to $5 in total. The built-in cap is $1.00 per run and 20 runs per invocation, so the hard ceiling is $18, which the estimate should stay well under.
-- Decision rule: report pass rates per grader category, mean cost and turns per arm, with 3 runs per cell as a weak signal. If both arms pass everything again, say so and stop adding scenarios of this kind; if skills cost more with no quality gain, record that as a negative result and consider disabling or shrinking the skills arm by default.
-- Not covered: live trigger accuracy (`evals/live.mjs`, needs `ANTHROPIC_API_KEY`) and an orchestration comparison; neither exists yet.
+## 3. Paid run result (2026-11-21, Sonnet, 3 runs per scenario and arm = 18 runs)
+Command: `node evals/scenarios.mjs --scenario payments-webhook-refund,tenant-invoice-isolation,migration-lock-safety --runs 3 --out evals/results/scenarios-2026-11-21-sonnet-n3-new3.json`. Recorded in `evals/REPORT.md`. Actual total cost **$1.63** (below the $2 to $5 estimate; cap was $1 per run).
+
+| Scenario | Arm | All graders passed | Passed excluding `test-file-added` | Mean cost | Mean turns |
+|---|---|---|---|---|---|
+| migration-lock-safety | baseline | 3/3 | 3/3 | $0.076 | 9.7 |
+| migration-lock-safety | skills | 3/3 | 3/3 | $0.100 | 9.3 |
+| payments-webhook-refund | baseline | 0/3 | 3/3 | $0.079 | 8.7 |
+| payments-webhook-refund | skills | 0/3 | 3/3 | $0.103 | 8.3 |
+| tenant-invoice-isolation | baseline | 0/3 | 3/3 | $0.085 | 8.3 |
+| tenant-invoice-isolation | skills | 0/3 | 3/3 | $0.102 | 8.3 |
+
+Across all 18 runs: correctness 42/42, security 15/15, performance 3/3 in both arms; baseline mean cost $0.080 and 8.9 turns, skills mean cost $0.102 and 8.7 turns.
+
+What this shows, and does not:
+- **No quality difference between arms.** Every correctness and security grader passed in every run in both arms, including the traps (idempotent refund on redelivery, cross-tenant read and write, `CREATE INDEX CONCURRENTLY` in a `-- no-transaction` file). Sonnet baseline handled them. These scenarios still do not discriminate, so no skill benefit is shown. Negative result, kept.
+- **The skills arm cost about 28 percent more per run** ($0.102 vs $0.080) with about the same number of turns (8.7 vs 8.9). That points to a larger prompt per turn (the generated project context), not extra turns. Three runs per cell is a weak signal; the cost gap was consistent in all 9 pairs.
+- **`test-file-added` failed in all 12 runs of two scenarios, in both arms. This was most likely a grader defect, not a model failure.** The grader required a `test/` directory, while the prompt did not say where to put the test, and the work directories were not kept, so I could not inspect what the models wrote. The grader was replaced by `tests-added` (any `*.test.*` or file under `test/` that calls `test(` or `it(`), validated offline; the old results keep the old grader id. The test-quality outcome for these 12 runs is **unknown**, not failed. Also `tests-pass` passes when there are no tests (`node --test` exits 0), so it did not catch this.
+- Cost and turns come from the runs; nothing above is extrapolated.
+
+## 4. What the evidence supports so far
+1. Skills do not improve outcomes on these 8 scenarios (5 pilot, 3 here) with Sonnet, and cost about 20 to 130 percent more per run in the recorded cells. The README claim stays "no benefit shown".
+2. Do not add scenarios of the same kind (single-file fixtures where the trap is a well-known pitfall); a strong baseline passes them. A discriminating scenario needs a hidden requirement the prompt does not hint at, version-specific behavior after the model's knowledge, or a larger repo where convention discovery matters.
+3. Rerunning only to recover the test-quality signal costs about $1.1 (12 runs at about $0.09, estimate from this run) and would use `--keep`; not started.

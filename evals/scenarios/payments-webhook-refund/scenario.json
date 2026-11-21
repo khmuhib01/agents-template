@@ -63,10 +63,13 @@
       ]
     },
     {
-      "id": "test-file-added",
+      "id": "tests-added",
       "category": "test_quality",
-      "type": "exists",
-      "path": "test"
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-tests-added.mjs"
+      ]
     },
     {
       "id": "exports-preserved",
