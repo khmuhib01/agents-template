@@ -1,0 +1,44 @@
+{
+  "title": "Rename a function across files",
+  "type": "cli",
+  "stack": [
+    "node"
+  ],
+  "tags": [
+    "refactor",
+    "simple"
+  ],
+  "prompt": "Rename the function `calcTotal` to `calculateTotal` everywhere in src and test. Behavior must not change and the tests must still pass.",
+  "graders": [
+    {
+      "id": "old-name-gone",
+      "category": "correctness",
+      "type": "not_contains",
+      "path": "src",
+      "pattern": "calcTotal"
+    },
+    {
+      "id": "old-name-gone-tests",
+      "category": "correctness",
+      "type": "not_contains",
+      "path": "test",
+      "pattern": "calcTotal"
+    },
+    {
+      "id": "new-name-defined",
+      "category": "correctness",
+      "type": "contains",
+      "path": "src/cart.js",
+      "pattern": "export function calculateTotal"
+    },
+    {
+      "id": "tests-pass",
+      "category": "correctness",
+      "type": "command",
+      "cmd": [
+        "node",
+        "--test"
+      ]
+    }
+  ]
+}

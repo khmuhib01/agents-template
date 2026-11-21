@@ -1,0 +1,36 @@
+{
+  "title": "Add a changelog entry in the existing format",
+  "type": "cli",
+  "stack": [
+    "node"
+  ],
+  "tags": [
+    "docs",
+    "simple"
+  ],
+  "prompt": "Add a changelog entry under Unreleased for: \"Added a --json flag to the export command\". Follow the existing format and change nothing else.",
+  "graders": [
+    {
+      "id": "entry-under-unreleased",
+      "category": "docs",
+      "type": "contains",
+      "path": "CHANGELOG.md",
+      "pattern": "## Unreleased\\n(?:(?!## )[\\s\\S])*--json"
+    },
+    {
+      "id": "older-entries-kept",
+      "category": "correctness",
+      "type": "contains",
+      "path": "CHANGELOG.md",
+      "pattern": "## 1\\.0\\.0 - 2026-01-10[\\s\\S]*Initial release"
+    },
+    {
+      "id": "no-new-heading-style",
+      "category": "docs",
+      "type": "not_contains",
+      "path": "CHANGELOG.md",
+      "pattern": "^### ",
+      "flags": "m"
+    }
+  ]
+}

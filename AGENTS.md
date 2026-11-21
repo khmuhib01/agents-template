@@ -29,6 +29,7 @@ Local-only / git-ignored (never commit):
 5. **Attribution:** Do not add `Co-Authored-By` or "Generated with" lines to commits or PRs.
 6. **Branch model:** `feat/example → dev → main`. `main` is protected: never commit or push to it directly.
 7. **Never** force-push, use `--no-verify`, or stage secrets (`.env`, credentials, dumps).
+8. **Delegation (cost):** do small, single-file or well-understood work directly; no planner, architect or reviewer for it. Use `planner` only for multi-file or unclear work, `architect` only for a real design decision, `security-reviewer` only when auth, input, secrets, permissions or dependencies change, `code-reviewer` only on request or for a large diff. One agent per question; never repeat an analysis another agent already did.
 
 ### Project-specific rules
 

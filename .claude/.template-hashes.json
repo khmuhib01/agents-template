@@ -11,10 +11,10 @@
   ".claude/agents/qa-engineer.md": "90ce7c1e7627765299f049dc9aec51501d4204430c0a0c08acaea2022868b00c",
   ".claude/agents/security-reviewer.md": "d697f354b5b4f3f2c88c12c4da8939be266e078086cd6ec69921f0ccef37ef98",
   ".claude/hooks/context-nudge.mjs": "c985e594042af97bd8f967604748819a35273cf4f16324e36c7088f4c0682ddf",
-  ".claude/hooks/guard-bash.mjs": "1d06dd82ba9f89b7a67385eecdafc094d2c587ae0d7113b1e8d16a3ef3e7703f",
-  ".claude/hooks/guard-read.mjs": "3c05f1271f3dbf5bdbdd4ed9825225e2acd5c9735b40d72cc06b09abdab66c39",
-  ".claude/hooks/guard-secrets.mjs": "7454c12239159287c1a9fd1f3b52a46e5a05f171a5919ca259900d7b9fc26f32",
-  ".claude/hooks/lib.mjs": "c933804df65369a327bd3ff649635560d7975a961346bce83c6e1df4bfaaefec",
+  ".claude/hooks/guard-bash.mjs": "4118ce1bedf5a0c759c70c371183e6be322f2799c01215715bea35f21b76b40c",
+  ".claude/hooks/guard-read.mjs": "e72ac9c77fa2e62f0ddc0b3be8fb67ffc0e63957b045f6acb79d46a39c15acf0",
+  ".claude/hooks/guard-secrets.mjs": "546a10613d77aaecbbfcd42bf1bfba9da2504766fb066989fde4d14baf908b5c",
+  ".claude/hooks/lib.mjs": "258b614ca016f2ac53211c2763473327f679de2b3acfff77e48cddb35a5a2212",
   ".claude/rules/ARCHITECTURE.md": "b31b25faa79986da82c9c07bfdc9014ada7742693d4be823c3d51bae435210fd",
   ".claude/rules/CODE-QUALITY.md": "e60c4954c2d6e9b7fbf6e82064f4f4bd2d3a0a55300215ede0e5108954f6bad8",
   ".claude/rules/COMMANDS-TESTING.md": "966fdc6c692b709d9cefc9bfee2af427aa53566a8d511ccac63ba3f9b63021d7",
@@ -76,6 +76,6 @@
   ".claude/skills/testing-best-practices/rules/security.md": "d32e3a755a203068a9a6566b5dd31aa0beb1da5b40a082e656cd426255a49716",
   ".claude/skills/testing-best-practices/rules/test-data.md": "11b2436a77f06295c2a3685dfdf06558b24a4d62531f449ff9b5ccb641b58b6c",
   ".claude/skills/typescript-development/SKILL.md": "3c25d4aff13eea7015101ac98cd29d7401d0031369ebd32a219deeafde4cb112",
-  "AGENTS.md": "853b726116f9bccff6ebfef8ba0855d39c9863c54920919da2891df6b1e9f36e",
+  "AGENTS.md": "7512cff5dd95834c837cb74add092a07c1b82ef91c3beb455099c67651abaf7b",
   "CLAUDE.md": "3ce02adb108577d3192fc337bfe23abb2a57dbffa3f4a46b2dcd1b0b125c4c89"
 }

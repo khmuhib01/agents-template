@@ -2,6 +2,35 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.22.3 - 2026-11-22
+
+Cheap-first routing with escalation (orchestrate.mjs, opt-in).
+
+- `model_routing.escalate`: when the tests fail after the routed model's work, the repair step runs on this stronger model (one counted call, event `model_escalated`). Plan and implement stay on the routed model. Ignored when `--model` is given. Without `escalate` nothing changes.
+- eval arm `routed` (`--arms routed`): orchestrate with `--profile auto` and the model from `model_routing` (default simple/medium `haiku`, complex and escalate `sonnet`; override with `EVAL_ROUTING="simple=a,medium=b,complex=c,escalate=d"`).
+- Measured (5 simple scenarios x 3 runs, orchestrated with sonnet vs routed, $1.52 total): both passed 15 of 15; $0.096 vs $0.005 per run (94% lower), 2.0 vs 1.4 model calls per run (the tiny profile skips the planner on simple goals). Caveats: easy tasks written by me, `medium` was set to the cheap model here (opt-in config, not the default behavior), no repair or escalation happened, mean time 15.4s vs 18.4s, and the saving mixes model price with the skipped planner call.
+- 2 harder scenarios with visible tests (`hard-expression-evaluator`, `hard-cron-next-run`; the cron expected values come from the reference solution and were spot-checked by hand). Tried to trigger the escalation path for real: `haiku` passed all 8 runs (4 + 4, about $0.008 per run), so the repair-on-stronger-model path has still not been exercised against a real model; it is covered only with a fake CLI. No failure was staged.
+- `EVAL_SCENARIOS_DIR` lets `evals/scenarios.mjs` read scenarios from a folder outside the repo, for tasks taken from private projects whose code must not be committed here.
+- First real-task measurement (2 bug-fix tasks taken from the history of a private Laravel project, 5 runs per model, $1.15 total; the code is not in this repo): `haiku` 9 of 10 and `sonnet` 9 of 10 passed, at about $0.010 and $0.105 per run. The router sent both to the strong model (one goal mentions "production", the other is medium), so it used none of that saving. The classifier was not loosened on two tasks; the intended way to use the saving where tests exist is `model_routing.medium: <cheap>` with `escalate`.
+
+## 1.22.2 - 2026-11-22
+
+Classifier fixes found with a second labeled set (`evals/routing-heldout.json`, 20 goals written before the change). Affects `orchestrate.mjs --profile auto` and `model_routing` only.
+
+- A short goal with no positive cue was rated `simple` ("write tests for the invoice calculator" went to the cheapest model). Now `simple` needs a cue (typo, grammar, rename, explain, changelog, copyright, ...) or a bug fix naming exactly one file; anything else is `medium`.
+- `JWT`, token, session, password, login, SSO/SAML/MFA, CORS, SSRF, SQL and signature work is now `complex` (a JWT refresh-token task was rated medium).
+- Building words (`implement`, `endpoint`, `page`, `schema`, `export`, ...) and spread words (`everywhere`, `across`, `all`, `modules`) keep a goal out of `simple`; a file name such as `src/page.js` no longer counts as one.
+- Before: held-out 17/20 correct, 1 false-simple, 1 missed complex. After: 20/20, 0 and 0. The set is no longer held-out now that I tuned against it, so that number is a regression check, not an estimate of accuracy on new goals. A test requires zero false-simple and zero missed complex over all 34 labeled goals.
+- Effect on the recorded simple-scenario runs (haiku and sonnet both 25/25): 3 of 5 are now routed to the cheap model instead of 2, so the routed total is 51% cheaper per passing task instead of 34%. The 8 earlier security/database scenarios are unchanged (none goes to the cheap model).
+
+## 1.22.1 - 2026-11-22
+
+Eval tooling only; generated projects are unchanged.
+
+- 5 simple scenarios in `evals/scenarios/` (typo, explain a function, rename across files, one-file off-by-one fix, changelog entry), each with deterministic graders and a reference solution (`node evals/scenarios.mjs --check` is green for all 13).
+- `node evals/routing-ab.mjs --cheap a.json --strong b.json`: offline, composes recorded runs into "routed vs all strong model" using the classifier, with an optional modeled escalation column.
+- Paid result (25 runs per model, 5 scenarios x 5 runs, $1.39 total): `haiku` and `sonnet` both passed 25 of 25; haiku cost about $0.004 and sonnet about $0.052 per run. The classifier sent only 2 of the 5 to the cheap model (typo, explain; the other three were classified medium), so the routed total is 34% cheaper per passing task at the same success rate. Sending all 5 to haiku would have been about 92% cheaper, but that is not what the router does.
+
 ## 1.22.0 - 2026-11-22
 
 Fixes two bugs from the 1.21.0 audit.

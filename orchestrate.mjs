@@ -180,7 +180,10 @@ function pipeline(l) {
       l.budget = noteRepair(l.budget);
       l = transition(l, 'running', 'repair attempt');
       event('repair_started', { detail: `attempt ${l.budget.repairs}` });
-      const r = dispatch(l, 'repair', { prompt: REPAIR_PROMPT(l, v), tools: ['Read', 'Grep', 'Glob', 'Edit', 'Write'], mode: 'acceptEdits' });
+      // Cheap-first: when the routed model's work failed the tests, the repair runs on the configured stronger model (escalate), a counted call.
+      const esc = l.escalateModel && l.escalateModel !== (l.model || MODEL) ? l.escalateModel : undefined;
+      if (esc) event('model_escalated', { detail: `tests failed on ${l.model || MODEL}; repair uses ${esc}` });
+      const r = dispatch(l, 'repair', { prompt: REPAIR_PROMPT(l, v), tools: ['Read', 'Grep', 'Glob', 'Edit', 'Write'], mode: 'acceptEdits' }, esc);
       l.changedFiles = snapshot();
       if (!r.ok) throw new Stop('step_failed', `repair failed: ${r.error}`);
       l.validation = null; // re-run the tests after the repair
@@ -238,7 +241,7 @@ function startNew() {
   if (co.status !== 0) die(`cannot create branch ${branch}: ${co.stderr.trim()}`);
   openStore(id);
   const now = new Date().toISOString();
-  let l = { version: 1, id, goal: redact(goal), profile, state: 'queued', stateReason: '', branch, baseBranch, head, testCommand, budget, level: cls.level, levelReasons: cls.reasons, agents: selectAgents(goal, cls.level), model: mr.model, modelSource: mr.source, fallbackModel: mr.fallback, plan: null, implemented: false, steps: [], validation: null, changedFiles: [], createdAt: now, updatedAt: now };
+  let l = { version: 1, id, goal: redact(goal), profile, state: 'queued', stateReason: '', branch, baseBranch, head, testCommand, budget, level: cls.level, levelReasons: cls.reasons, agents: selectAgents(goal, cls.level), model: mr.model, modelSource: mr.source, fallbackModel: mr.fallback, escalateModel: mr.escalate, plan: null, implemented: false, steps: [], validation: null, changedFiles: [], createdAt: now, updatedAt: now };
   l = transition(l, 'ready', 'accepted');
   save(l);
   event('task_accepted', { detail: `${id} profile ${profile} on ${branch}; complexity ${cls.level} (${cls.reasons.join(', ')}); model ${mr.model} (${mr.source})` });
