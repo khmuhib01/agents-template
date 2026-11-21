@@ -1,5 +1,5 @@
 // Scenario harness helpers (no network). A scenario is evals/scenarios/<id>/ with:
-//   scenario.json  { title, prompt, type, stack, domains?, tags?, graders: [...] }
+//   scenario.json  { title, prompt, type, stack, domains?, tags?, test_command?, graders: [...] }   (test_command: what the orchestrated arm runs to validate, default `node --test`)
 //   fixture/       the starting repo
 //   hidden/        optional files copied in AFTER the agent finishes (graders may run them)
 //   solution/      optional overlay used only by `node evals/scenarios.mjs --check` to prove the graders pass a good answer
@@ -92,8 +92,14 @@ export function prepare(scenario, arm, initPath) {
     const r = spawnSync(process.execPath, [initPath, '--target', work], { encoding: 'utf8' });
     if (r.status !== 0) throw new Error(`init failed: ${r.stderr}`);
   }
+  if (arm === 'orchestrated') { // the driver needs a clean tree with at least one commit; it adds no template files (candidate C = fixture + driver)
+    spawnSync('git', ['add', '-A'], { cwd: work });
+    spawnSync('git', ['-c', 'user.name=eval', '-c', 'user.email=eval@example.invalid', 'commit', '-q', '-m', 'fixture'], { cwd: work });
+  }
   return work;
 }
+
+export const ARMS = ['baseline', 'skills', 'orchestrated'];
 
 // Validates a scenario's graders without any model: the bare fixture must NOT pass everything, fixture + solution must pass everything.
 export function checkScenario(scenario) {

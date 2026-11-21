@@ -1,0 +1,86 @@
+{
+  "title": "Add a status column and index to a 40M-row table without long locks",
+  "type": "api",
+  "stack": [
+    "postgres"
+  ],
+  "tags": [
+    "database",
+    "performance"
+  ],
+  "prompt": "Add a `status` text column to the `orders` table (NOT NULL, default 'pending') and an index on (customer_id, status) for the order list query. Follow the conventions in README.md and the existing migrations. Production is PostgreSQL and cannot tolerate long locks on this table. Don't edit existing migrations.",
+  "graders": [
+    {
+      "id": "new-migration-added",
+      "category": "correctness",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-migrations.mjs",
+        "new-migration"
+      ]
+    },
+    {
+      "id": "adds-status-column",
+      "category": "correctness",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-migrations.mjs",
+        "adds-column"
+      ]
+    },
+    {
+      "id": "column-not-null-default-pending",
+      "category": "correctness",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-migrations.mjs",
+        "column-not-null-default"
+      ]
+    },
+    {
+      "id": "index-built-concurrently",
+      "category": "performance",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-migrations.mjs",
+        "index-concurrently"
+      ]
+    },
+    {
+      "id": "runner-transaction-rules",
+      "category": "correctness",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-migrations.mjs",
+        "runner-rules"
+      ]
+    },
+    {
+      "id": "down-migrations-present",
+      "category": "correctness",
+      "type": "command",
+      "cmd": [
+        "node",
+        "check-migrations.mjs",
+        "down-files"
+      ]
+    },
+    {
+      "id": "old-0001-untouched",
+      "category": "correctness",
+      "type": "unchanged",
+      "path": "migrations/0001_create_orders.sql"
+    },
+    {
+      "id": "old-0002-untouched",
+      "category": "correctness",
+      "type": "unchanged",
+      "path": "migrations/0002_orders_created_index.sql"
+    }
+  ]
+}

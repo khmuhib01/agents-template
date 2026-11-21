@@ -311,8 +311,18 @@ function main() {
   const focused = cfg.skills_mode !== 'all';
   const profile = String(cfg.model_profile || 'balanced');
   const wanted = (rel) => !focused || ctx.routed_set.has(rel.split(path.sep)[0]);
-  if (ctx.unmatched_stack.length) console.warn(`⚠ stack token(s) matched no skill: ${ctx.unmatched_stack.join(', ')} (check spelling, or map them in core/skill-map.json)`);
+  if (ctx.unmatched_stack.length) {
+    const doms = Object.keys(JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8')).domains || {});
+    const asDomain = ctx.unmatched_stack.filter((x) => doms.includes(x));
+    console.warn(`⚠ stack token(s) matched no skill: ${ctx.unmatched_stack.join(', ')} (check spelling, or map them in core/skill-map.json)${asDomain.length ? `; ${asDomain.join(', ')} ${asDomain.length > 1 ? 'are' : 'is a'} domain${asDomain.length > 1 ? 's' : ''}: put ${asDomain.length > 1 ? 'them' : 'it'} under \`domains\` instead of \`stack\`` : ''}`);
+  }
   if (ctx.unmatched_domains.length) console.warn(`⚠ domain(s) matched no skill: ${ctx.unmatched_domains.join(', ')} (see "domains" in core/skill-map.json)`);
+  if (focused && cfg.type === 'mobile') {
+    // mobile-release and mobile-quality come in through the platform skills (flutter, react-native, swift, android-kotlin), not through `type`.
+    const skillMap = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));
+    const platform = Object.entries(skillMap.deps || {}).filter(([, v]) => v.includes('mobile-release')).map(([k]) => k);
+    if (platform.length && !platform.some((s) => ctx.routed_set.has(s))) console.warn('⚠ type is mobile but no platform stack token matched (for example android, compose, ios, swift, flutter, expo, reactnative): mobile-release and mobile-quality are not installed. Add a platform token to `stack` to get all four mobile skills.');
+  }
   for (const sub of ['skills', 'agents', 'rules']) {
     const base = path.join(HERE, 'core', sub);
     for (const f of walk(base)) {
