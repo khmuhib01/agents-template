@@ -3,6 +3,7 @@
 // Zero dependencies. Usage:
 //   node init.mjs [--target DIR] [--config FILE] [--dry-run]   generate / update (safe to re-run)
 //   node init.mjs --check [--target DIR]                       exit 1 if generated files are out of date (CI); writes nothing
+//   node init.mjs --strict                                     treat warnings (unknown config key, unmatched stack/domain) as errors; writes nothing
 //   node init.mjs --force                                      overwrite files you edited by hand (a backup is made)
 //   node init.mjs --scaffold [--target DIR]                    write a draft project.config.yml from detected stack
 import fs from 'node:fs';
@@ -33,6 +34,7 @@ const TARGET = path.resolve(opt('--target', process.cwd()));
 const CONFIG = path.resolve(opt('--config', path.join(TARGET, 'project.config.yml')));
 const CHECK = has('--check');
 const FORCE = has('--force');
+const STRICT = has('--strict');
 const DRY = has('--dry-run') || CHECK;
 
 import { parseYaml } from './lib/yaml.mjs';
@@ -217,13 +219,16 @@ function applyModelProfile(name, text, profile) {
 
 // Typos in config keys are otherwise silently ignored. The JSON schema is the list of known keys.
 function warnUnknownKeys(cfg) {
+  const bad = [];
   let known;
-  try { known = Object.keys(JSON.parse(fs.readFileSync(path.join(HERE, 'project.config.schema.json'), 'utf8')).properties); } catch { return; }
+  try { known = Object.keys(JSON.parse(fs.readFileSync(path.join(HERE, 'project.config.schema.json'), 'utf8')).properties); } catch { return bad; }
   const dist = (a, b) => { const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]); for (let j = 1; j <= b.length; j++) d[0][j] = j; for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; };
   for (const k of Object.keys(cfg).filter((x) => !known.includes(x))) {
     const near = known.map((n) => [n, dist(k, n)]).sort((x, y) => x[1] - y[1])[0];
+    bad.push(k);
     console.warn(`⚠ unknown config key "${k}" is ignored${near && near[1] <= 3 ? ` (did you mean "${near[0]}"?)` : ''}`);
   }
+  return bad;
 }
 
 const installedSkills = () => new Set([...fs.readdirSync(path.join(HERE, 'core', 'skills')), ...fs.readdirSync(path.join(HERE, 'templates', '.claude', 'skills'))]);
@@ -319,7 +324,7 @@ function main() {
   errors.push(...commandProblems('test_command', cfg.test_command), ...commandProblems('format_command', cfg.format_command), ...dockerProblems(cfg.docker));
   if (errors.length) { console.error('✖ Config problems:\n' + errors.map((e) => '  - ' + e).join('\n')); process.exit(1); }
 
-  warnUnknownKeys(cfg);
+  const unknownKeys = warnUnknownKeys(cfg);
   try { prevHashes = JSON.parse(fs.readFileSync(path.join(TARGET, HASH_FILE), 'utf8')); } catch { prevHashes = {}; }
   const ctx = buildContext(cfg);
   console.log(`${DRY ? '[dry-run] ' : ''}Generating for "${cfg.name}" → ${TARGET}`);
@@ -335,6 +340,7 @@ function main() {
     console.warn(`⚠ stack token(s) matched no skill: ${ctx.unmatched_stack.join(', ')} (check spelling, or map them in core/skill-map.json)${asDomain.length ? `; ${asDomain.join(', ')} ${asDomain.length > 1 ? 'are' : 'is a'} domain${asDomain.length > 1 ? 's' : ''}: put ${asDomain.length > 1 ? 'them' : 'it'} under \`domains\` instead of \`stack\`` : ''}`);
   }
   if (ctx.unmatched_domains.length) console.warn(`⚠ domain(s) matched no skill: ${ctx.unmatched_domains.join(', ')} (see "domains" in core/skill-map.json)`);
+  if (STRICT && (unknownKeys.length || ctx.unmatched_stack.length || ctx.unmatched_domains.length)) { console.error('✖ --strict: the warnings above are errors; nothing was written.'); process.exit(1); }
   if (focused && cfg.type === 'mobile') {
     // mobile-release and mobile-quality come in through the platform skills (flutter, react-native, swift, android-kotlin), not through `type`.
     const skillMap = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));

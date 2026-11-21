@@ -40,7 +40,7 @@ node <path-to>/agents-template/init.mjs --scaffold   # writes a draft project.co
 node <path-to>/agents-template/init.mjs              # generate
 ```
 
-Re-run `init.mjs` any time: after editing the config, or after improving the template (it refreshes the generic parts in every project). Files it changes are first backed up to `.claude/.init-backup/<timestamp>/` (add that folder to `.gitignore`). `--dry-run` shows what would change.
+Re-run `init.mjs` any time: after editing the config, or after improving the template (it refreshes the generic parts in every project). Files it changes are first backed up to `.claude/.init-backup/<timestamp>/` (add that folder to `.gitignore`). `--dry-run` shows what would change; `--strict` turns warnings (unknown config key, stack token or domain that matches no skill) into errors and writes nothing.
 
 **`@` picker and agents.** The `@` picker in the VS Code extension is a file search that obeys `.gitignore`, and it only mentions files; it does not list agents. To run an agent, name it in chat or use `/agents`. The generated folders are git-ignored, so the picker would not find them. `init.mjs` therefore adds `search.useIgnoreFiles: false`, `search.useParentIgnoreFiles: false` and a `search.exclude` entry for `**/.claude/.init-backup` to `<project>/.vscode/settings.json` (Reload Window once). Only missing keys are added (your values, comments and line endings are kept), a second run changes nothing, and it is written only when `.vscode/` is git-ignored, otherwise init warns and skips so teammates' editors are not affected. Set `vscode_settings: false` to opt out. User-level VS Code settings are never touched.
 
@@ -71,7 +71,7 @@ node install-global.mjs --codex    # or pick: --claude --codex --antigravity, or
 
 - The script rewrites the template path inside the skills to wherever you cloned it, so the folder can be anywhere, but it must stay on the PC (the skills run `init.mjs` from it).
 - Restart the agent afterwards, then in any project: `/agent-setup-scaffold` → edit `project.config.yml` → `/agent-init`.
-- After `git pull` in the template (or editing `global-skills/`), run `install-global.mjs` again. `--dry-run` shows what would be written.
+- After `git pull` in the template (or editing `global-skills/`), run `install-global.mjs` again. `--dry-run` shows the plan. Skills you made yourself are never overwritten (skipped unless `--force`); overwrites are backed up; `--uninstall` removes only what this tool installed. After upgrading from < 1.21 run once with `--force` to adopt old installs.
 - To bring an existing project up to the latest template, open it in Claude Code and run `/agent-update`: it pulls the template, compares versions, shows the changelog entries and a dry-run, asks, then runs `init.mjs`. (Plugin: `/agents-template:agent-update`.)
 
 ## What init creates in a project

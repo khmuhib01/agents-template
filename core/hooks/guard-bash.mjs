@@ -131,4 +131,4 @@ run(() => {
     block('this project forbids "Co-Authored-By" / "Generated with" attribution lines in commits and PRs. Remove them and retry.');
   }
   if (asks.length) ask(asks.join(' '));
-});
+}, { guard: true });
