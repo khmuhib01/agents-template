@@ -251,6 +251,7 @@ console.log('\n[orchestrate]');
   const unk = bu.record(bu.newBudget('small'), { cost: null });
   check(unk.spent === 0 && unk.unknownCostCalls === 1, 'a call with no reported cost is counted as unavailable, never estimated');
   check(throws(() => bu.raiseCap(bu.newBudget('small'), 0.5)) && bu.raiseCap(bu.newBudget('small'), 2).max_estimated_cost === 2, 'the cap can only be raised to a strictly larger value');
+  check(Math.abs(bu.raiseCap(bu.newBudget('small'), 1.5).per_call_cap - 0.8) < 1e-6, 'raising the overall cap scales the per-call cap');
   check(pl.validatePlan({ summary: 's', acceptance_criteria: ['a'], steps: [{ title: 't' }] }).ok && !pl.validatePlan({ summary: 's', steps: [] }).ok && pl.extractJson('```json\n{"a":1}\n```').value.a === 1, 'plan schema and JSON extraction work');
   check(!/hunter2|AKIA[0-9A-Z]{16}/.test(pl.redact('password=hunter2value and AKIAABCDEFGHIJKLMNOP and Bearer abcdefghijklmnop12')), 'secret-looking strings are redacted');
 
@@ -314,6 +315,14 @@ console.log('\n[orchestrate]');
     check(lowCap.r.status === 2 && noCap.calls.length === 2, 'a cap that is not larger is refused');
     const up = orch(repo, 'hardstop', steps, ['--resume', id, '--max-cost', '3']);
     check(up.r.status === 0 && up.ledger.state === 'completed' && up.calls.length === 3, 'resume with a larger cap continues at the repair; plan and implement are not repeated');
+  }
+  { // a call that hits its per-call cap (real CLI: is_error, subtype error_max_budget_usd, cost above the cap)
+    const repo = mkRepo('stepcap');
+    const steps = [{ result: PLAN, cost: 0.05 }, { is_error: true, subtype: 'error_max_budget_usd', cost: 0.3, exit: 1, write: { 'a.txt': 'half\n' } }, { result: 'done', cost: 0.05, write: { 'a.txt': 'two\n' } }];
+    const o = orch(repo, 'stepcap', steps, ['--goal', 'g', ...T]);
+    check(o.r.status === 3 && o.ledger.state === 'budget_exhausted' && /step_cap/.test(o.ledger.stateReason) && Math.abs(o.ledger.budget.spent - 0.35) < 1e-9 && o.ledger.changedFiles.length === 1, 'a call that hits its per-call cap is a budget stop (not a plain failure), its real cost is recorded and partial edits are noted');
+    const up = orch(repo, 'stepcap', steps, ['--resume', o.id, '--max-cost', '1.5']);
+    check(up.r.status === 0 && up.ledger.state === 'completed' && up.calls.length === 3 && Number(up.calls[2].argv[up.calls[2].argv.indexOf('--max-budget-usd') + 1]) > 0.4, 'resume with a larger cap retries the step with a proportionally larger per-call cap');
   }
   { // stale evidence after a user edit, no model call needed
     const repo = mkRepo('stale');
