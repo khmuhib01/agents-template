@@ -162,18 +162,20 @@ function mergeStatusLine(settings, on) {
     else console.warn('⚠ statusline: true, but settings.json already has a different statusLine; left unchanged.');
   } else if (ours) delete settings.statusLine;
 }
-// MCP: mcp_allow limits which .mcp.json servers are enabled; mcp_deny blocks a server's tools. Both are additive.
-function mergeMcp(settings, cfg) {
+// MCP: mcp_allow limits which .mcp.json servers are enabled (mcp_deny becomes managed deny rules, see denyNow).
+// `prev` is what the last run enabled, so a server dropped from mcp_allow is removed while servers the user added stay.
+// Returns the record to remember in the manifest.
+function mergeMcp(settings, cfg, prev = {}) {
   const allow = toArr(cfg.mcp_allow).map(String);
-  const deny = toArr(cfg.mcp_deny).map(String);
-  if (allow.length) {
-    settings.enabledMcpjsonServers = [...new Set([...(settings.enabledMcpjsonServers || []), ...allow])];
-    if (settings.enableAllProjectMcpServers === undefined) settings.enableAllProjectMcpServers = false;
-  }
-  if (deny.length) {
-    settings.permissions = settings.permissions || {};
-    settings.permissions.deny = [...new Set([...(settings.permissions.deny || []), ...deny.map((n) => `mcp__${n}`)])];
-  }
+  const prevAllow = Array.isArray(prev.enabled) ? prev.enabled : [];
+  const cur = Array.isArray(settings.enabledMcpjsonServers) ? settings.enabledMcpjsonServers : [];
+  const list = [...new Set([...cur.filter((n) => !prevAllow.includes(n) || allow.includes(n)), ...allow])];
+  if (list.length) settings.enabledMcpjsonServers = list; else delete settings.enabledMcpjsonServers;
+  let enableAllSet = prev.enableAllSet === true;
+  if (allow.length && settings.enableAllProjectMcpServers === undefined) { settings.enableAllProjectMcpServers = false; enableAllSet = true; }
+  if (!allow.length && enableAllSet && settings.enableAllProjectMcpServers === false) delete settings.enableAllProjectMcpServers;
+  if (!allow.length) enableAllSet = false;
+  return { enabled: allow, enableAllSet };
 }
 // Adds our hook entries, drops our stale ones, and leaves every other hook untouched.
 function mergeHooks(settings, desired) {
@@ -394,13 +396,18 @@ function main() {
   // protect_secrets turned off) is removed next run while rules the user added are left alone.
   let prevManaged = {};
   try { prevManaged = JSON.parse(fs.readFileSync(path.join(TARGET, '.claude', 'CONFIGURATION.MANIFEST.JSON'), 'utf8')).managedPermissions || {}; } catch { /* first run or unreadable */ }
-  const denyNow = denyRules(cfg, ctx);
+  const denyNow = [...new Set([...denyRules(cfg, ctx), ...toArr(cfg.mcp_deny).map((n) => `mcp__${n}`)])];
   const allowNow = cfg.allow_safe_commands !== false ? allowRules(ctx) : [];
-  put(path.join(TARGET, '.claude', 'CONFIGURATION.MANIFEST.JSON'), JSON.stringify({
+
+  const manifestPath = path.join(TARGET, '.claude', 'CONFIGURATION.MANIFEST.JSON');
+  const manifest = {
     name: cfg.name, generatedBy: 'claude-template', templateVersion: TEMPLATE_VERSION, skillsMode: focused ? 'focused' : 'all', type: cfg.type, stack: ctx.stack, branches: ctx.branches,
     runInDocker: Boolean(cfg.run_in_docker), testCommand: ctx.test_cmd_full, skills: skillNames, agents: agentNames, hooks: hookList.map((h) => h.script), packages: ctx.packages.map((p) => p.path),
     managedPermissions: { deny: denyNow, allow: allowNow },
-  }, null, 2) + '\n');
+  };
+  let prevMcp = {};
+  try { prevMcp = JSON.parse(fs.readFileSync(manifestPath, 'utf8')).managedMcp || {}; } catch { /* first run or unreadable */ }
+  manifest.managedMcp = prevMcp;
 
   const stampPath = path.join(TARGET, '.claude', '.template-version');
   const prevVersion = fs.existsSync(stampPath) ? fs.readFileSync(stampPath, 'utf8').trim() : '';
@@ -422,9 +429,10 @@ function main() {
     }
     mergeHooks(settings, hookList);
     mergeStatusLine(settings, cfg.statusline === true);
-    mergeMcp(settings, cfg);
+    manifest.managedMcp = mergeMcp(settings, cfg, prevMcp);
     put(settingsPath, JSON.stringify(settings, null, 2) + '\n');
   }
+  put(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
 
   // 3. mirrors for other agents: .agents/ (Antigravity/Gemini, Codex) and .codex/ (Codex), linked to .claude/
   const mirrors = [];

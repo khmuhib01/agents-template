@@ -2,6 +2,15 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.20.0 - 2026-11-21
+
+Last items from the audit.
+
+- `mcp_allow` / `mcp_deny` are covered by stale cleanup: init remembers what it enabled and denied (`managedMcp` and `managedPermissions` in the manifest). A server dropped from the config is no longer enabled or denied; servers and rules you added stay. The `enableAllProjectMcpServers: false` that init set goes away with the last `mcp_allow` entry, but a value you set yourself is kept. The first run after upgrading has no record and removes nothing.
+- the YAML parser no longer treats an apostrophe inside a plain value as the start of a string: `notes: don't # comment` keeps its comment handling and `[don't, x]` is a list. `''` inside single quotes is now read as one apostrophe.
+- `.github/workflows/test.yml` pins `actions/checkout` and `actions/setup-node` to commit SHAs (v4.4.0); a test fails if an unpinned action is added.
+- tests: 11 new checks; the cleanup, YAML and pinning ones fail without the change.
+
 ## 1.19.1 - 2026-11-21
 
 - `--target`, `--config` (and any value flag) with no value now stop with `✖ --target needs a value` instead of taking the next flag as the value. `node init.mjs --target --dry-run` used to look for a folder named `--dry-run`.
