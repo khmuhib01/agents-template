@@ -26,10 +26,12 @@ export function ask(reason) {
   process.exit(0);
 }
 
-// A crashing hook exits 1 (non-blocking, message visible) instead of failing silently.
-export function run(main) {
+// A crashing hook must not silently let the call through. Guards (security checks) fail closed: exit 2 blocks the call.
+// Escape hatch if a hook bug blocks your work: set HOOK_FAIL_OPEN=1. Non-guard hooks (format, context) stay non-blocking (exit 1).
+export function run(main, { guard = false } = {}) {
   try { main(); } catch (e) {
-    process.stderr.write(`Project hook error: ${e.message}. The check did not run.\n`);
-    process.exit(1);
+    const closed = guard && process.env.HOOK_FAIL_OPEN !== '1';
+    process.stderr.write(`Project hook error: ${e.message}. The check did not run${closed ? ', so the call is blocked (set HOOK_FAIL_OPEN=1 to bypass)' : ''}.\n`);
+    process.exit(closed ? 2 : 1);
   }
 }

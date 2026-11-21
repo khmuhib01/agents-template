@@ -420,13 +420,50 @@ console.log('\n[orchestrate]');
       const o3 = orch(repo, 'strict-resume', steps, ['--resume', o1.id, '--budget-policy', 'balanced']);
       check(o3.r.status === 0 && o3.ledger.state === 'completed' && o3.ledger.budget.policy === 'balanced', 'strict: --resume --budget-policy balanced continues without repeating the plan');
     }
+    { // cheap-first: the repair after failing tests runs on the escalate model (not with an explicit --model)
+      const bad = [{ result: PLAN, cost: 0.05 }, { result: 'x', cost: 0.05, write: { 'a.txt': 'wrong\n' } }, { result: 'fixed', cost: 0.05, write: { 'a.txt': 'two\n' } }];
+      const o = orch(rt('route-esc', ROUTE + '  escalate: m-esc\n'), 'route-esc', bad, ['--goal', 'add a button component', ...T]);
+      check(o.calls.length === 3 && modelOf(o.calls[0]) === 'm-mid' && modelOf(o.calls[1]) === 'm-mid' && modelOf(o.calls[2]) === 'm-esc' && o.ledger.state === 'completed' && /model_escalated/.test(o.events), 'routing: the repair after failing tests runs on the escalate model; plan and implement stay on the routed one');
+      const x = orch(rt('route-esc2', ROUTE + '  escalate: m-esc\n'), 'route-esc2', bad, ['--goal', 'add a button component', '--model', 'mine', ...T]);
+      check(x.calls.every((c) => modelOf(c) === 'mine') && !/model_escalated/.test(x.events), 'routing: an explicit --model is never escalated away from');
+    }
+    { // the eval `routed` arm: a committed fixture with model_routing in its project config, configurable via EVAL_ROUTING
+      const lib = await import(pathToFileURL(path.join(HERE, 'evals', 'scenario-lib.mjs')).href);
+      const sc = lib.loadScenario('simple-typo-readme');
+      const w = lib.prepare(sc, 'routed', path.join(HERE, 'init.mjs'));
+      const cfg = fs.readFileSync(path.join(w, 'project.config.yml'), 'utf8');
+      check(lib.ARMS.includes('routed') && /model_routing:\n  enabled: true/.test(cfg) && /simple: haiku/.test(cfg) && /escalate: sonnet/.test(cfg) && sh(w, 'git', ['status', '--porcelain']).stdout.trim() === '', 'evals: the routed arm writes model_routing into the fixture and leaves a clean committed tree');
+      fs.rmSync(w, { recursive: true, force: true });
+    }
     const rtm = await import(pathToFileURL(path.join(HERE, 'lib', 'routing-tasks.mjs')).href);
     const lv = (g, f) => rtm.classifyTask(g, { files: f }).level;
     check(lv('fix a typo in the README') === 'simple' && lv('explain what this function does') === 'simple' && lv('add an endpoint to list invoices') === 'medium' && lv('rotate the payment webhook secret') === 'complex' && lv('rename a variable', 9) === 'complex' && lv('tidy two modules', 2) === 'medium', 'classifier: simple / medium / complex goals');
     check(JSON.stringify(rtm.selectAgents('fix typo', 'simple')) === '[]' && rtm.selectAgents('redesign the architecture of billing', 'complex').join() === 'planner,architect,security-reviewer,code-reviewer' && rtm.selectAgents('add an endpoint', 'medium').length === 0, 'agent selection: none for simple/medium work; planner, architect, security and review only when the goal justifies them');
     check(rtm.routingProblems({ enabled: true, simple: 'a b' }).length === 1 && rtm.routingProblems({ typo: 1 }).length === 1 && rtm.routingProblems(ROUTE && { enabled: true, simple: 'x', fallback: 'y' }).length === 0, 'model_routing validation rejects bad ids and unknown keys');
+    { // evals/routing-ab.mjs composes measured per-scenario means; checked with synthetic numbers
+      const ab = await import(pathToFileURL(path.join(HERE, 'evals', 'routing-ab.mjs')).href);
+      const cheap = { a: { n: 2, p: 1, cost: 0.01 }, b: { n: 2, p: 0.5, cost: 0.01 }, only: { n: 1, p: 1, cost: 1 } };
+      const strong = { a: { n: 2, p: 1, cost: 0.1 }, b: { n: 2, p: 1, cost: 0.1 } };
+      const r1 = ab.compose(cheap, strong, (id) => (id === 'a' ? 'simple' : 'complex'));
+      check(r1.rows.length === 2 && Math.abs(r1.reduction - 45) < 0.01 && r1.routed.rate === 1, 'routing-ab: only simple goals go to the cheap model; scenarios measured on one model are ignored');
+      const r2 = ab.compose(cheap, strong, () => 'simple');
+      check(r2.routed.rate === 0.75 && Math.abs(r2.reduction - 86.667) < 0.01 && Math.abs(r2.reductionEscalated - 65) < 0.01, 'routing-ab: a cheap model that fails more shows its lower success, and escalation is modeled separately');
+      check(ab.compose({}, strong, () => 'simple').reduction === null, 'routing-ab: no comparable scenarios gives no number, not zero');
+    }
     const rc = JSON.parse(fs.readFileSync(path.join(HERE, 'evals', 'routing-cases.json'), 'utf8'));
     check(rc.length >= 12 && rc.every((c) => rtm.classifyTask(c.goal).level === c.level), 'classifier: every labeled case in evals/routing-cases.json gets its expected level');
+    { // safety invariant over both labeled sets: nothing that is not simple is ever sent down as simple, and no complex goal is rated lower
+      const sets = ['routing-cases', 'routing-heldout'].flatMap((f) => JSON.parse(fs.readFileSync(path.join(HERE, 'evals', `${f}.json`), 'utf8')));
+      const got = sets.map((c) => ({ ...c, got: rtm.classifyTask(c.goal).level }));
+      check(got.filter((c) => c.got === 'simple' && c.level !== 'simple').length === 0 && got.filter((c) => c.level === 'complex' && c.got !== 'complex').length === 0, `classifier: no false-simple and no missed complex over ${sets.length} labeled goals`);
+      check(rtm.classifyTask('write tests for the invoice calculator').level === 'medium' && rtm.classifyTask('implement JWT refresh token rotation').level === 'complex', 'classifier: a short goal with no positive cue is medium, not simple; token/JWT work is complex');
+    }
+    { // private scenarios live outside the repo via EVAL_SCENARIOS_DIR; unset keeps the bundled ones
+      const pd = fs.mkdtempSync(path.join(os.tmpdir(), 'ps-')); fs.mkdirSync(path.join(pd, 'only-private')); fs.writeFileSync(path.join(pd, 'only-private', 'scenario.json'), '{"title":"x","prompt":"y","graders":[]}');
+      const ls = (env) => JSON.parse(spawnSync(process.execPath, ['-e', `import(${JSON.stringify(pathToFileURL(path.join(HERE, 'evals', 'scenario-lib.mjs')).href)}).then((m) => console.log(JSON.stringify(m.listScenarios())))`], { encoding: 'utf8', env: { ...process.env, EVAL_SCENARIOS_DIR: '', ...env } }).stdout);
+      check(ls({ EVAL_SCENARIOS_DIR: pd }).join() === 'only-private' && ls({}).includes('simple-typo-readme') && !ls({}).includes('only-private'), 'evals: EVAL_SCENARIOS_DIR selects a private scenario folder; without it the bundled scenarios are used');
+      fs.rmSync(pd, { recursive: true, force: true });
+    }
     const bad = fs.mkdtempSync(path.join(os.tmpdir(), 'mr-')); fs.writeFileSync(path.join(bad, 'project.config.yml'), 'name: S\ntype: web\nbranches: {working: x, production: main}\nmodel_routing:\n  complex: "a;b"\n');
     check(run(bad).status === 1 && !fs.existsSync(path.join(bad, 'AGENTS.md')), 'init rejects an invalid model_routing before writing anything'); fs.rmSync(bad, { recursive: true, force: true });
   }

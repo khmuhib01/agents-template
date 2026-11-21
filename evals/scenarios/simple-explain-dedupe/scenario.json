@@ -1,0 +1,50 @@
+{
+  "title": "Explain what a function does",
+  "type": "cli",
+  "stack": [
+    "node"
+  ],
+  "tags": [
+    "docs",
+    "simple"
+  ],
+  "prompt": "In a new file EXPLAIN.md (under 120 words) explain what `dedupe` in src/dedupe.js does, whether it keeps the first or the last duplicate, and its time complexity. Do not modify any source file.",
+  "graders": [
+    {
+      "id": "explain-exists",
+      "category": "docs",
+      "type": "exists",
+      "path": "EXPLAIN.md"
+    },
+    {
+      "id": "says-first",
+      "category": "correctness",
+      "type": "contains",
+      "path": "EXPLAIN.md",
+      "pattern": "first",
+      "flags": "i"
+    },
+    {
+      "id": "says-linear",
+      "category": "correctness",
+      "type": "contains",
+      "path": "EXPLAIN.md",
+      "pattern": "O\\(n\\)|linear",
+      "flags": "i"
+    },
+    {
+      "id": "mentions-key",
+      "category": "correctness",
+      "type": "contains",
+      "path": "EXPLAIN.md",
+      "pattern": "key",
+      "flags": "i"
+    },
+    {
+      "id": "source-untouched",
+      "category": "correctness",
+      "type": "unchanged",
+      "path": "src/dedupe.js"
+    }
+  ]
+}

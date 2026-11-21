@@ -169,7 +169,8 @@
         "simple": { "type": "string" },
         "medium": { "type": "string" },
         "complex": { "type": "string" },
-        "fallback": { "type": "string", "description": "Tried once, as a counted call, only if the routed model is unavailable." }
+        "fallback": { "type": "string", "description": "Tried once, as a counted call, only if the routed model is unavailable." },
+        "escalate": { "type": "string", "description": "Model for the repair step after the tests failed on the routed model (cheap-first, escalate on failure). Ignored with an explicit --model." }
       },
       "additionalProperties": false
     },
