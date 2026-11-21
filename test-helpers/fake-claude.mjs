@@ -18,5 +18,6 @@ for (const [f, content] of Object.entries(step.write || {})) {
 }
 const out = { type: 'result', result: step.result ?? '', num_turns: step.turns ?? 3, is_error: !!step.is_error };
 if (step.cost !== null && step.cost !== undefined) out.total_cost_usd = step.cost;
+if (step.subtype) out.subtype = step.subtype; // e.g. error_max_budget_usd, as the real CLI reports a per-call budget stop
 process.stdout.write(JSON.stringify(out));
 process.exit(step.exit || 0);

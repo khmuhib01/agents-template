@@ -69,13 +69,13 @@ Use the existing scenarios and add one arm to `evals/scenarios.mjs`: `orchestrat
 | Step | Content | Cost | Done when |
 |---|---|---|---|
 | S1 (implemented) | pure modules `lib/orch-state.mjs`, `orch-budget.mjs`, `orch-plan.mjs`, `orch-report.mjs`, plus tests | free | tests pass on Node 18 and 22 (CI) |
-| S2 (implemented) | `orchestrate.mjs` with `test-helpers/fake-claude.mjs`: dispatch, caps, validation, one repair, resume, stale evidence | free | section 7 checks pass (`node test.mjs --only orchestrate`, 33 checks) |
-| S3 | one real run on one existing scenario | about $0.3 to $0.8 [Estimate] | ledger and report reflect real cost; cap verified |
+| S2 (implemented) | `orchestrate.mjs` with `test-helpers/fake-claude.mjs`: dispatch, caps, validation, one repair, resume, stale evidence | free | section 7 checks pass (`node test.mjs --only orchestrate`, 36 checks) |
+| S3 (done, 2026-11-21) | one real run on a small throwaway task plus one cap probe | actual about $0.14 (see 10c) | ledger and report reflect real cost; overshoot measured |
 | S4 | `orchestrated` arm and the evaluation in section 8 | about $1 to $3 [Estimate] | results recorded in `evals/REPORT.md`, negative results kept |
 Size [Estimate]: roughly 500 to 900 lines including tests, new files only (`orchestrate.mjs`, `lib/` modules), no change to generated output, so no `VERSION` bump needed.
 
 ## 10. Risks and unknowns
-- Whether `--max-budget-usd` overshoots and by how much [U]; S3 measures it.
+- `--max-budget-usd` **does overshoot** (measured in S3, section 10c): it is checked between turns. The total overshoot is bounded by one turn of the last call, not by the cap.
 - Fresh process per step reloads project context each time (prompt cache may help [U]); the evaluation measures the overhead.
 - `claude -p` flags and JSON fields can change; no max-turns flag was seen in `--help` [U], so turn limits may need another mechanism.
 - Sequential single-agent work leaves real parallel gains unmeasured.
@@ -87,11 +87,18 @@ Size [Estimate]: roughly 500 to 900 lines including tests, new files only (`orch
 - Usage: `node orchestrate.mjs --goal "..." [--profile tiny|small|medium] [--test-cmd "..."]`, `--resume ID [--max-cost USD]`, `--status ID`, `--dry-run`. Exit codes: 0 completed, 1 failed or not verified, 2 precondition error, 3 stopped on budget.
 - Decisions taken to proceed, all reversible: budget numbers from section 4 unchanged; the driver, not a model step, runs the test command; no Bash for any model step; a task whose implementer changed nothing fails instead of completing; a budget stop resumes only with a strictly larger `--max-cost` (a call-cap stop also gets exactly one extra call).
 - Found by the tests: reading `git status` through a trimming helper dropped the first column and broke both the changed-file list and stale-evidence detection; fixed and covered by a test.
-- Not verified against the real CLI: no paid run was made, so `--max-budget-usd` overshoot, the JSON fields on error paths and hook behavior are still [U]. The fake binary follows the fields `evals/scenarios.mjs` already reads.
+- Real CLI behavior is now partly verified (section 10c). Still unverified: hook behavior inside driver-run steps, runs on larger tasks, and Windows or macOS runs of a real `claude`.
 - Not done: classification model, worktrees, DAG, approvals, review step, tool-call counts (the CLI JSON gives none), cost-based per-step budgets by stage.
 
+## 10c. S3 result (real `claude` 2.1.330, Sonnet, 2026-11-21)
+Task: in a throwaway git repo, add `farewell(name)` to `greet.mjs`; the test command `node check.mjs` failed on the bare repo (exit 1) and a stated behavior (`''` gives `friend`) was not in the code. Command: `node orchestrate.mjs --target <repo> --goal "..." --test-cmd "node check.mjs"` (profile small).
+- **Outcome:** completed. Plan call 4 turns, $0.0558; implement call 5 turns, $0.0519; total **$0.108** actual, 2 of 3 calls, about 20 seconds. The test command exited 0 (re-run by hand: `ok`), one file changed (`greet.mjs`, 4 lines added, `greet` untouched), no model step had Bash, the repo ran on a local `orch/<id>` branch and the source repo stayed clean. Ledger and events matched the real cost fields.
+- **Cap probe:** one direct `claude -p` call with `--max-budget-usd 0.01` and a two-file read task stopped after 2 turns with `is_error: true`, `subtype: error_max_budget_usd`, `terminal_reason: budget_exhausted`, no `result` text, exit 1, and **$0.0289 actual, about 2.9 times the cap**. So the per-call cap is checked between turns and can be exceeded by up to one turn.
+- **Consequences, implemented in this change:** a call that ends with that subtype is now treated as a budget stop (`step_cap`, exit 3, real cost recorded, partial edits noted) instead of a plain failure; resuming needs a larger `--max-cost`, which also scales the per-call cap; child processes get `stdio: ignore` for stdin (the CLI printed a stdin warning when none was provided). Tests: 36 checks.
+- **Limits of this evidence:** one small task, one run, one model, no baseline arm, so no cost comparison against a direct call yet (S4). Total real spend for S3: about $0.14 (run $0.108 plus probe $0.029), under the stated worst case of $0.75 plus a small probe.
+
 ## 11. Decisions needed
-1. Proceed with S1 and S2 (free), or stop here given the evaluation result.
+1. Proceed with S1 and S2 (free), or stop here given the evaluation result. (S1 and S2 done; S3 done; S4 needs approval.)
 2. Starting budget numbers (section 4) or different ones.
 3. Tool and location: external tool in this repo only, or also generated into projects later.
 4. Whether the implementer may run the test command itself (Bash) or only the driver runs it (proposed: driver only).

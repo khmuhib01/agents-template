@@ -70,11 +70,14 @@ function callClaude({ prompt, tools, mode, perCallUsd }) {
   const cli = ['-p', prompt, '--output-format', 'json', '--model', MODEL, '--setting-sources', 'project', '--strict-mcp-config', '--no-session-persistence',
     '--max-budget-usd', String(perCallUsd), '--permission-mode', mode, '--allowed-tools', ...tools];
   const viaNode = /\.m?js$/.test(BIN);
-  const p = spawnSync(viaNode ? process.execPath : BIN, viaNode ? [BIN, ...cli] : cli, { cwd: TARGET, encoding: 'utf8', timeout: 600000, maxBuffer: 64 * 1024 * 1024 });
+  const p = spawnSync(viaNode ? process.execPath : BIN, viaNode ? [BIN, ...cli] : cli, { cwd: TARGET, encoding: 'utf8', timeout: 600000, maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
   if (p.error) return { ok: false, error: `cannot run ${BIN}: ${p.error.message}`, cost: null, turns: null, text: '' };
   let j;
   try { j = JSON.parse(p.stdout); } catch { return { ok: false, error: `unreadable CLI output (exit ${p.status})`, cost: null, turns: null, text: '' }; }
-  return { ok: !j.is_error && p.status === 0, error: j.is_error ? String(j.result || 'CLI reported an error') : p.status ? `exit ${p.status}` : '', cost: typeof j.total_cost_usd === 'number' ? j.total_cost_usd : null, turns: typeof j.num_turns === 'number' ? j.num_turns : null, text: String(j.result || '') };
+  // Observed with the real CLI (2.1.330): a call that exceeds --max-budget-usd ends with is_error, subtype error_max_budget_usd, no result text
+  // and a cost above the cap (the cap is checked between turns, so it can be overshot).
+  const budgetStop = j.subtype === 'error_max_budget_usd' || j.terminal_reason === 'budget_exhausted';
+  return { budgetStop, ok: !j.is_error && p.status === 0, error: j.is_error ? String(j.result || 'CLI reported an error') : p.status ? `exit ${p.status}` : '', cost: typeof j.total_cost_usd === 'number' ? j.total_cost_usd : null, turns: typeof j.num_turns === 'number' ? j.num_turns : null, text: String(j.result || '') };
 }
 
 // Every model call goes through here: authorize, call, record. A refused call raises Stop and nothing is spent.
@@ -88,6 +91,7 @@ function dispatch(l, name, spec) {
   event('step_completed', { step: name, ok: r.ok, cost: r.cost === null ? 'unavailable' : r.cost, turns: r.turns });
   if (l.budget.justWarned) event('budget_warning', { detail: `$${l.budget.spent.toFixed(3)} of $${l.budget.max_estimated_cost.toFixed(2)} used` });
   save(l);
+  if (r.budgetStop) throw new Stop('step_cap', `the ${name} call hit its per-call cap of $${auth.perCallUsd.toFixed(2)} before finishing (actual cost ${r.cost === null ? 'unavailable' : '$' + r.cost.toFixed(3)})`);
   return r;
 }
 
@@ -175,8 +179,9 @@ function pipeline(l) {
     }
   } catch (e) {
     if (!(e instanceof Stop)) throw e;
-    const budgetStop = e.reason === 'call_cap' || e.reason === 'cost_cap';
+    const budgetStop = e.reason === 'call_cap' || e.reason === 'cost_cap' || e.reason === 'step_cap';
     if (budgetStop) {
+      l.changedFiles = snapshot(); // a call stopped mid-work may have left edits on the branch
       event('budget_hard_stop', { detail: `${e.reason}: ${e.message}` });
       l.remaining = [!l.plan && l.budget.plan ? 'plan' : null, !l.implemented ? 'implement' : null, !l.validation || l.validation.exitCode !== 0 ? 'validate' : null].filter(Boolean);
       l = transition(l, 'budget_exhausted', `${e.reason}: ${e.message}`);
