@@ -1,6 +1,6 @@
 # Proposal: minimal budget-enforced sequential slice
 
-Status: **S1 and S2 implemented as a prototype (no paid run yet); S3 and S4 not started**. Date: 2026-11-21, baseline `dev` 1.17.1. Decisions: `docs/adr/0001-orchestration-runtime.md`.
+Status: **S1 to S4 done as a prototype. Evaluation result: no gain on small tasks (section 10d); stays opt-in**. Date: 2026-11-21, baseline `dev` 1.17.1. Decisions: `docs/adr/0001-orchestration-runtime.md`.
 Phase mapping to the brief: Phase 2 (instrumentation, budgets) and Phase 3 (sequential slice). Phases 4 to 7 are out of scope.
 Labels: **[E]** evidence in the repo or a command I ran, **[I]** my inference, **[U]** unverified, **[Estimate]** a guess to be tuned.
 
@@ -71,7 +71,7 @@ Use the existing scenarios and add one arm to `evals/scenarios.mjs`: `orchestrat
 | S1 (implemented) | pure modules `lib/orch-state.mjs`, `orch-budget.mjs`, `orch-plan.mjs`, `orch-report.mjs`, plus tests | free | tests pass on Node 18 and 22 (CI) |
 | S2 (implemented) | `orchestrate.mjs` with `test-helpers/fake-claude.mjs`: dispatch, caps, validation, one repair, resume, stale evidence | free | section 7 checks pass (`node test.mjs --only orchestrate`, 36 checks) |
 | S3 (done, 2026-11-21) | one real run on a small throwaway task plus one cap probe | actual about $0.14 (see 10c) | ledger and report reflect real cost; overshoot measured |
-| S4 | `orchestrated` arm and the evaluation in section 8 | about $1 to $3 [Estimate] | results recorded in `evals/REPORT.md`, negative results kept |
+| S4 (done, 2026-11-21) | `orchestrated` arm and the evaluation in section 8 | actual $2.87 | results in `evals/REPORT.md`; outcome: no gain on small tasks, see 10d |
 Size [Estimate]: roughly 500 to 900 lines including tests, new files only (`orchestrate.mjs`, `lib/` modules), no change to generated output, so no `VERSION` bump needed.
 
 ## 10. Risks and unknowns
@@ -96,6 +96,9 @@ Task: in a throwaway git repo, add `farewell(name)` to `greet.mjs`; the test com
 - **Cap probe:** one direct `claude -p` call with `--max-budget-usd 0.01` and a two-file read task stopped after 2 turns with `is_error: true`, `subtype: error_max_budget_usd`, `terminal_reason: budget_exhausted`, no `result` text, exit 1, and **$0.0289 actual, about 2.9 times the cap**. So the per-call cap is checked between turns and can be exceeded by up to one turn.
 - **Consequences, implemented in this change:** a call that ends with that subtype is now treated as a budget stop (`step_cap`, exit 3, real cost recorded, partial edits noted) instead of a plain failure; resuming needs a larger `--max-cost`, which also scales the per-call cap; child processes get `stdio: ignore` for stdin (the CLI printed a stdin warning when none was provided). Tests: 36 checks.
 - **Limits of this evidence:** one small task, one run, one model, no baseline arm, so no cost comparison against a direct call yet (S4). Total real spend for S3: about $0.14 (run $0.108 plus probe $0.029), under the stated worst case of $0.75 plus a small probe.
+
+## 10d. S4 result and decision
+27 runs (3 scenarios x baseline, skills, orchestrated x 3), Sonnet, $2.87 actual. Orchestrated: 7 of 9 passes, $0.131 mean cost, $0.169 per passing run, 27.9 s; baseline: 8 of 9, $0.080, $0.090, 16.6 s; skills: 9 of 9, $0.108, $0.108, 19.0 s. The only differing scenario was payments, where the planner missed redelivery in 2 of 3 runs. By the pre-registered rule this is "no gain on small tasks": the driver stays opt-in and is not recommended for small tasks. Full table, caveats and the grader finding are in `docs/EVALUATION-PLAN.md` section 6. Not tested: larger tasks, interruptions and resume under real use, and the value of the hard cap itself.
 
 ## 11. Decisions needed
 1. Proceed with S1 and S2 (free), or stop here given the evaluation result. (S1 and S2 done; S3 done; S4 needs approval.)
