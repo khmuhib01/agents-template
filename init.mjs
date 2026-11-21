@@ -31,6 +31,7 @@ const DRY = has('--dry-run') || CHECK;
 import { parseYaml } from './lib/yaml.mjs';
 import { render, missing, truthy } from './lib/render.mjs';
 import { scaffold } from './lib/scaffold.mjs';
+import { commandProblems, dockerProblems } from './lib/validate.mjs';
 import { focusSkills, shipsWithSkill } from './lib/routing.mjs';
 
 // ---------------------------------------------------------------- context
@@ -87,7 +88,9 @@ function buildContext(c) {
 function denyRules(cfg, ctx) {
   const rules = [];
   if (cfg.protect_secrets !== false) {
-    rules.push('Read(./.env)', 'Read(./**/.env)', 'Read(./**/.env.local)', 'Read(./**/.env.production)');
+    // Explicit variants rather than .env.*: .env.example stays readable, it documents the variables a project needs.
+    for (const v of ['', '.local', '.production', '.development', '.staging', '.test', '.production.local', '.development.local', '.test.local']) rules.push(`Read(./.env${v})`, `Read(./**/.env${v})`);
+    rules.push('Read(./**/*.pem)', 'Read(./**/*.key)', 'Read(./**/id_rsa*)', 'Read(./**/id_ed25519*)', 'Read(./**/.npmrc)', 'Read(./**/.netrc)', 'Read(~/.ssh/**)', 'Read(~/.aws/**)');
     for (const raw of toArr(cfg.local_only)) {
       const e = String(raw).trim().replace(/^\.?\//, '');
       if (!e || e === '.env') continue;
@@ -295,10 +298,16 @@ function main() {
   else for (const [key, p] of Object.entries(cfg.packages || {})) {
     const pp = String((p && p.path) || '').replace(/\\/g, '/');
     if (!pp) errors.push(`packages.${key}.path is required`);
+    else if (/^(\.\/?)+$/.test(pp)) errors.push(`packages.${key}.path must be a sub-folder, not the project root (got "${pp}"): it would overwrite the root CLAUDE.md`);
     else if (path.isAbsolute(pp) || /^[a-zA-Z]:/.test(pp) || pp.split('/').includes('..') || /^\.?\/?\.claude(\/|$)/.test(pp)) errors.push(`packages.${key}.path must be a relative folder inside the project (got "${pp}")`);
     if (p && p.type && !TYPES.includes(p.type)) errors.push(`packages.${key}.type must be ${TYPES.join(' | ')} (got "${p.type}")`);
   }
   if (cfg.run_in_docker && !(cfg.docker && cfg.docker.service)) errors.push('run_in_docker is true but docker.service is missing');
+  // Writing through a symlinked .claude/.gitignore/... would land outside the project (a hostile repo can ship one).
+  for (const n of ['.claude', '.agents', '.codex', '.vscode', '.gitignore', 'AGENTS.md', 'CLAUDE.md']) {
+    try { if (fs.lstatSync(path.join(TARGET, n)).isSymbolicLink()) errors.push(`${n} is a symlink; init will not write through it. Replace it with a real file or folder.`); } catch { /* does not exist */ }
+  }
+  errors.push(...commandProblems('test_command', cfg.test_command), ...commandProblems('format_command', cfg.format_command), ...dockerProblems(cfg.docker));
   if (errors.length) { console.error('✖ Config problems:\n' + errors.map((e) => '  - ' + e).join('\n')); process.exit(1); }
 
   warnUnknownKeys(cfg);
@@ -457,7 +466,7 @@ function main() {
     // 0 = ignored, 1 = not ignored, 128 = not a git repository (nothing can be committed, so it is safe to write).
     let code = 0;
     try { execSync(`git check-ignore -q ${rel}`, { cwd: TARGET, stdio: 'ignore' }); } catch (e) { code = e.status ?? 1; }
-    if (code === 1) return { status: 'skipped', message: `⚠ ${rel} not written: .vscode/ is not git-ignored, so these settings would be committed and change teammates' editors. Ignore .vscode/ or ${manual}  (vscode_settings: false silences this.)` };
+    if (code !== 0 && code !== 128) return { status: 'skipped', message: `⚠ ${rel} not written: .vscode/ is not git-ignored, so these settings would be committed and change teammates' editors. Ignore .vscode/ or ${manual}  (vscode_settings: false silences this.)` };
 
     const exists = fs.existsSync(sp);
     const raw = exists ? fs.readFileSync(sp, 'utf8').replace(/^﻿/, '') : '';
@@ -504,7 +513,8 @@ function main() {
 
   // 3c. VS Code "@" picker: it is a file search that obeys .gitignore, so git-ignored generated files (.claude/agents, ...) are
   // invisible. Add the minimal workspace settings that fix it. Only missing keys are added; user values are never changed.
-  const vscode = cfg.vscode_settings === false ? { status: 'off' } : applyVscodeSettings();
+  // .vscode/settings.json is machine-local, so it never counts as drift in --check.
+  const vscode = cfg.vscode_settings === false || CHECK ? { status: 'off' } : applyVscodeSettings();
   if (vscode.status === 'created') stats.created++;
   else if (vscode.status === 'updated') stats.updated++;
   else if (vscode.status === 'unchanged') stats.same++;
@@ -514,8 +524,11 @@ function main() {
   const problems = [];
   if (!DRY) {
     for (const f of rendered) {
-      const left = fs.readFileSync(f, 'utf8').match(/\{\{[^}]*\}\}/g);
-      if (left) problems.push(`unresolved placeholder(s) ${[...new Set(left)].join(' ')} in ${path.relative(TARGET, f)}`);
+      // {{...}} that the user wrote in a config value (a Blade/Vue example in notes) is content, not a template slip.
+      const own = new Set(JSON.stringify(cfg).match(/\{\{[^}]*\}\}/g) || []);
+      const left = (fs.readFileSync(f, 'utf8').match(/\{\{[^}]*\}\}/g) || []).filter((t) => !own.has(t));
+      if (!left.length) continue;
+      problems.push(`unresolved placeholder(s) ${[...new Set(left)].join(' ')} in ${path.relative(TARGET, f)}`);
     }
     const forbid = toArr(cfg.forbid).map(String);
     if (forbid.length) {
@@ -536,6 +549,14 @@ function main() {
       }
     } catch { /* no .gitignore */ }
   }
+  // Hashes describe what init already wrote above, so save them before the checks can exit; otherwise a failed check
+  // leaves stale hashes and the next run mistakes untouched files for hand edits.
+  if (!DRY) {
+    const sorted = Object.fromEntries(Object.keys(newHashes).sort().map((k) => [k, newHashes[k]]));
+    const hp = path.join(TARGET, HASH_FILE);
+    const text = JSON.stringify(sorted, null, 2) + '\n';
+    if (!fs.existsSync(hp) || fs.readFileSync(hp, 'utf8') !== text) { fs.mkdirSync(path.dirname(hp), { recursive: true }); fs.writeFileSync(hp, text); }
+  }
   if (missing.size) problems.push(`template uses undefined keys: ${[...missing].join(', ')}`);
 
   console.log(`${stats.created} created, ${stats.updated} updated, ${stats.same} unchanged.`);
@@ -547,12 +568,6 @@ function main() {
     if (stats.created || stats.updated) { console.error(`✖ ${stats.created + stats.updated} generated file(s) are out of date. Run: node ${path.join(HERE, 'init.mjs')} --target "${TARGET}"`); process.exit(1); }
     console.log('✔ Generated files are in sync with project.config.yml and the template.');
     return;
-  }
-  if (!DRY) {
-    const sorted = Object.fromEntries(Object.keys(newHashes).sort().map((k) => [k, newHashes[k]]));
-    const hp = path.join(TARGET, HASH_FILE);
-    const text = JSON.stringify(sorted, null, 2) + '\n';
-    if (!fs.existsSync(hp) || fs.readFileSync(hp, 'utf8') !== text) { fs.mkdirSync(path.dirname(hp), { recursive: true }); fs.writeFileSync(hp, text); }
   }
   // Always-loaded context: what every session pays before the first prompt. Descriptions of model-invocable skills count;
   // manual-only skills (disable-model-invocation: true) are not listed to the model, so they cost nothing.
