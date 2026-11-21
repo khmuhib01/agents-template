@@ -150,3 +150,51 @@ With 3 run(s) per cell, small differences between arms are noise; a skill earns 
 
 With 3 run(s) per cell, small differences between arms are noise; a skill earns the label "evaluated" only with repeated runs recorded here.
 
+### 2026-11-21, haiku, 2 run(s) per scenario and arm, cap $0.4/run
+
+| Scenario | Arm | Runs | Passed all graders | Mean cost | Mean turns |
+|---|---|---|---|---|---|
+| migration-lock-safety | baseline | 2 | 1/2 (50%) | $0.008 | 13.5 |
+| mobile-token-storage | baseline | 2 | 2/2 (100%) | $0.007 | 7.0 |
+| payments-webhook-refund | baseline | 2 | 1/2 (50%) | $0.008 | 9.0 |
+| react18-no-react19-apis | baseline | 2 | 2/2 (100%) | $0.006 | 6.0 |
+| seo-noindex-regression | baseline | 2 | 2/2 (100%) | $0.012 | 15.5 |
+| structured-data-product | baseline | 2 | 0/2 (0%) | $0.010 | 10.0 |
+| tenant-invoice-isolation | baseline | 2 | 2/2 (100%) | $0.006 | 7.5 |
+| wordpress-plugin-security | baseline | 2 | 1/2 (50%) | $0.008 | 10.5 |
+
+| Category | Arm | Graders passed |
+|---|---|---|
+| correctness | baseline | 46/50 (92%) |
+| docs | baseline | 12/14 (86%) |
+| performance | baseline | 2/2 (100%) |
+| security | baseline | 31/34 (91%) |
+| test_quality | baseline | 16/18 (89%) |
+| version | baseline | 6/6 (100%) |
+
+With 2 run(s) per cell, small differences between arms are noise; a skill earns the label "evaluated" only with repeated runs recorded here.
+
+### 2026-11-21, sonnet, 2 run(s) per scenario and arm, cap $0.4/run
+
+| Scenario | Arm | Runs | Passed all graders | Mean cost | Mean turns |
+|---|---|---|---|---|---|
+| migration-lock-safety | baseline | 2 | 2/2 (100%) | $0.070 | 9.0 |
+| mobile-token-storage | baseline | 2 | 2/2 (100%) | $0.060 | 4.0 |
+| payments-webhook-refund | baseline | 2 | 1/2 (50%) | $0.077 | 9.0 |
+| react18-no-react19-apis | baseline | 2 | 2/2 (100%) | $0.058 | 4.0 |
+| seo-noindex-regression | baseline | 2 | 1/2 (50%) | $0.087 | 9.0 |
+| structured-data-product | baseline | 2 | 2/2 (100%) | $0.118 | 10.5 |
+| tenant-invoice-isolation | baseline | 2 | 2/2 (100%) | $0.080 | 8.5 |
+| wordpress-plugin-security | baseline | 2 | 2/2 (100%) | $0.097 | 7.5 |
+
+| Category | Arm | Graders passed |
+|---|---|---|
+| correctness | baseline | 49/50 (98%) |
+| docs | baseline | 14/14 (100%) |
+| performance | baseline | 2/2 (100%) |
+| security | baseline | 34/34 (100%) |
+| test_quality | baseline | 17/18 (94%) |
+| version | baseline | 6/6 (100%) |
+
+With 2 run(s) per cell, small differences between arms are noise; a skill earns the label "evaluated" only with repeated runs recorded here.
+

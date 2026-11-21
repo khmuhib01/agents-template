@@ -12,6 +12,8 @@ Fixes two bugs from the 1.21.0 audit.
 - **model routing and complexity** (orchestrate.mjs only, opt-in): `lib/routing-tasks.mjs` classifies a goal as simple/medium/complex with fixed rules (no model call) and suggests agents; `--profile auto` maps it to tiny/small/medium (default stays `small`). Optional `model_routing` config (`enabled`, `simple`, `medium`, `complex`, `fallback`; no model ids built in, validated by init and the schema). Explicit `--model` always wins; a fallback model is tried once, as a counted call, only when the failure is about the model. The ledger records level, agents, model and its source.
 - `evals/report.mjs` prints Credit Reduction (%) on cost per passing run next to the success rate, from recorded runs only. `node bench.mjs` prints the agents invoked under the delegation policy against all-four-every-time, over `evals/routing-cases.json` (a policy count, not cost). Recorded results so far show the skills and orchestrated arms costing more than baseline.
 - README: budget policy, routing, hook failure behavior and limits.
+- `--resume` after a strict-policy stop no longer suggests a larger `--max-cost` (it cannot help): it explains that and accepts `--resume ID --budget-policy balanced|best-effort`.
+- first paid model comparison recorded (haiku vs sonnet, 16 runs each, about $1.42 total): 69% vs 88% pass, 87% lower cost per passing run for haiku. Summary in the README; raw runs in `evals/results/`.
 - tests: install-global rewritten for scenarios A-I (ownership, dry-run, update, edited file, uninstall, interrupted install, idempotence); 6 budget-policy checks.
 
 ## 1.21.0 - 2026-11-21

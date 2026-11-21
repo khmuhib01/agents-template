@@ -410,6 +410,16 @@ console.log('\n[orchestrate]');
     check(o.calls.length === 3 && modelOf(o.calls[0]) === 'm-mid' && modelOf(o.calls[1]) === 'm-fb' && o.ledger.budget.calls === 3 && /model_fallback/.test(o.events), 'routing: an unavailable model is retried once with the fallback and the retry is counted in the budget');
     o = orch(rt('route-fb2', ROUTE), 'route-fb2', [{ is_error: true, result: 'something else broke', exit: 1 }], ['--goal', 'add a button component', ...T]);
     check(o.calls.length > 0 && o.calls.every((c) => modelOf(c) === 'm-mid') && !/model_fallback/.test(o.events), 'routing: an error that is not about the model does not trigger a fallback call');
+    { // strict policy stop: a larger cap does not help, only a looser policy continues
+      const repo = mkRepo('strict-resume');
+      const steps = [{ result: PLAN }, { result: 'x', write: { 'a.txt': 'two\n' } }];
+      const o1 = orch(repo, 'strict-resume', steps, ['--goal', 'g', '--budget-policy', 'strict', ...T]);
+      check(o1.r.status === 3 && /usage_unknown/.test(o1.ledger.stateReason) && o1.calls.length === 1, 'strict: the run stops after the first call that reported no cost');
+      const o2 = orch(repo, 'strict-resume', steps, ['--resume', o1.id, '--max-cost', '5']);
+      check(o2.r.status === 2 && /--budget-policy/.test(o2.r.stderr) && /does not help/.test(o2.r.stderr) && o2.calls.length === 1, 'strict: --resume with a larger --max-cost explains that it does not help and calls nothing');
+      const o3 = orch(repo, 'strict-resume', steps, ['--resume', o1.id, '--budget-policy', 'balanced']);
+      check(o3.r.status === 0 && o3.ledger.state === 'completed' && o3.ledger.budget.policy === 'balanced', 'strict: --resume --budget-policy balanced continues without repeating the plan');
+    }
     const rtm = await import(pathToFileURL(path.join(HERE, 'lib', 'routing-tasks.mjs')).href);
     const lv = (g, f) => rtm.classifyTask(g, { files: f }).level;
     check(lv('fix a typo in the README') === 'simple' && lv('explain what this function does') === 'simple' && lv('add an endpoint to list invoices') === 'medium' && lv('rotate the payment webhook secret') === 'complex' && lv('rename a variable', 9) === 'complex' && lv('tidy two modules', 2) === 'medium', 'classifier: simple / medium / complex goals');

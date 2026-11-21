@@ -14,7 +14,7 @@ import { spawnSync } from 'node:child_process';
 import { parseYaml } from './lib/yaml.mjs';
 import { classifyTask, PROFILE_FOR, resolveModel, selectAgents } from './lib/routing-tasks.mjs';
 import { transition } from './lib/orch-state.mjs';
-import { newBudget, authorize, record, canRepair, noteRepair, raiseCap } from './lib/orch-budget.mjs';
+import { newBudget, authorize, record, canRepair, noteRepair, raiseCap, POLICIES } from './lib/orch-budget.mjs';
 import { extractJson, validatePlan, normalizePlan, redact, tail } from './lib/orch-plan.mjs';
 import { completionReport } from './lib/orch-report.mjs';
 
@@ -258,7 +258,14 @@ if (resumeId) {
   ledger = openStoreFor(resumeId);
   if (['completed', 'failed', 'cancelled'].includes(ledger.state)) { console.log(`task ${ledger.id} is already ${ledger.state}; nothing to resume.`); finish(ledger, ledger.state === 'completed' ? 0 : 1); }
   verifyResume(ledger);
-  if (ledger.state === 'budget_exhausted') {
+  if (ledger.state === 'budget_exhausted' && /^usage_unknown/.test(ledger.stateReason)) {
+    // The strict policy stopped because a cost was unknown; a larger cap does not help. Only an explicit, different policy continues.
+    const pol = opt('--budget-policy', '');
+    if (!pol || pol === 'strict' || !POLICIES.includes(pol)) die(`task stopped by the strict budget policy (${ledger.stateReason}). A larger --max-cost does not help. Continue only with a looser policy: --resume ${ledger.id} --budget-policy balanced|best-effort`);
+    ledger.budget.policy = pol;
+    if (ledger.budget.calls >= ledger.budget.max_total_model_calls) ledger.budget.max_total_model_calls = ledger.budget.calls + 1;
+    event('budget_policy_changed', { detail: `policy now ${pol}, call cap ${ledger.budget.max_total_model_calls}` });
+  } else if (ledger.state === 'budget_exhausted') {
     const cap = opt('--max-cost', '');
     if (!cap) die(`task stopped on budget (${ledger.stateReason}). Continue only with an explicit larger cap: --resume ${ledger.id} --max-cost <USD above ${ledger.budget.max_estimated_cost}>`);
     try { ledger.budget = raiseCap(ledger.budget, Number(cap)); } catch (e) { die(e.message); }
