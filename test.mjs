@@ -1077,6 +1077,62 @@ const wf = fs.readFileSync(path.join(HERE, '.github/workflows/test.yml'), 'utf8'
 check(/^permissions:\s*\n\s+contents: read/m.test(wf), 'test workflow declares least-privilege permissions');
 }
 
+if (on('orch-report')) {
+console.log('\n[orch-report]');
+{
+  // The report text is what a user reads after an orchestrated run, so it must never claim more than the ledger records.
+  const { efficiencyReport, completionReport } = await import(pathToFileURL(path.join(HERE, 'lib', 'orch-report.mjs')).href);
+  const { newBudget, record, noteRepair } = await import(pathToFileURL(path.join(HERE, 'lib', 'orch-budget.mjs')).href);
+  const led = (over = {}) => ({ id: 'T-1', state: 'completed', goal: 'fix the bug', profile: 'small', branch: 'feat/x', budget: newBudget('small'), steps: [], ...over });
+
+  // --- efficiencyReport: cost and counts
+  let b2 = record(record(newBudget('small'), { cost: 0.1 }), { cost: 0.0234 });
+  const eff = efficiencyReport(led({ budget: b2, steps: [{ model: 'sonnet' }, { model: 'sonnet' }, { model: 'haiku' }, {}] }));
+  check(/^Efficiency report/.test(eff) && /Cost: \$0\.123 actual$/m.test(eff) && !/lower bound/.test(eff), 'efficiency: a fully known cost is shown as an actual amount');
+  check(/Model calls: 2 of 3/.test(eff) && /Agent dispatches: 2/.test(eff) && /Budget used: \$0\.123 of \$0\.75 \(calls 2\/3\)/.test(eff), 'efficiency: calls and budget are taken from the budget record');
+  check(/Models used: sonnet, haiku$/m.test(eff), 'efficiency: models are listed once each, steps without a model are ignored');
+  check(/Models used: none$/m.test(efficiencyReport(led())), 'efficiency: no recorded model is reported as "none"');
+  check(/Tool calls: not reported by the CLI/.test(eff) && /context the CLI loads by itself is not measured/.test(eff), 'efficiency: unmeasured figures are stated as not measured, never invented');
+
+  const allUnknown = efficiencyReport(led({ budget: record(newBudget('small'), { cost: null }) }));
+  check(/Cost: unavailable \(the CLI reported no cost\)/.test(allUnknown) && !/actual/.test(allUnknown), 'efficiency: when no call reported a cost, the cost is "unavailable", not $0.000');
+  const someUnknown = efficiencyReport(led({ budget: record(record(newBudget('small'), { cost: 0.2 }), { cost: undefined }) }));
+  check(/\$0\.200 actual \(1 call\(s\) reported no cost, so this is a lower bound\)/.test(someUnknown), 'efficiency: a partly unknown cost is marked as a lower bound');
+  check(/Cost: \$0\.000 actual/.test(efficiencyReport(led())), 'efficiency: zero calls is a known zero cost, not "unavailable"');
+
+  // --- efficiencyReport: avoided work
+  const tiny = efficiencyReport(led({ budget: newBudget('tiny') }));
+  check(/planner \(tiny profile\)/.test(tiny) && /repair call/.test(tiny), 'efficiency: tiny profile and no repairs list the planner and the repair call as avoided');
+  const repaired = efficiencyReport(led({ budget: noteRepair(newBudget('small')) }));
+  check(!/repair call/.test(repaired) && /Repair iterations: 1 of 1/.test(repaired) && !/planner \(tiny profile\)/.test(repaired), 'efficiency: a used repair is not listed as avoided, and a planned profile does not avoid the planner');
+  check(/outside this slice/.test(eff), 'efficiency: out-of-scope work is always flagged as outside this slice');
+
+  // --- completionReport
+  const plan = { summary: 'Guard the null case', acceptance_criteria: ['null input returns 0', 'tests pass'] };
+  const done = completionReport(led({ plan, changedFiles: [{ path: 'src/a.js' }, { path: 'src/b.js' }], validation: { ran: true, command: 'npm test', exitCode: 0, attempts: 1 } }));
+  check(/^Task T-1: completed$/m.test(done) && /^Goal: fix the bug$/m.test(done) && /^Profile: small, branch feat\/x$/m.test(done), 'completion: header shows id, state, goal, profile and branch');
+  check(/^Plan: Guard the null case$/m.test(done) && /^  - null input returns 0$/m.test(done) && /^  - tests pass$/m.test(done), 'completion: plan summary and each acceptance criterion are listed');
+  check(/Changed files \(2\): src\/a\.js, src\/b\.js/.test(done) && /Validation: `npm test` exited 0\./.test(done) && !/after \d+ attempts/.test(done), 'completion: changed files and a first-attempt validation are reported plainly');
+  check(done.includes('\n\nEfficiency report\n'), 'completion: the efficiency report follows after a blank line');
+  check(/exited 0 after 2 attempts\./.test(completionReport(led({ plan, validation: { ran: true, command: 'npm test', exitCode: 0, attempts: 2 } }))), 'completion: more than one validation attempt is stated');
+  check(/^Changed files: none recorded$/m.test(completionReport(led({ plan }))) && /^Changed files: none recorded$/m.test(completionReport(led({ plan, changedFiles: [] }))), 'completion: no recorded change is stated, not assumed');
+  check(!/^Plan:/m.test(completionReport(led({ plan: null }))) && !/Acceptance criteria/.test(completionReport(led({ plan: null }))), 'completion: a ledger without a plan prints no plan section');
+
+  // --- completionReport: never claims what was not verified
+  const notRun = completionReport(led({ state: 'failed', plan, validation: { ran: false, note: 'no test command' } }));
+  check(/Validation: NOT RUN \(no test command\)\. Nothing is verified; review the diff yourself\./.test(notRun) && !/exited/.test(notRun), 'completion: validation that did not run says NOT RUN with the note and claims no exit code');
+  check(/Validation: NOT RUN\. Nothing is verified/.test(completionReport(led({ state: 'failed', plan, validation: null }))), 'completion: a missing validation record is also NOT RUN');
+  const failed = completionReport(led({ state: 'failed', stateReason: 'tests failed', plan, validation: { ran: true, command: 'npm test', exitCode: 1, attempts: 2 } }));
+  check(/^Task T-1: failed \(tests failed\)$/m.test(failed) && /exited 1 after 2 attempts/.test(failed) && /Risk: the change is on branch feat\/x and is not verified\./.test(failed), 'completion: a failed task shows its reason, the failing exit code and the unverified-branch risk');
+  check(/Risk: the change is on branch/.test(completionReport(led({ state: 'blocked', plan, validation: null }))), 'completion: a blocked task also carries the risk line');
+  check(!/Risk:/.test(done), 'completion: a completed, validated task carries no risk line');
+
+  const exhausted = completionReport(led({ state: 'budget_exhausted', stateReason: 'cost_cap', plan, remaining: ['write tests', 'update docs'], validation: { ran: false } }));
+  check(/Stopped: cost_cap\. Remaining work: write tests, update docs\. Continue only by raising the cap explicitly: --resume T-1 --max-cost <larger USD>\./.test(exhausted), 'completion: budget exhaustion lists the remaining work and the explicit resume command');
+  check(/Remaining work: see ledger\./.test(completionReport(led({ state: 'budget_exhausted', stateReason: 'call_cap', plan, validation: { ran: false } }))), 'completion: budget exhaustion without a remaining list points to the ledger');
+}
+}
+
 if (on('invalid config')) {
 console.log('\n[invalid config]');
 const inv = path.join(base, 'invalid');
