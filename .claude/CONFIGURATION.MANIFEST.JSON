@@ -1,0 +1,70 @@
+{
+  "name": "agents-template",
+  "generatedBy": "claude-template",
+  "templateVersion": "1.18.0",
+  "skillsMode": "focused",
+  "type": "cli",
+  "stack": [
+    "node"
+  ],
+  "branches": {
+    "working": "feat/example",
+    "integration": "dev",
+    "production": "main"
+  },
+  "runInDocker": false,
+  "testCommand": "node test.mjs",
+  "skills": [
+    "audit",
+    "bug-investigation",
+    "build",
+    "code-review",
+    "commit",
+    "commit-push",
+    "dependency-management",
+    "deploy",
+    "devops-engineering",
+    "doc-sync",
+    "framework-upgrade",
+    "merge-to-dev",
+    "merge-to-main",
+    "nodejs-development",
+    "performance-engineering",
+    "pr",
+    "project-init",
+    "project-intelligence",
+    "push",
+    "review",
+    "safe-refactoring",
+    "security-audit",
+    "ship",
+    "status",
+    "sync",
+    "system-design",
+    "technical-debt",
+    "technical-documentation",
+    "test",
+    "test-engineering",
+    "testing-best-practices",
+    "typescript-development"
+  ],
+  "agents": [
+    "architect",
+    "backend-engineer",
+    "code-reviewer",
+    "debugger",
+    "devops-engineer",
+    "frontend-engineer",
+    "git-manager",
+    "planner",
+    "qa-engineer",
+    "security-reviewer"
+  ],
+  "hooks": [
+    "guard-bash",
+    "guard-secrets",
+    "guard-read",
+    "context-nudge"
+  ],
+  "packages": []
+}
