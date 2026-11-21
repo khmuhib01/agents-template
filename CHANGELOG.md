@@ -2,6 +2,14 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.22.3 - 2026-11-22
+
+Cheap-first routing with escalation (orchestrate.mjs, opt-in).
+
+- `model_routing.escalate`: when the tests fail after the routed model's work, the repair step runs on this stronger model (one counted call, event `model_escalated`). Plan and implement stay on the routed model. Ignored when `--model` is given. Without `escalate` nothing changes.
+- `EVAL_SCENARIOS_DIR` lets `evals/scenarios.mjs` read scenarios from a folder outside the repo, for tasks taken from private projects whose code must not be committed here.
+- First real-task measurement (2 bug-fix tasks taken from the history of a private Laravel project, 5 runs per model, $1.15 total; the code is not in this repo): `haiku` 9 of 10 and `sonnet` 9 of 10 passed, at about $0.010 and $0.105 per run. The router sent both to the strong model (one goal mentions "production", the other is medium), so it used none of that saving. The classifier was not loosened on two tasks; the intended way to use the saving where tests exist is `model_routing.medium: <cheap>` with `escalate`.
+
 ## 1.22.2 - 2026-11-22
 
 Classifier fixes found with a second labeled set (`evals/routing-heldout.json`, 20 goals written before the change). Affects `orchestrate.mjs --profile auto` and `model_routing` only.

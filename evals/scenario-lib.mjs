@@ -12,7 +12,8 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-export const SCEN_DIR = path.join(HERE, 'scenarios');
+// EVAL_SCENARIOS_DIR points at a folder of private scenarios kept outside this repo (never commit code from another project).
+export const SCEN_DIR = process.env.EVAL_SCENARIOS_DIR ? path.resolve(process.env.EVAL_SCENARIOS_DIR) : path.join(HERE, 'scenarios');
 export const CATEGORIES = ['correctness', 'test_quality', 'security', 'performance', 'version', 'docs'];
 const GENERATED = ['.claude', '.agents', '.codex', '.vscode', 'AGENTS.md', 'CLAUDE.md', 'project.config.yml', '.git', 'node_modules'];
 
