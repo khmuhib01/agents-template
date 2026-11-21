@@ -88,7 +88,9 @@ function buildContext(c) {
 function denyRules(cfg, ctx) {
   const rules = [];
   if (cfg.protect_secrets !== false) {
-    rules.push('Read(./.env)', 'Read(./**/.env)', 'Read(./**/.env.local)', 'Read(./**/.env.production)');
+    // Explicit variants rather than .env.*: .env.example stays readable, it documents the variables a project needs.
+    for (const v of ['', '.local', '.production', '.development', '.staging', '.test', '.production.local', '.development.local', '.test.local']) rules.push(`Read(./.env${v})`, `Read(./**/.env${v})`);
+    rules.push('Read(./**/*.pem)', 'Read(./**/*.key)', 'Read(./**/id_rsa*)', 'Read(./**/id_ed25519*)', 'Read(./**/.npmrc)', 'Read(./**/.netrc)', 'Read(~/.ssh/**)', 'Read(~/.aws/**)');
     for (const raw of toArr(cfg.local_only)) {
       const e = String(raw).trim().replace(/^\.?\//, '');
       if (!e || e === '.env') continue;
@@ -301,6 +303,10 @@ function main() {
     if (p && p.type && !TYPES.includes(p.type)) errors.push(`packages.${key}.type must be ${TYPES.join(' | ')} (got "${p.type}")`);
   }
   if (cfg.run_in_docker && !(cfg.docker && cfg.docker.service)) errors.push('run_in_docker is true but docker.service is missing');
+  // Writing through a symlinked .claude/.gitignore/... would land outside the project (a hostile repo can ship one).
+  for (const n of ['.claude', '.agents', '.codex', '.vscode', '.gitignore', 'AGENTS.md', 'CLAUDE.md']) {
+    try { if (fs.lstatSync(path.join(TARGET, n)).isSymbolicLink()) errors.push(`${n} is a symlink; init will not write through it. Replace it with a real file or folder.`); } catch { /* does not exist */ }
+  }
   errors.push(...commandProblems('test_command', cfg.test_command), ...commandProblems('format_command', cfg.format_command), ...dockerProblems(cfg.docker));
   if (errors.length) { console.error('✖ Config problems:\n' + errors.map((e) => '  - ' + e).join('\n')); process.exit(1); }
 
@@ -518,8 +524,11 @@ function main() {
   const problems = [];
   if (!DRY) {
     for (const f of rendered) {
-      const left = fs.readFileSync(f, 'utf8').match(/\{\{[^}]*\}\}/g);
-      if (left) problems.push(`unresolved placeholder(s) ${[...new Set(left)].join(' ')} in ${path.relative(TARGET, f)}`);
+      // {{...}} that the user wrote in a config value (a Blade/Vue example in notes) is content, not a template slip.
+      const own = new Set(JSON.stringify(cfg).match(/\{\{[^}]*\}\}/g) || []);
+      const left = (fs.readFileSync(f, 'utf8').match(/\{\{[^}]*\}\}/g) || []).filter((t) => !own.has(t));
+      if (!left.length) continue;
+      problems.push(`unresolved placeholder(s) ${[...new Set(left)].join(' ')} in ${path.relative(TARGET, f)}`);
     }
     const forbid = toArr(cfg.forbid).map(String);
     if (forbid.length) {

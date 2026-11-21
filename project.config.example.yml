@@ -5,9 +5,9 @@
 # Supported YAML subset: `key: value`, nested maps (2-space indent), `- item` lists,
 # inline [a, b] lists, inline {a: b} maps, "quoted strings". No multi-line block scalars.
 
-name: ARTA Blog
-description: "Blog for the Asian Restaurant and Takeaway Awards (ARTA)."
-url: https://www.artauk.com/blog
+name: Example Blog
+description: "Company blog built on Laravel."
+url: https://example.com/blog
 type: web                       # web | api | mobile | fullstack | cli | library | other
 stack: [laravel8, blade, mysql] # free tokens; matched against core/skill-map.json
 package_manager: composer       # composer | npm | pnpm | yarn | pip | uv ... (optional)
@@ -21,7 +21,7 @@ docker:
 test_command: "php artisan test"   # leave empty if the project has no tests
 
 branches:
-  working: muhib                # your day-to-day branch (or feature/*)
+  working: feature/x             # your day-to-day branch (or feature/*)
   integration: develop          # leave empty "" if you merge straight to production
   production: main              # protected branch
 
@@ -46,7 +46,7 @@ local_only:                     # git-ignored paths that must never be committed
   - "*.sql"
 
 notes:                          # project-specific rules in plain words
-  - "Brand is ARTA (not Artauk)."
+  - "Brand name is Example (not Example Inc)."
   - "Keep the current blog design; branding changes only unless asked."
   - "Keep /blog/{slug} URLs stable (migrated WordPress slugs)."
   - "Images are not in git."
