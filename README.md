@@ -114,7 +114,7 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 
 | Key | Default | Effect |
 |---|---|---|
-| `protect_secrets` | true | `settings.json` denies Read on `.env` and every `local_only` path (dumps never enter context) |
+| `protect_secrets` | true | `settings.json` denies the **Read tool** on `.env` and every `local_only` path, and `guard-secrets` blocks writes there. It does **not** cover shell commands: `cat .env` or `node -e` is not stopped by any rule or hook, only by your permission prompt (verified in a real run). Do not grant broad Bash allow rules such as `Bash(node *)`, and do not use `bypassPermissions`, in a project that holds secrets |
 | `deny_heavy` | true | also denies Read on `vendor/`, `node_modules/`, `dist/`, `build/`, logs, `*.min.js`, `*.map` (stack-aware) |
 | `allow_safe_commands` | true | `git status/diff/log` and the project test command run without a permission prompt (fewer turns) |
 | `domains` | `[]` | Optional concerns (not tech stacks) that add skills on top of `type` and `stack`, `seo` (six SEO skills), `saas`, `payments`, `realtime`, `events`, `search`, `product` (discovery, PRD, delivery planning, production readiness). Names come from `domains` in `core/skill-map.json`. Unknown names warn. Skills can also declare dependencies in `core/skill-map.json` (`deps`), which are expanded automatically |
