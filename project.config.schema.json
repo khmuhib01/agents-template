@@ -161,6 +161,18 @@
       "type": "string",
       "description": "Default model written to settings.json (overrides model_profile)."
     },
+    "model_routing": {
+      "type": "object",
+      "description": "Optional. Used only by orchestrate.mjs (an interactive session cannot switch models by config). enabled: true turns it on; simple/medium/complex/fallback are model ids or aliases your CLI accepts. An explicit --model always wins.",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "simple": { "type": "string" },
+        "medium": { "type": "string" },
+        "complex": { "type": "string" },
+        "fallback": { "type": "string", "description": "Tried once, as a counted call, only if the routed model is unavailable." }
+      },
+      "additionalProperties": false
+    },
     "model_profile": {
       "enum": [
         "economy",

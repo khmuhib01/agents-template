@@ -1,0 +1,929 @@
+{
+  "kind": "scenarios",
+  "date": "2026-11-21",
+  "model": "sonnet",
+  "runsPerCell": 2,
+  "budgetPerRunUsd": 0.4,
+  "runs": [
+    {
+      "scenario": "migration-lock-safety",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.0631767,
+      "turns": 6,
+      "seconds": 11.3,
+      "graders": [
+        {
+          "id": "new-migration-added",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "adds-status-column",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "column-not-null-default-pending",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "index-built-concurrently",
+          "category": "performance",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "runner-transaction-rules",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "down-migrations-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0001-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0002-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "mobile-token-storage",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.0605983,
+      "turns": 4,
+      "seconds": 10.9,
+      "graders": [
+        {
+          "id": "uses-secure-store",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "writes-secure",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-asyncstorage-writes",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-copies-removed",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "migrates-on-read",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "api-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-token-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-dependencies",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "payments-webhook-refund",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.0783058,
+      "turns": 9,
+      "seconds": 15.7,
+      "graders": [
+        {
+          "id": "refund-applied",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-idempotent-on-redelivery",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-rejects-bad-signature",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "paid-and-unknown-events-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-added",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "exports-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-secret-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "react18-no-react19-apis",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.057595099999999996,
+      "turns": 4,
+      "seconds": 9.2,
+      "graders": [
+        {
+          "id": "no-react19-apis",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-use-hook",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "react-not-upgraded",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "pending-state",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "error-handled",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rollback",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "seo-noindex-regression",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.08917230000000001,
+      "turns": 8,
+      "seconds": 19.6,
+      "graders": [
+        {
+          "id": "prod-build-indexable",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "staging-still-blocked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "regression-test-exists",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-catches-original-bug",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "structured-data-product",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.10494430000000002,
+      "turns": 10,
+      "seconds": 24.6,
+      "graders": [
+        {
+          "id": "jsonld-valid-and-matches-data",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-fabricated-reviews",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "script-breakout-escaped",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-exist",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "tenant-invoice-isolation",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.0826468,
+      "turns": 9,
+      "seconds": 17.4,
+      "graders": [
+        {
+          "id": "own-invoices-work",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-read",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-write",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "csv-only-own-tenant",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "list-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-added",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "db-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "wordpress-plugin-security",
+      "arm": "baseline",
+      "run": 1,
+      "pass": true,
+      "cost": 0.0878462,
+      "turns": 7,
+      "seconds": 20.3,
+      "graders": [
+        {
+          "id": "output-escaped",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "sql-prepared",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-interpolated-sql",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "nonce-checked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "capability-checked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-permission-real",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "ids-cast",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "php-lint",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "migration-lock-safety",
+      "arm": "baseline",
+      "run": 2,
+      "pass": true,
+      "cost": 0.0767709,
+      "turns": 12,
+      "seconds": 15.3,
+      "graders": [
+        {
+          "id": "new-migration-added",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "adds-status-column",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "column-not-null-default-pending",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "index-built-concurrently",
+          "category": "performance",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "runner-transaction-rules",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "down-migrations-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0001-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0002-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "mobile-token-storage",
+      "arm": "baseline",
+      "run": 2,
+      "pass": true,
+      "cost": 0.0592501,
+      "turns": 4,
+      "seconds": 10.3,
+      "graders": [
+        {
+          "id": "uses-secure-store",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "writes-secure",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-asyncstorage-writes",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-copies-removed",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "migrates-on-read",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "api-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-token-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-dependencies",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "payments-webhook-refund",
+      "arm": "baseline",
+      "run": 2,
+      "pass": false,
+      "cost": 0.0759794,
+      "turns": 9,
+      "seconds": 15.3,
+      "graders": [
+        {
+          "id": "refund-applied",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-idempotent-on-redelivery",
+          "category": "correctness",
+          "pass": false,
+          "detail": "exit 1: refund applied more than once, balance 100\n"
+        },
+        {
+          "id": "refund-rejects-bad-signature",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "paid-and-unknown-events-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-added",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "exports-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-secret-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "react18-no-react19-apis",
+      "arm": "baseline",
+      "run": 2,
+      "pass": true,
+      "cost": 0.0582336,
+      "turns": 4,
+      "seconds": 9.3,
+      "graders": [
+        {
+          "id": "no-react19-apis",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-use-hook",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "react-not-upgraded",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "pending-state",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "error-handled",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rollback",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "seo-noindex-regression",
+      "arm": "baseline",
+      "run": 2,
+      "pass": false,
+      "cost": 0.0848765,
+      "turns": 10,
+      "seconds": 18.9,
+      "graders": [
+        {
+          "id": "prod-build-indexable",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "staging-still-blocked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "regression-test-exists",
+          "category": "test_quality",
+          "pass": false,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-catches-original-bug",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "structured-data-product",
+      "arm": "baseline",
+      "run": 2,
+      "pass": true,
+      "cost": 0.13089119999999999,
+      "turns": 11,
+      "seconds": 32.1,
+      "graders": [
+        {
+          "id": "jsonld-valid-and-matches-data",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-fabricated-reviews",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "script-breakout-escaped",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-exist",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "tenant-invoice-isolation",
+      "arm": "baseline",
+      "run": 2,
+      "pass": true,
+      "cost": 0.07724840000000001,
+      "turns": 8,
+      "seconds": 16.4,
+      "graders": [
+        {
+          "id": "own-invoices-work",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-read",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-write",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "csv-only-own-tenant",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "list-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-added",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "db-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "wordpress-plugin-security",
+      "arm": "baseline",
+      "run": 2,
+      "pass": true,
+      "cost": 0.1064299,
+      "turns": 8,
+      "seconds": 27.1,
+      "graders": [
+        {
+          "id": "output-escaped",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "sql-prepared",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-interpolated-sql",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "nonce-checked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "capability-checked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-permission-real",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "ids-cast",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "php-lint",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    }
+  ]
+}

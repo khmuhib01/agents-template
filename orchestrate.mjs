@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Budget-enforced sequential task driver (prototype, opt-in). Proposal: docs/AUTONOMOUS-ORCHESTRATION.md, ADR: docs/adr/0001-orchestration-runtime.md
-//   node orchestrate.mjs --goal "..." [--target DIR] [--profile tiny|small|medium] [--test-cmd "..."] [--model sonnet]
+//   node orchestrate.mjs --goal "..." [--target DIR] [--profile tiny|small|medium|auto] [--budget-policy strict|balanced|best-effort] [--test-cmd "..."] [--model sonnet]
 //   node orchestrate.mjs --resume ID [--max-cost USD]     continue a task; a stopped-on-budget task needs a strictly larger --max-cost
 //   node orchestrate.mjs --status ID                      print state and budget
 // Each model step is a separate `claude -p` call. Budget, call caps and tool lists are enforced here, by code, before every dispatch.
@@ -12,8 +12,9 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { parseYaml } from './lib/yaml.mjs';
+import { classifyTask, PROFILE_FOR, resolveModel, selectAgents } from './lib/routing-tasks.mjs';
 import { transition } from './lib/orch-state.mjs';
-import { newBudget, authorize, record, canRepair, noteRepair, raiseCap } from './lib/orch-budget.mjs';
+import { newBudget, authorize, record, canRepair, noteRepair, raiseCap, POLICIES } from './lib/orch-budget.mjs';
 import { extractJson, validatePlan, normalizePlan, redact, tail } from './lib/orch-plan.mjs';
 import { completionReport } from './lib/orch-report.mjs';
 
@@ -66,8 +67,8 @@ function snapshot() {
 }
 
 // --- model call
-function callClaude({ prompt, tools, mode, perCallUsd }) {
-  const cli = ['-p', prompt, '--output-format', 'json', '--model', MODEL, '--setting-sources', 'project', '--strict-mcp-config', '--no-session-persistence',
+function callClaude({ prompt, tools, mode, perCallUsd, model }) {
+  const cli = ['-p', prompt, '--output-format', 'json', '--model', model || MODEL, '--setting-sources', 'project', '--strict-mcp-config', '--no-session-persistence',
     '--max-budget-usd', String(perCallUsd), '--permission-mode', mode, '--allowed-tools', ...tools];
   const viaNode = /\.m?js$/.test(BIN);
   const p = spawnSync(viaNode ? process.execPath : BIN, viaNode ? [BIN, ...cli] : cli, { cwd: TARGET, encoding: 'utf8', timeout: 600000, maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -81,16 +82,24 @@ function callClaude({ prompt, tools, mode, perCallUsd }) {
 }
 
 // Every model call goes through here: authorize, call, record. A refused call raises Stop and nothing is spent.
-function dispatch(l, name, spec) {
+// The model comes from the ledger (chosen once at start: --model, model_routing or the default). One configured fallback model is tried
+// once, as a separate counted call, only when the call failed because the model itself was unavailable.
+const MODEL_ERROR = /model|not.?found|unavailable|overloaded|does not exist|access/i;
+function dispatch(l, name, spec, modelOverride) {
+  const model = modelOverride || l.model || MODEL;
   const auth = authorize(l.budget);
   if (!auth.ok) throw new Stop(auth.reason, auth.detail);
-  event('step_started', { step: name, model: MODEL, perCallUsd: auth.perCallUsd });
-  const r = callClaude({ ...spec, perCallUsd: auth.perCallUsd });
-  l.budget = record(l.budget, { cost: r.cost });
-  l.steps.push({ name, model: MODEL, cost: r.cost, turns: r.turns, ok: r.ok, error: r.error ? tail(redact(r.error), 300) : undefined });
+  event('step_started', { step: name, model, perCallUsd: auth.perCallUsd });
+  const r = callClaude({ ...spec, perCallUsd: auth.perCallUsd, model });
+  l.budget = record(l.budget, { cost: r.cost, cap: auth.perCallUsd });
+  l.steps.push({ name, model, cost: r.cost, turns: r.turns, ok: r.ok, error: r.error ? tail(redact(r.error), 300) : undefined });
   event('step_completed', { step: name, ok: r.ok, cost: r.cost === null ? 'unavailable' : r.cost, turns: r.turns });
   if (l.budget.justWarned) event('budget_warning', { detail: `$${l.budget.spent.toFixed(3)} of $${l.budget.max_estimated_cost.toFixed(2)} used` });
   save(l);
+  if (!r.ok && !r.budgetStop && !modelOverride && l.fallbackModel && l.fallbackModel !== model && MODEL_ERROR.test(r.error || '')) {
+    event('model_fallback', { step: name, detail: `${model} failed (${tail(redact(r.error), 120)}); retrying once with ${l.fallbackModel}` });
+    return dispatch(l, name, spec, l.fallbackModel);
+  }
   if (r.budgetStop) throw new Stop('step_cap', `the ${name} call hit its per-call cap of $${auth.perCallUsd.toFixed(2)} before finishing (actual cost ${r.cost === null ? 'unavailable' : '$' + r.cost.toFixed(3)})`);
   return r;
 }
@@ -179,7 +188,7 @@ function pipeline(l) {
     }
   } catch (e) {
     if (!(e instanceof Stop)) throw e;
-    const budgetStop = e.reason === 'call_cap' || e.reason === 'cost_cap' || e.reason === 'step_cap';
+    const budgetStop = e.reason === 'call_cap' || e.reason === 'cost_cap' || e.reason === 'step_cap' || e.reason === 'usage_unknown';
     if (budgetStop) {
       l.changedFiles = snapshot(); // a call stopped mid-work may have left edits on the branch
       event('budget_hard_stop', { detail: `${e.reason}: ${e.message}` });
@@ -207,15 +216,20 @@ function verifyResume(l) {
 function startNew() {
   const goal = opt('--goal', '');
   if (!goal) die('--goal is required (or --resume ID / --status ID)');
-  const profile = opt('--profile', 'small');
+  let profile = opt('--profile', 'small');
+  const cls = classifyTask(goal);
+  if (profile === 'auto') profile = PROFILE_FOR[cls.level];
   let budget;
-  try { budget = newBudget(profile, opt('--max-cost', '') ? { max_estimated_cost: Number(opt('--max-cost', '')) } : {}); } catch (e) { die(e.message); }
+  try { budget = newBudget(profile, { ...(opt('--max-cost', '') ? { max_estimated_cost: Number(opt('--max-cost', '')) } : {}), ...(opt('--budget-policy', '') ? { policy: opt('--budget-policy', '') } : {}) }); } catch (e) { die(e.message); }
   if (gitOut(['rev-parse', '--is-inside-work-tree']) !== 'true') die(`${TARGET} is not a git repository`);
   const head = gitOut(['rev-parse', 'HEAD']);
   if (!head) die('the repository has no commits yet');
   if ((gitOut(['status', '--porcelain', '-uall']) || '') !== '') die('the working tree has uncommitted changes; commit or stash them first (your work is never touched)');
   let testCommand = opt('--test-cmd', '');
-  if (!testCommand) { try { testCommand = String(parseYaml(fs.readFileSync(path.join(TARGET, 'project.config.yml'), 'utf8')).test_command || ''); } catch { /* no config */ } }
+  let cfg = {};
+  try { cfg = parseYaml(fs.readFileSync(path.join(TARGET, 'project.config.yml'), 'utf8')) || {}; } catch { /* no config */ }
+  if (!testCommand) testCommand = String(cfg.test_command || '');
+  const mr = resolveModel({ explicit: opt('--model', ''), routing: cfg.model_routing, level: cls.level, fallbackDefault: MODEL });
   const id = `t${Date.now().toString(36)}${crypto.randomBytes(2).toString('hex')}`;
   const baseBranch = gitOut(['rev-parse', '--abbrev-ref', 'HEAD']);
   const branch = `orch/${id}`;
@@ -224,10 +238,10 @@ function startNew() {
   if (co.status !== 0) die(`cannot create branch ${branch}: ${co.stderr.trim()}`);
   openStore(id);
   const now = new Date().toISOString();
-  let l = { version: 1, id, goal: redact(goal), profile, state: 'queued', stateReason: '', branch, baseBranch, head, testCommand, budget, plan: null, implemented: false, steps: [], validation: null, changedFiles: [], createdAt: now, updatedAt: now };
+  let l = { version: 1, id, goal: redact(goal), profile, state: 'queued', stateReason: '', branch, baseBranch, head, testCommand, budget, level: cls.level, levelReasons: cls.reasons, agents: selectAgents(goal, cls.level), model: mr.model, modelSource: mr.source, fallbackModel: mr.fallback, plan: null, implemented: false, steps: [], validation: null, changedFiles: [], createdAt: now, updatedAt: now };
   l = transition(l, 'ready', 'accepted');
   save(l);
-  event('task_accepted', { detail: `${id} profile ${profile} on ${branch}` });
+  event('task_accepted', { detail: `${id} profile ${profile} on ${branch}; complexity ${cls.level} (${cls.reasons.join(', ')}); model ${mr.model} (${mr.source})` });
   return l;
 }
 
@@ -244,7 +258,14 @@ if (resumeId) {
   ledger = openStoreFor(resumeId);
   if (['completed', 'failed', 'cancelled'].includes(ledger.state)) { console.log(`task ${ledger.id} is already ${ledger.state}; nothing to resume.`); finish(ledger, ledger.state === 'completed' ? 0 : 1); }
   verifyResume(ledger);
-  if (ledger.state === 'budget_exhausted') {
+  if (ledger.state === 'budget_exhausted' && /^usage_unknown/.test(ledger.stateReason)) {
+    // The strict policy stopped because a cost was unknown; a larger cap does not help. Only an explicit, different policy continues.
+    const pol = opt('--budget-policy', '');
+    if (!pol || pol === 'strict' || !POLICIES.includes(pol)) die(`task stopped by the strict budget policy (${ledger.stateReason}). A larger --max-cost does not help. Continue only with a looser policy: --resume ${ledger.id} --budget-policy balanced|best-effort`);
+    ledger.budget.policy = pol;
+    if (ledger.budget.calls >= ledger.budget.max_total_model_calls) ledger.budget.max_total_model_calls = ledger.budget.calls + 1;
+    event('budget_policy_changed', { detail: `policy now ${pol}, call cap ${ledger.budget.max_total_model_calls}` });
+  } else if (ledger.state === 'budget_exhausted') {
     const cap = opt('--max-cost', '');
     if (!cap) die(`task stopped on budget (${ledger.stateReason}). Continue only with an explicit larger cap: --resume ${ledger.id} --max-cost <USD above ${ledger.budget.max_estimated_cost}>`);
     try { ledger.budget = raiseCap(ledger.budget, Number(cap)); } catch (e) { die(e.message); }
