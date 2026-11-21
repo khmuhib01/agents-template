@@ -1,6 +1,6 @@
 # Proposal: minimal budget-enforced sequential slice
 
-Status: **Proposed, not approved, no code written**. Date: 2026-11-21, baseline `dev` 1.17.1. Decisions: `docs/adr/0001-orchestration-runtime.md`.
+Status: **S1 and S2 implemented as a prototype (no paid run yet); S3 and S4 not started**. Date: 2026-11-21, baseline `dev` 1.17.1. Decisions: `docs/adr/0001-orchestration-runtime.md`.
 Phase mapping to the brief: Phase 2 (instrumentation, budgets) and Phase 3 (sequential slice). Phases 4 to 7 are out of scope.
 Labels: **[E]** evidence in the repo or a command I ran, **[I]** my inference, **[U]** unverified, **[Estimate]** a guess to be tuned.
 
@@ -68,8 +68,8 @@ Use the existing scenarios and add one arm to `evals/scenarios.mjs`: `orchestrat
 ## 9. Delivery plan (each step its own PR, each needs approval)
 | Step | Content | Cost | Done when |
 |---|---|---|---|
-| S1 | pure modules: state table, budget accounting, ledger and event schema, report formatter, plus tests | free | tests pass on Node 18 and 22 |
-| S2 | driver with a fake `claude`: dispatch, caps, validation, one repair, resume | free | section 7 checks pass |
+| S1 (implemented) | pure modules `lib/orch-state.mjs`, `orch-budget.mjs`, `orch-plan.mjs`, `orch-report.mjs`, plus tests | free | tests pass on Node 18 and 22 (CI) |
+| S2 (implemented) | `orchestrate.mjs` with `test-helpers/fake-claude.mjs`: dispatch, caps, validation, one repair, resume, stale evidence | free | section 7 checks pass (`node test.mjs --only orchestrate`, 33 checks) |
 | S3 | one real run on one existing scenario | about $0.3 to $0.8 [Estimate] | ledger and report reflect real cost; cap verified |
 | S4 | `orchestrated` arm and the evaluation in section 8 | about $1 to $3 [Estimate] | results recorded in `evals/REPORT.md`, negative results kept |
 Size [Estimate]: roughly 500 to 900 lines including tests, new files only (`orchestrate.mjs`, `lib/` modules), no change to generated output, so no `VERSION` bump needed.
@@ -81,6 +81,14 @@ Size [Estimate]: roughly 500 to 900 lines including tests, new files only (`orch
 - Sequential single-agent work leaves real parallel gains unmeasured.
 - Planner quality on ambiguous tasks is untested; ambiguity currently ends in a question to the user, not a guess.
 - The strategy report was not available in the repo; scope follows the brief only.
+
+## 10b. Implementation notes (S1 and S2)
+- Ledger and events live in `<git-dir>/orchestrator/<id>/` (not `.claude/`); see the ADR.
+- Usage: `node orchestrate.mjs --goal "..." [--profile tiny|small|medium] [--test-cmd "..."]`, `--resume ID [--max-cost USD]`, `--status ID`, `--dry-run`. Exit codes: 0 completed, 1 failed or not verified, 2 precondition error, 3 stopped on budget.
+- Decisions taken to proceed, all reversible: budget numbers from section 4 unchanged; the driver, not a model step, runs the test command; no Bash for any model step; a task whose implementer changed nothing fails instead of completing; a budget stop resumes only with a strictly larger `--max-cost` (a call-cap stop also gets exactly one extra call).
+- Found by the tests: reading `git status` through a trimming helper dropped the first column and broke both the changed-file list and stale-evidence detection; fixed and covered by a test.
+- Not verified against the real CLI: no paid run was made, so `--max-budget-usd` overshoot, the JSON fields on error paths and hook behavior are still [U]. The fake binary follows the fields `evals/scenarios.mjs` already reads.
+- Not done: classification model, worktrees, DAG, approvals, review step, tool-call counts (the CLI JSON gives none), cost-based per-step budgets by stage.
 
 ## 11. Decisions needed
 1. Proceed with S1 and S2 (free), or stop here given the evaluation result.
