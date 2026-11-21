@@ -115,7 +115,7 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 
 | Key | Default | Effect |
 |---|---|---|
-| `protect_secrets` | true | `settings.json` denies the **Read tool** on `.env` and every `local_only` path, and `guard-secrets` blocks writes there. It does **not** cover shell commands: `cat .env` or `node -e` is not stopped by any rule or hook, only by your permission prompt (verified in a real run). Do not grant broad Bash allow rules such as `Bash(node *)`, and do not use `bypassPermissions`, in a project that holds secrets |
+| `protect_secrets` | true | `settings.json` denies the **Read tool** on `.env`, its variants (`.env.local`, `.staging`, `.development`, `.test`, ...; `.env.example` stays readable), `*.pem`, `*.key`, `id_rsa*`, `.npmrc`, `.netrc`, `~/.ssh` and `~/.aws`, and every `local_only` path, and `guard-secrets` blocks writes there. It does **not** cover shell commands: `cat .env` or `node -e` is not stopped by any rule or hook, only by your permission prompt (verified in a real run). Do not grant broad Bash allow rules such as `Bash(node *)`, and do not use `bypassPermissions`, in a project that holds secrets |
 | `deny_heavy` | true | also denies Read on `vendor/`, `node_modules/`, `dist/`, `build/`, logs, `*.min.js`, `*.map` (stack-aware) |
 | `allow_safe_commands` | true | `git status/diff/log` and the project test command run without a permission prompt (fewer turns) |
 | `domains` | `[]` | Optional concerns (not tech stacks) that add skills on top of `type` and `stack`, `seo` (six SEO skills), `saas`, `payments`, `realtime`, `events`, `search`, `product` (discovery, PRD, delivery planning, production readiness). Names come from `domains` in `core/skill-map.json`. Unknown names warn. Skills can also declare dependencies in `core/skill-map.json` (`deps`), which are expanded automatically |
@@ -135,8 +135,8 @@ Rules in markdown can be forgotten; hooks are run by Claude Code itself. init co
 
 | Hook | Runs on | Does |
 |---|---|---|
-| `guard-bash` | Bash | **Blocks**: commit or push on `branches.production`/`integration`, force-push, `--no-verify`, and `Co-Authored-By`/"Generated with" lines when `commit_attribution` is false. **Asks**: `git reset --hard`, `git branch -D` |
-| `guard-secrets` | Write/Edit | **Blocks** writes to `.env*` and `local_only` paths, and content with obvious secrets (AWS/GitHub/Slack/Google keys, private keys, `sk-…`). Needs `protect_secrets` (default true) |
+| `guard-bash` | Bash | **Blocks**: commit or push on `branches.production`/`integration`, force-push, `--no-verify`, and `Co-Authored-By`/"Generated with" lines when `commit_attribution` is false. **Asks**: `git reset --hard`, `git branch -D`, changing `core.hooksPath`. Also blocks `git push --mirror/--all`. It follows `env`/`sudo`/`command`, `bash -c`, `eval`, `$(...)` and backticks, but it is a best-effort guard, not a sandbox (aliases and scripts are not seen): protect `main`/`dev` with branch protection on the host |
+| `guard-secrets` | Write/Edit | **Blocks** writes to `.env*` and `local_only` paths (case-insensitive, and through symlinks), and content with obvious secrets (AWS/GitHub/Slack/Google keys, private keys, `sk-…`). Needs `protect_secrets` (default true) |
 | `format` | after Write/Edit | Runs `format_command "<file>"`. Only installed when `format_command` is set |
 | `guard-read` | Read | **Blocks** whole-file reads above `big_file_kb` (default 100) and large lockfiles; Read with `offset`/`limit` is always allowed. `0` disables |
 | `context-nudge` | each prompt | Warns the **user** (no tokens) to `/compact` or `/clear` when the transcript passes `context_nudge_kb` (default 400); repeats after 25% growth. `0` disables |

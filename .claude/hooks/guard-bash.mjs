@@ -34,6 +34,26 @@ function tokenize(seg) {
   return t;
 }
 
+const WRAPPERS = new Set(['env', 'command', 'builtin', 'time', 'nohup', 'exec', 'sudo', 'doas', 'nice']);
+// Drops VAR=x prefixes and wrapper programs (env, sudo, command ...) so `env git push` is judged like `git push`.
+function unwrap(tokens) {
+  let i = 0;
+  for (;;) {
+    while (i < tokens.length && /^\w+=/.test(tokens[i])) i++;
+    if (!WRAPPERS.has((tokens[i] || '').replace(/^.*[\\/]/, ''))) break;
+    i++;
+    while (i < tokens.length && tokens[i].startsWith('-')) i++;
+  }
+  return tokens.slice(i);
+}
+// `bash -c "<cmd>"` and `eval <cmd>` -> the inner command string, otherwise ''.
+function shellInner(tokens) {
+  const name = (tokens[0] || '').replace(/^.*[\\/]/, '');
+  if (name === 'eval') return tokens.slice(1).join(' ');
+  if (['sh', 'bash', 'zsh', 'dash'].includes(name)) { const i = tokens.findIndex((t) => /^-[a-z]*c[a-z]*$/.test(t)); if (i >= 0) return tokens[i + 1] || ''; }
+  return '';
+}
+
 // -> { sub, args, dir } for `git [global opts] <sub> ...`, otherwise null.
 function parseGit(tokens) {
   let i = 0;
@@ -69,8 +89,16 @@ run(() => {
 
   const asks = [];
   let sawCommit = false;
-  for (const seg of splitSegments(cmd)) {
-    const tokens = tokenize(seg);
+  // Best effort, not a sandbox: it follows wrappers, `bash -c`, `eval`, $(...) and backticks, but not aliases or scripts.
+  // The real protection for main/dev is the host's branch protection.
+  const inspect = (text, depth) => {
+  if (depth > 3) return;
+  for (const m of text.matchAll(/\$\(([^()]*)\)|`([^`]*)`/g)) inspect(m[1] ?? m[2], depth + 1);
+  for (const seg of splitSegments(text)) {
+    const tokens = unwrap(tokenize(seg));
+    const inner = shellInner(tokens);
+    if (inner) inspect(inner, depth + 1);
+    if (/(^|[\\/])git(\.exe)?$/.test(tokens[0] || '') && tokens.some((t) => /^core\.hookspath=/i.test(t))) asks.push('overriding core.hooksPath can disable the git hooks.');
     if (tokens[0] === 'gh' && tokens[1] === 'pr' && ['create', 'edit'].includes(tokens[2])) sawCommit = true;
     const g = parseGit(tokens);
     if (!g) continue;
@@ -85,15 +113,19 @@ run(() => {
     }
     if (g.sub === 'push') {
       if (flags.includes('--no-verify')) block('git push --no-verify (skipping hooks) is not allowed.');
+      if (flags.includes('--mirror') || flags.includes('--all')) block('git push --mirror/--all would also push protected branches.');
       if (flags.some((f) => f === '--force' || f.startsWith('--force-with-lease') || f === '--force-if-includes' || /^-[a-zA-Z]*f[a-zA-Z]*$/.test(f)) || positional.slice(1).some((r) => r.startsWith('+'))) block('force-push is not allowed.');
       const refspecs = positional.slice(1);
       const targets = refspecs.map((r) => r.replace(/^\+/, '').split(':').pop().replace(/^refs\/heads\//, '')).map((t) => (t === 'HEAD' ? branch : t));
       if (targets.some(isProtected)) block(`pushing to a protected branch (${protectedBranches.join(', ')}) is not allowed. Push your working branch and open a PR.`);
       if (!refspecs.length && isProtected(branch)) block(`the current branch "${branch}" is protected; do not push it directly.`);
     }
+    if (g.sub === 'config' && g.args.some((a) => /^core\.hookspath$/i.test(a))) asks.push('changing core.hooksPath can disable the git hooks.');
     if (g.sub === 'reset' && flags.includes('--hard')) asks.push('git reset --hard discards uncommitted work.');
     if (g.sub === 'branch' && (flags.includes('-D') || (flags.includes('-d') && (flags.includes('-f') || flags.includes('--force'))))) asks.push('git branch -D force-deletes a branch.');
   }
+  };
+  inspect(cmd, 0);
 
   if (sawCommit && cfg.blockAttribution && /co-authored-by:|generated with/i.test(cmd)) {
     block('this project forbids "Co-Authored-By" / "Generated with" attribution lines in commits and PRs. Remove them and retry.');

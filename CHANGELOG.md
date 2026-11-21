@@ -2,6 +2,19 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.18.2 - 2026-11-21
+
+Second hardening pass from the same audit.
+
+- `protect_secrets` denies more: `.env.development/.staging/.test` and the `.local` variants, `*.pem`, `*.key`, `id_rsa*`, `id_ed25519*`, `.npmrc`, `.netrc`, `~/.ssh`, `~/.aws`. `.env.example` is deliberately not denied.
+- `guard-secrets` matches case-insensitively and judges the real target of a symlink (`notes.txt -> .env` was not recognised).
+- `guard-bash` sees through `env`, `sudo`, `command`, `bash -c`, `eval`, `$(...)` and backticks, blocks `git push --mirror/--all`, and asks before `core.hooksPath` is changed. Documented as best effort: the real protection is branch protection on the host.
+- init refuses to write through a symlinked `.claude`, `.agents`, `.codex`, `.vscode`, `.gitignore`, `AGENTS.md` or `CLAUDE.md` (a hostile repo could point one outside the project).
+- a `{{...}}` the user wrote in a config value (Blade/Vue example in `notes`) is no longer reported as an unresolved placeholder after the files were written.
+- `--scaffold`: a folder or branch name with a space, `#` or `:` is quoted; next+react and expo+react-native are both detected (a short-circuit dropped the second).
+- `project.config.example.yml` no longer carries a real project's name, url and branch; `.github/workflows/test.yml` declares `permissions: contents: read`; the `review` skill description is shorter and points to `code-review` for PRs.
+- tests: 17 new checks, 12 of which fail without the fixes.
+
 ## 1.18.1 - 2026-11-21
 
 Config hardening, found by a read-only audit. Re-run `init.mjs` in existing projects; a config that now fails validation prints exactly which line to change.

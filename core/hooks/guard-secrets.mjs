@@ -1,4 +1,5 @@
 // PreToolUse(Write|Edit|MultiEdit|NotebookEdit): blocks writes to .env / local-only paths and obvious secrets in content.
+import fs from 'node:fs';
 import path from 'node:path';
 import { readInput, loadConfig, block, run } from './lib.mjs';
 
@@ -12,7 +13,7 @@ const SECRET_PATTERNS = [
 ];
 
 function matchesLocalOnly(rel, raw) {
-  const pat = String(raw).trim().replace(/^\.?\//, '');
+  const pat = String(raw).trim().replace(/^\.?\//, '').toLowerCase();
   if (!pat || pat === '.env') return false;
   if (pat.endsWith('/')) return rel.startsWith(pat) || rel.includes('/' + pat);
   if (pat.startsWith('*')) return rel.endsWith(pat.slice(1));
@@ -26,9 +27,12 @@ run(() => {
   if (!file) process.exit(0);
   const cfg = loadConfig();
   const root = process.env.CLAUDE_PROJECT_DIR || input.cwd || process.cwd();
-  const rel = path.relative(root, path.resolve(input.cwd || root, file)).split(path.sep).join('/');
+  const abs = path.resolve(input.cwd || root, file);
+  const real = (p) => { try { return fs.realpathSync(p); } catch { return p; } };
+  // Judge both the path as written and where it really points (a symlink notes.txt -> .env), compared case-insensitively.
+  const rels = [...new Set([path.relative(root, abs), path.relative(real(root), real(abs))])].map((r) => r.split(path.sep).join('/').toLowerCase());
 
-  if (!rel.startsWith('..')) {
+  for (const rel of rels.filter((r) => !r.startsWith('..'))) {
     const base = path.posix.basename(rel);
     if (/^\.env(\..+)?$/.test(base) && !/\.(example|sample|template|dist)$/.test(base)) block(`${rel} holds secrets; edit it yourself, not through Claude.`);
     if ((cfg.localOnly || []).some((p) => matchesLocalOnly(rel, p))) block(`${rel} is a local-only path (git-ignored, may hold credentials or dumps).`);
