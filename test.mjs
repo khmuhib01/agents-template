@@ -997,6 +997,7 @@ for (const [label, extra] of [
 }
 const okDir = mkProj('hard-ok', 'test_command: "pnpm test --run"\nformat_command: "npx prettier --write"\nrun_in_docker: true\ndocker: {dir: docker, service: app}\n');
 check(run(okDir).status === 0, 'normal test_command, format_command and docker values still pass');
+check(run(mkProj('hard-win', 'format_command: "vendor\\bin\\pint"\n')).status === 0, 'format_command with Windows path separators is accepted');
 
 // protect_secrets: default writes the deny rules; "False" (any case) must really switch it off.
 const denies = (d) => JSON.parse(fs.readFileSync(path.join(d, '.claude/settings.json'), 'utf8')).permissions.deny || [];

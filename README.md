@@ -141,7 +141,7 @@ Rules in markdown can be forgotten; hooks are run by Claude Code itself. init co
 | `guard-read` | Read | **Blocks** whole-file reads above `big_file_kb` (default 100) and large lockfiles; Read with `offset`/`limit` is always allowed. `0` disables |
 | `context-nudge` | each prompt | Warns the **user** (no tokens) to `/compact` or `/clear` when the transcript passes `context_nudge_kb` (default 400); repeats after 25% growth. `0` disables |
 
-Config: `hooks: false` installs none (and removes ours from `settings.json`); `format_command` e.g. `npx prettier --write` or `vendor/bin/pint`. `test_command` and `format_command` must be one plain command (no `; & | ` $ < >`, backslash or newline, and not a shell such as `bash`): the first becomes an auto-approved permission and the second runs through a shell on every edit, so init rejects anything else before writing files. A hook that crashes reports the error (non-blocking) instead of failing silently.
+Config: `hooks: false` installs none (and removes ours from `settings.json`); `format_command` e.g. `npx prettier --write` or `vendor/bin/pint`. `test_command` and `format_command` must be one plain command (no `; & | ` $ < >` or newline, and not a shell such as `bash`): the first becomes an auto-approved permission and the second runs through a shell on every edit, so init rejects anything else before writing files. A hook that crashes reports the error (non-blocking) instead of failing silently.
 
 ## Monorepo
 
