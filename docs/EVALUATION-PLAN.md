@@ -48,3 +48,16 @@ What this shows, and does not:
 1. Skills do not improve outcomes on these 8 scenarios (5 pilot, 3 here) with Sonnet, and cost about 20 to 130 percent more per run in the recorded cells. The README claim stays "no benefit shown".
 2. Do not add scenarios of the same kind (single-file fixtures where the trap is a well-known pitfall); a strong baseline passes them. A discriminating scenario needs a hidden requirement the prompt does not hint at, version-specific behavior after the model's knowledge, or a larger repo where convention discovery matters.
 3. Rerunning only to recover the test-quality signal costs about $1.1 (12 runs at about $0.09, estimate from this run) and would use `--keep`; not started.
+
+## 5. S4: comparing the orchestrated arm (code done, paid run not started)
+Added to `evals/scenarios.mjs`: `--arms ...,orchestrated` runs the fixture (no template files) through `orchestrate.mjs` with profile small, the same cost ceiling as `--budget`, and the scenario's `test_command` or `node --test`. The report gains a per-arm table (pass rate, mean cost, **cost per passing run**, turns, seconds) and every run records wall-clock seconds. Tested offline with the fake `claude` (4 checks, `node test.mjs --only "eval arms"`).
+
+Design choices that affect how to read the result [I]:
+- Candidate C is orchestrator **without** the skills template, so it isolates the driver. A "skills plus driver" arm is not included.
+- `node --test` passes when the fixture has no tests, so for `migration-lock-safety` the driver's own validation is weak; the scenario graders (hidden) still decide pass or fail.
+- A task that ends `failed` or `budget_exhausted` is still graded as it stands and counts as a failed run, with the cost it actually spent.
+
+Proposed paid run (needs approval, not started). The grader `test-file-added` was replaced after the last run, so old baseline and skills numbers for the test-quality category are not comparable; running all three arms together also removes day-to-day drift.
+- `node evals/scenarios.mjs --scenario payments-webhook-refund,tenant-invoice-isolation,migration-lock-safety --arms baseline,skills,orchestrated --runs 3 --max-runs 27 --keep --out evals/results/<file>.json` (27 runs; `--keep` leaves the work directories in the temp folder so the test files can be inspected).
+- Cost, **estimate only**: baseline about $0.08 and skills about $0.10 per run (measured earlier), orchestrated about $0.15 to $0.30 per run (the S3 task cost $0.108 for two calls; these tasks are larger). Expected total about $3 to $5. The per-run ceiling is $1, so the hard worst case is $27; the driver's own call cap (3 calls) makes an orchestrated run above about $1.2 impossible by construction, apart from one turn of overshoot per call.
+- Decision rule, fixed in advance: keep the driver only if it improves reliability or recoverability at acceptable cost. If orchestrated passes no more graders than baseline and costs more per passing run, the result is "no gain on small tasks": keep it opt-in for larger tasks, say so in the README, and do not widen the claim.

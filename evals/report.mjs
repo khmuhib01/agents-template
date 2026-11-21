@@ -34,6 +34,15 @@ export function buildReport(results) {
       const cells = {};
       for (const x of r.runs) { const k = `${x.scenario}|${x.arm}`; (cells[k] = cells[k] || []).push(x); }
       for (const [k, xs] of Object.entries(cells).sort()) { const [s, a] = k.split('|'); const ok = xs.filter((x) => x.pass).length; L.push(`| ${s} | ${a} | ${xs.length} | ${ok}/${xs.length} (${pct(ok, xs.length)}) | $${(xs.reduce((n, x) => n + x.cost, 0) / xs.length).toFixed(3)} | ${(xs.reduce((n, x) => n + x.turns, 0) / xs.length).toFixed(1)} |`); }
+      const arms = [...new Set(r.runs.map((x) => x.arm))].sort();
+      if (arms.length > 1) {
+        L.push('', '| Arm | Runs | Passed all graders | Mean cost | Cost per passing run | Mean turns | Mean seconds |', '|---|---|---|---|---|---|---|');
+        for (const a of arms) {
+          const xs = r.runs.filter((x) => x.arm === a); const ok = xs.filter((x) => x.pass).length; const total = xs.reduce((n, x) => n + x.cost, 0);
+          const secs = xs.filter((x) => typeof x.seconds === 'number');
+          L.push(`| ${a} | ${xs.length} | ${ok}/${xs.length} (${pct(ok, xs.length)}) | $${(total / xs.length).toFixed(3)} | ${ok ? '$' + (total / ok).toFixed(3) : 'n/a (no passing run)'} | ${(xs.reduce((n, x) => n + x.turns, 0) / xs.length).toFixed(1)} | ${secs.length ? (secs.reduce((n, x) => n + x.seconds, 0) / secs.length).toFixed(1) : 'not recorded'} |`);
+        }
+      }
       const byCat = {};
       for (const x of r.runs) for (const g of x.graders) { const k = `${g.category}|${x.arm}`; byCat[k] = byCat[k] || [0, 0]; byCat[k][1]++; if (g.pass) byCat[k][0]++; }
       L.push('', '| Category | Arm | Graders passed |', '|---|---|---|');
