@@ -2,6 +2,16 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.19.0 - 2026-11-21
+
+Stale cleanup. init used to only add, so what it generated earlier and no longer generates stayed forever.
+
+- stale generated files are removed: files recorded in `.template-hashes.json` that this run does not generate (`skills_mode: all` -> `focused`, a renamed skill, a removed package or hook) and that are still unchanged. Each is copied to `.claude/.init-backup/<time>/` first. A stale file you edited is kept and reported once. A skill or file you created is never touched, and a removed package loses its generated `CLAUDE.md` but not its folder. Forged entries in the hash file (`..`, absolute paths, non-generated files) are ignored.
+- stale permission rules are removed: init now records the rules it wrote (`managedPermissions` in the manifest). Changing `test_command` no longer leaves the old `Bash(...:*)` auto-approval behind; removing a `local_only` entry or setting `protect_secrets: false` / `allow_safe_commands: false` removes the rules init wrote. Rules you added stay. The first run after upgrading has no record, so it removes no permission rule and starts tracking.
+- `--dry-run` lists removals as `removed <file>` and `--check` counts them as out of date; a summary line is printed only when something was removed.
+- not covered: `mcp_allow` / `mcp_deny` entries.
+- tests: 22 new checks, 11 of which fail without the change.
+
 ## 1.18.2 - 2026-11-21
 
 Second hardening pass from the same audit.
