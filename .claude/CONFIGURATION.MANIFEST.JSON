@@ -1,7 +1,7 @@
 {
   "name": "agents-template",
   "generatedBy": "claude-template",
-  "templateVersion": "1.18.2",
+  "templateVersion": "1.19.0",
   "skillsMode": "focused",
   "type": "cli",
   "stack": [
@@ -66,5 +66,49 @@
     "guard-read",
     "context-nudge"
   ],
-  "packages": []
+  "packages": [],
+  "managedPermissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./**/.env)",
+      "Read(./.env.local)",
+      "Read(./**/.env.local)",
+      "Read(./.env.production)",
+      "Read(./**/.env.production)",
+      "Read(./.env.development)",
+      "Read(./**/.env.development)",
+      "Read(./.env.staging)",
+      "Read(./**/.env.staging)",
+      "Read(./.env.test)",
+      "Read(./**/.env.test)",
+      "Read(./.env.production.local)",
+      "Read(./**/.env.production.local)",
+      "Read(./.env.development.local)",
+      "Read(./**/.env.development.local)",
+      "Read(./.env.test.local)",
+      "Read(./**/.env.test.local)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Read(./**/id_rsa*)",
+      "Read(./**/id_ed25519*)",
+      "Read(./**/.npmrc)",
+      "Read(./**/.netrc)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(./**/*.min.js)",
+      "Read(./**/*.map)",
+      "Read(./**/node_modules/**)",
+      "Read(./**/dist/**)",
+      "Read(./**/build/**)",
+      "Read(./**/.next/**)"
+    ],
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git remote -v)",
+      "Bash(git branch --show-current)",
+      "Bash(node test.mjs:*)"
+    ]
+  }
 }

@@ -2,6 +2,7 @@
 // Smoke test for init.mjs: node test.mjs
 // Runs init against several sample configs in a temp dir and checks the output.
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -1130,6 +1131,94 @@ console.log('\n[orch-report]');
   const exhausted = completionReport(led({ state: 'budget_exhausted', stateReason: 'cost_cap', plan, remaining: ['write tests', 'update docs'], validation: { ran: false } }));
   check(/Stopped: cost_cap\. Remaining work: write tests, update docs\. Continue only by raising the cap explicitly: --resume T-1 --max-cost <larger USD>\./.test(exhausted), 'completion: budget exhaustion lists the remaining work and the explicit resume command');
   check(/Remaining work: see ledger\./.test(completionReport(led({ state: 'budget_exhausted', stateReason: 'call_cap', plan, validation: { ran: false } }))), 'completion: budget exhaustion without a remaining list points to the ledger');
+}
+}
+
+if (on('stale cleanup')) {
+console.log('\n[stale cleanup]');
+{
+  const BASE = 'name: S\ntype: web\nstack: [node]\nbranches: {working: dev1, integration: develop, production: main}\n';
+  const mk = (name, extra = '') => { const d = path.join(base, name); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'project.config.yml'), BASE + extra); return d; };
+  const setCfg = (d, extra = '') => fs.writeFileSync(path.join(d, 'project.config.yml'), BASE + extra);
+  const ls = (d, sub) => (fs.existsSync(path.join(d, '.claude', sub)) ? fs.readdirSync(path.join(d, '.claude', sub)).sort() : []);
+  const settings = (d) => JSON.parse(fs.readFileSync(path.join(d, '.claude/settings.json'), 'utf8'));
+  const editSettings = (d, f) => { const st = settings(d); f(st); fs.writeFileSync(path.join(d, '.claude/settings.json'), JSON.stringify(st, null, 2) + '\n'); };
+
+  // --- stale skills: skills_mode all -> focused
+  const fresh = mk('stale-fresh'); run(fresh);
+  const focusedSet = ls(fresh, 'skills');
+  const sd = mk('stale-skills', 'skills_mode: all\n'); run(sd);
+  const allSet = ls(sd, 'skills');
+  const gone = allSet.filter((n) => !focusedSet.includes(n));
+  check(gone.length > 0, 'setup: skills_mode all installs skills that focused does not');
+  fs.mkdirSync(path.join(sd, '.claude/skills/my-own-skill'), { recursive: true });
+  fs.writeFileSync(path.join(sd, '.claude/skills/my-own-skill/SKILL.md'), '---\nname: my-own-skill\ndescription: mine\n---\n');
+  setCfg(sd, 'skills_mode: focused\n');
+  const dry = run(sd, ['--dry-run']);
+  check(dry.status === 0 && /would be removed/.test(dry.stdout) && ls(sd, 'skills').includes(gone[0]), '--dry-run lists stale skills as "would be removed" and deletes nothing');
+  check(run(sd, ['--check']).status === 1, '--check reports stale generated files as out of date');
+  const r = run(sd);
+  check(r.status === 0 && /stale generated file\(s\) removed/.test(r.stdout), 'init removes skills it generated earlier and no longer generates');
+  check(gone.every((n) => !fs.existsSync(path.join(sd, '.claude/skills', n))), 'the stale skill folders are gone, not left empty');
+  check(JSON.stringify(ls(sd, 'skills').filter((n) => n !== 'my-own-skill')) === JSON.stringify(focusedSet), 'what remains matches a fresh focused project');
+  check(fs.existsSync(path.join(sd, '.claude/skills/my-own-skill/SKILL.md')), 'a skill the user created is never touched');
+  const bk = fs.readdirSync(path.join(sd, '.claude/.init-backup'));
+  check(bk.length === 1 && fs.existsSync(path.join(sd, '.claude/.init-backup', bk[0], '.claude/skills', gone[0], 'SKILL.md')), 'a copy of each removed file is kept in .init-backup');
+  check(fs.existsSync(path.join(sd, '.claude/skills')) && ['.agents', '.codex'].every((m) => !fs.existsSync(path.join(sd, m, 'skills')) || fs.readdirSync(path.join(sd, m, 'skills')).length > 0), '.claude/skills itself and the mirror links survive');
+  const again = run(sd);
+  check(/0 created, 0 updated/.test(again.stdout) && !/stale generated file/.test(again.stdout) && run(sd, ['--check']).status === 0, 'the run after the cleanup changes nothing and --check passes');
+
+  // --- a stale skill the user edited is kept and reported once
+  const ed = mk('stale-edited', 'skills_mode: all\n'); run(ed);
+  fs.appendFileSync(path.join(ed, '.claude/skills', gone[0], 'SKILL.md'), '\nmy note\n');
+  setCfg(ed, 'skills_mode: focused\n');
+  const er = run(ed);
+  check(er.status === 0 && fs.existsSync(path.join(ed, '.claude/skills', gone[0], 'SKILL.md')) && new RegExp(`you edited them, so they were kept:.*${gone[0]}`).test(er.stderr), 'a stale skill you edited is kept and named in a warning');
+  check(!/you edited them/.test(run(ed).stderr), 'that warning is shown once, not on every run');
+
+  // --- hostile hash file: a hash entry must never delete anything outside the generated files
+  const hs = mk('stale-hostile'); run(hs);
+  const victim = path.join(base, 'stale-victim.txt'); fs.writeFileSync(victim, 'keep me\n');
+  fs.mkdirSync(path.join(base, 'stale-victim'), { recursive: true }); fs.writeFileSync(path.join(base, 'stale-victim/CLAUDE.md'), 'keep me\n');
+  fs.writeFileSync(path.join(hs, 'src.txt'), 'keep me too\n');
+  const sha = (t) => crypto.createHash('sha256').update(t).digest('hex');
+  const hp = path.join(hs, '.claude/.template-hashes.json');
+  const hh = JSON.parse(fs.readFileSync(hp, 'utf8'));
+  hh['../stale-victim.txt'] = sha('keep me\n'); hh['../stale-victim/CLAUDE.md'] = sha('keep me\n'); hh['src.txt'] = sha('keep me too\n'); hh[victim] = sha('keep me\n');
+  fs.writeFileSync(hp, JSON.stringify(hh));
+  const hr = run(hs);
+  check(hr.status === 0 && fs.existsSync(victim) && fs.existsSync(path.join(base, 'stale-victim/CLAUDE.md')) && fs.existsSync(path.join(hs, 'src.txt')), 'forged hash entries (.., absolute, a non-generated file) never delete anything');
+
+  // --- a removed package: its CLAUDE.md goes, the folder and the user's files stay
+  const pk = mk('stale-pkg', 'packages:\n  web:\n    path: apps/web\n');
+  fs.mkdirSync(path.join(pk, 'apps/web'), { recursive: true }); fs.writeFileSync(path.join(pk, 'apps/web/index.js'), '//\n');
+  run(pk);
+  check(fs.existsSync(path.join(pk, 'apps/web/CLAUDE.md')), 'setup: a package CLAUDE.md is generated');
+  setCfg(pk); run(pk);
+  check(!fs.existsSync(path.join(pk, 'apps/web/CLAUDE.md')) && fs.existsSync(path.join(pk, 'apps/web/index.js')), 'a removed package loses its generated CLAUDE.md but keeps the folder and the code in it');
+
+  // --- stale permission rules
+  const pm = mk('stale-perm', 'test_command: "pnpm test"\nlocal_only: ["dumps/"]\n'); run(pm);
+  check(settings(pm).permissions.allow.includes('Bash(pnpm test:*)') && settings(pm).permissions.deny.includes('Read(./dumps/**)'), 'setup: test_command and local_only become permission rules');
+  editSettings(pm, (st) => { st.permissions.allow.push('Bash(echo mine:*)'); st.permissions.deny.push('Read(./my-secret.txt)'); });
+  setCfg(pm, 'test_command: "npm test"\n'); run(pm);
+  const a1 = settings(pm).permissions;
+  check(!a1.allow.includes('Bash(pnpm test:*)') && a1.allow.includes('Bash(npm test:*)'), 'changing test_command removes the old auto-approved rule and adds the new one');
+  check(!a1.deny.includes('Read(./dumps/**)'), 'removing a local_only entry removes its deny rule');
+  check(a1.allow.includes('Bash(echo mine:*)') && a1.deny.includes('Read(./my-secret.txt)'), 'rules the user added are preserved');
+  setCfg(pm, 'test_command: "npm test"\nprotect_secrets: false\nallow_safe_commands: false\n'); run(pm);
+  const a2 = settings(pm).permissions;
+  check(!(a2.deny || []).includes('Read(./.env)') && (a2.deny || []).includes('Read(./my-secret.txt)'), 'protect_secrets: false removes only the rules init wrote');
+  check(!(a2.allow || []).includes('Bash(npm test:*)') && !(a2.allow || []).includes('Bash(git status:*)') && a2.allow.includes('Bash(echo mine:*)'), 'allow_safe_commands: false removes the safe-command rules but not the user ones');
+  const idem = run(pm);
+  check(/0 created, 0 updated/.test(idem.stdout) && run(pm, ['--check']).status === 0, 'permission cleanup is idempotent');
+
+  // --- the first run after upgrading has no record of managed rules, so it must not remove anything
+  const up = mk('stale-upgrade', 'test_command: "pnpm test"\n'); run(up);
+  const mp = path.join(up, '.claude/CONFIGURATION.MANIFEST.JSON');
+  const mj = JSON.parse(fs.readFileSync(mp, 'utf8')); delete mj.managedPermissions; fs.writeFileSync(mp, JSON.stringify(mj));
+  setCfg(up, 'test_command: "npm test"\n'); run(up);
+  check(settings(up).permissions.allow.includes('Bash(pnpm test:*)') && settings(up).permissions.allow.includes('Bash(npm test:*)'), 'without a managed-rules record (older manifest) nothing is removed, only added');
 }
 }
 
