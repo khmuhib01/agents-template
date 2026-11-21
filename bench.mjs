@@ -45,11 +45,14 @@ for (const [label, yml] of Object.entries(SAMPLES)) {
   const ruleChars = (all) => rules.filter((f) => all || !/^paths:/m.test(fm(f))).reduce((n, f) => n + size(f), 0);
   const optimized = tok(instr + agents + skillChars(false) + ruleChars(false));
   const unoptimized = tok(instr + agents + skillChars(true) + ruleChars(true));
-  rows.push({ project: label, skills: skills.length, unoptimized, optimized, saved: unoptimized - optimized, pct: Math.round(((unoptimized - optimized) / unoptimized) * 100) });
+  const parts = { instructions: tok(instr), agents: tok(agents), skills: tok(skillChars(false)), rules: tok(ruleChars(false)) };
+  rows.push({ project: label, skills: skills.length, parts, unoptimized, optimized, saved: unoptimized - optimized, pct: Math.round(((unoptimized - optimized) / unoptimized) * 100) });
 }
 fs.rmSync(base, { recursive: true, force: true });
 if (process.argv.includes('--json')) { console.log(JSON.stringify(rows, null, 2)); process.exit(0); }
 console.log('Always-loaded context per session (est. tokens, ~4 chars/token)\n');
 console.log('project'.padEnd(30) + 'skills'.padStart(7) + 'unoptimized'.padStart(13) + 'generated'.padStart(11) + 'saved'.padStart(8));
 for (const r of rows) console.log(r.project.padEnd(30) + String(r.skills).padStart(7) + String(r.unoptimized).padStart(13) + String(r.optimized).padStart(11) + `${r.saved} (${r.pct}%)`.padStart(14));
+console.log('\nWhere the generated context goes (est. tokens)\n');
+for (const r of rows) console.log(r.project.padEnd(30) + Object.entries(r.parts).map(([k, v]) => `${k} ${v}`).join('  ·  '));
 console.log('\nStatic context only; real cost also depends on model, conversation length and prompt caching.');

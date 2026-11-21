@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 // Installs the global slash-skills (/agent-setup-scaffold, /agent-init, /agent-update) on this PC.
-// Usage: node install-global.mjs [--claude] [--codex] [--antigravity] [--all] [--dry-run]   (default: every agent found on this PC)
+// Usage: node install-global.mjs [--claude] [--codex] [--antigravity] [--all] [--dry-run] [--force] [--uninstall]
+//   (default targets: every agent found on this PC)
+// A skill dir we installed carries a .agent-template marker. Managed + changed = updated; identical = untouched;
+// existing without the marker (your own skill, or one from before v1.21) = skipped unless --force. Overwrites are backed up.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -30,15 +33,50 @@ const fix = (text) => text.replaceAll('__TEMPLATE_DIR__', templatePath);
 const srcDir = path.join(root, 'global-skills');
 const names = fs.readdirSync(srcDir).filter((n) => fs.existsSync(path.join(srcDir, n, 'SKILL.md')));
 
-function write(file, content) {
-  console.log(`${dry ? '[dry-run] ' : ''}write ${file}`);
-  if (dry) return;
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, content);
+const MARK = '.agent-template';
+const force = args.has('--force');
+const uninstall = args.has('--uninstall');
+const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+const counts = { installed: 0, updated: 0, same: 0, skipped: 0, removed: 0 };
+const log = (m) => console.log(`${dry ? '[dry-run] ' : ''}${m}`);
+
+function backup(skillsDir, name) {
+  const to = path.join(skillsDir, '.agent-template-backup', stamp, name);
+  log(`backup ${path.join(skillsDir, name)} -> ${to}`);
+  if (!dry) { fs.mkdirSync(path.dirname(to), { recursive: true }); fs.cpSync(path.join(skillsDir, name), to, { recursive: true }); }
 }
 
-for (const name of names) {
-  const raw = fix(fs.readFileSync(path.join(srcDir, name, 'SKILL.md'), 'utf8'));
-  for (const t of targets) write(path.join(AGENTS[t].skills, name, 'SKILL.md'), raw);
+for (const t of targets) {
+  const skillsDir = AGENTS[t].skills;
+  for (const name of names) {
+    const dir = path.join(skillsDir, name);
+    const file = path.join(dir, 'SKILL.md');
+    const managed = fs.existsSync(path.join(dir, MARK));
+    if (uninstall) {
+      if (!fs.existsSync(dir)) continue;
+      if (!managed && !force) { log(`skip ${dir} (not installed by this tool; --force removes it)`); counts.skipped++; continue; }
+      backup(skillsDir, name);
+      log(`remove ${dir}`);
+      if (!dry) fs.rmSync(dir, { recursive: true });
+      counts.removed++;
+      continue;
+    }
+    const raw = fix(fs.readFileSync(path.join(srcDir, name, 'SKILL.md'), 'utf8'));
+    if (fs.existsSync(file)) {
+      if (fs.readFileSync(file, 'utf8') === raw) {
+        if (!managed && !dry) fs.writeFileSync(path.join(dir, MARK), `${stamp}\n`);
+        counts.same++; continue;
+      }
+      if (!managed && !force) { log(`skip ${file} (exists and was not installed by this tool; --force overwrites after a backup)`); counts.skipped++; continue; }
+      backup(skillsDir, name);
+      log(`update ${file}`);
+      counts.updated++;
+    } else { log(`install ${file}`); counts.installed++; }
+    if (dry) continue;
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(file, raw);
+    fs.writeFileSync(path.join(dir, MARK), `${stamp}\n`);
+  }
 }
-console.log(`Done for: ${targets.map((t) => AGENTS[t].label).join(', ')}. Template path used: ${templatePath}. Restart the tool(s) to load the new commands.`);
+const c = counts;
+console.log(`Done for: ${targets.map((t) => AGENTS[t].label).join(', ')}. ${c.installed} installed, ${c.updated} updated, ${c.same} unchanged, ${c.skipped} skipped, ${c.removed} removed. Template path used: ${templatePath}.${c.skipped ? ' Skipped skills were left as they are.' : ''}${dry ? ' (dry run: nothing was written)' : ' Restart the tool(s) to load changes.'}`);

@@ -21,4 +21,4 @@ run(() => {
   if (LOCKFILES.has(base) && size > 4096) block(`${base} is a lockfile (${kb} KB). Use Grep for the package you need, or Read with offset/limit.`);
   const limitKb = Number(cfg.bigFileKb) || 0;
   if (limitKb > 0 && size > limitKb * 1024) block(`${base} is ${kb} KB (limit ${limitKb} KB, roughly ${Math.round(size / 4000)}k tokens). Use Grep to find what you need, then Read with offset/limit.`);
-});
+}, { guard: true });

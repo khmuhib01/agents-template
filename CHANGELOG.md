@@ -2,6 +2,18 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.21.0 - 2026-11-21
+
+Safer global install, fail-closed guards.
+
+- `install-global.mjs` no longer overwrites silently. A skill it installs gets a `.agent-template` marker. Same-named skills without the marker (yours, or installed before 1.21) are skipped unless `--force`. Changed managed skills are updated; unchanged ones are left alone. Every overwrite or removal is copied to `<skills>/.agent-template-backup/<time>/` first. New: `--force`, `--uninstall` (removes only marked skills unless `--force`); `--dry-run` shows the plan.
+- **Behavior change:** `guard-bash`, `guard-secrets` and `guard-read` now fail closed. A guard that crashes or gets invalid input exits 2 (blocks the call) instead of 1 (call allowed). If a hook bug blocks your work, set `HOOK_FAIL_OPEN=1`. `format` and the context hooks stay non-blocking.
+- Migration: after upgrading, run `node install-global.mjs --force` once to adopt skills installed by an older version (a backup is made); re-run `node init.mjs` in projects to refresh the hooks.
+- generated `AGENTS.md` gets a short delegation rule (item 8): small work runs directly; planner, architect, security-reviewer and code-reviewer only when the change justifies them.
+- `node init.mjs --strict`: warnings (unknown config key, stack token or domain that matches no skill) become errors and nothing is written. Without it they only warn, as before.
+- `node bench.mjs` also prints where the generated context goes (instructions, agents, skills, rules); `--json` has it as `parts`.
+- tests: 14 new checks; the install-global and fail-closed ones fail without the change.
+
 ## 1.20.0 - 2026-11-21
 
 Last items from the audit.
