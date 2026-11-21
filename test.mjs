@@ -134,25 +134,56 @@ ${extra}`;
   check(['guard-bash', 'guard-secrets', 'guard-read'].every((h) => badIn(h, { HOOK_FAIL_OPEN: '1' }).status === 1), 'hooks: HOOK_FAIL_OPEN=1 downgrades a guard error to exit 1');
   check(badIn('format').status === 1, 'hooks: a non-guard hook error stays non-blocking (exit 1)');
 
-  // install-global: never overwrites a skill it did not install; backs up before overwriting; --uninstall only removes its own
+  // install-global ownership (scenarios A-I): a user-owned skill is never claimed, overwritten or deleted
   {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ig-'));
     const ig = (...a) => spawnSync(process.execPath, [path.join(HERE, 'install-global.mjs'), '--claude', ...a], { encoding: 'utf8', env: { ...process.env, HOME: home, USERPROFILE: home } });
     const sk = path.join(home, '.claude', 'skills');
+    const f = (n) => path.join(sk, n, 'SKILL.md');
+    const txt = (n) => (fs.existsSync(f(n)) ? fs.readFileSync(f(n), 'utf8') : null);
+    const man = () => { try { return JSON.parse(fs.readFileSync(path.join(sk, '.agent-template.json'), 'utf8')).skills; } catch { return {}; } };
+    const src = (n) => fs.readFileSync(path.join(HERE, 'global-skills', n, 'SKILL.md'), 'utf8').replaceAll('__TEMPLATE_DIR__', HERE.replace(/\\/g, '/'));
+    // B: identical unmanaged skill + extra user file; C: different user skill
     fs.mkdirSync(path.join(sk, 'agent-init'), { recursive: true });
-    fs.writeFileSync(path.join(sk, 'agent-init', 'SKILL.md'), 'MINE');
+    fs.writeFileSync(f('agent-init'), src('agent-init'));
+    fs.writeFileSync(path.join(sk, 'agent-init', 'notes.md'), 'USER NOTES');
+    fs.mkdirSync(path.join(sk, 'agent-update'), { recursive: true });
+    fs.writeFileSync(f('agent-update'), 'MINE');
     const d = ig('--dry-run');
-    check(d.status === 0 && fs.readFileSync(path.join(sk, 'agent-init', 'SKILL.md'), 'utf8') === 'MINE' && !fs.existsSync(path.join(sk, 'agent-setup-scaffold')), 'install-global: --dry-run writes nothing');
+    check(d.status === 0 && !fs.existsSync(f('agent-setup-scaffold')) && !fs.existsSync(path.join(sk, '.agent-template.json')), 'install-global: --dry-run writes nothing');
+    ig(); // A: the missing skill is installed
+    check(fs.existsSync(f('agent-setup-scaffold')) && man()['agent-setup-scaffold'] && !man()['agent-init'] && !man()['agent-update'], 'install-global A: a new skill is installed and recorded; existing ones are not claimed');
+    check(txt('agent-update') === 'MINE' && fs.existsSync(path.join(sk, 'agent-init', 'notes.md')), 'install-global B/C: identical and different user skills are left untouched');
+    const again = ig();
+    check(/3 unchanged|1 unchanged/.test(again.stdout) && !fs.existsSync(path.join(sk, '.agent-template-backup')), 'install-global I: reinstalling is idempotent (no change, no backup)');
+    ig('--update');
+    // D: update a managed skill (simulate an older managed version)
+    const sc = f('agent-setup-scaffold');
+    fs.writeFileSync(sc, 'OLD'); const m0 = JSON.parse(fs.readFileSync(path.join(sk, '.agent-template.json'), 'utf8')); m0.skills['agent-setup-scaffold'].sha256 = crypto.createHash('sha256').update('OLD').digest('hex'); fs.writeFileSync(path.join(sk, '.agent-template.json'), JSON.stringify(m0));
     ig();
-    check(fs.readFileSync(path.join(sk, 'agent-init', 'SKILL.md'), 'utf8') === 'MINE', 'install-global: a same-named skill it did not install is not overwritten');
-    check(fs.existsSync(path.join(sk, 'agent-setup-scaffold', '.agent-template')), 'install-global: new skills are installed and marked');
-    fs.writeFileSync(path.join(sk, 'agent-setup-scaffold', 'SKILL.md'), 'old');
+    check(txt('agent-setup-scaffold') === src('agent-setup-scaffold') && fs.existsSync(path.join(sk, '.agent-template-backup')), 'install-global D: an unmodified managed skill is updated, old copy backed up');
+    // E: the user edits a managed skill
+    fs.writeFileSync(sc, 'MY EDIT');
     ig();
-    check(/agent-setup-scaffold/.test(fs.readFileSync(path.join(sk, 'agent-setup-scaffold', 'SKILL.md'), 'utf8')) && fs.existsSync(path.join(sk, '.agent-template-backup')), 'install-global: a managed skill is updated and the old one is backed up');
+    check(txt('agent-setup-scaffold') === 'MY EDIT', 'install-global E: a managed skill you edited is not overwritten');
     ig('--uninstall');
-    check(!fs.existsSync(path.join(sk, 'agent-setup-scaffold')) && fs.readFileSync(path.join(sk, 'agent-init', 'SKILL.md'), 'utf8') === 'MINE', 'install-global: --uninstall removes only what it installed');
+    check(txt('agent-setup-scaffold') === 'MY EDIT', 'install-global F: --uninstall keeps a managed skill you edited');
     ig('--force');
-    check(fs.readFileSync(path.join(sk, 'agent-init', 'SKILL.md'), 'utf8') !== 'MINE' && fs.readdirSync(path.join(sk, '.agent-template-backup')).length > 0, 'install-global: --force overwrites after a backup');
+    check(txt('agent-setup-scaffold') === src('agent-setup-scaffold') && /MY EDIT/.test(fs.readdirSync(path.join(sk, '.agent-template-backup')).map((t) => { const q = path.join(sk, '.agent-template-backup', t, 'agent-setup-scaffold', 'SKILL.md'); return fs.existsSync(q) ? fs.readFileSync(q, 'utf8') : ''; }).join('')), 'install-global E: --force overwrites after backing up your edit');
+    check(txt('agent-update') !== 'MINE' && man()['agent-update'], 'install-global: --force adopts a user skill (explicit) after a backup');
+    // G: uninstall never removes user-owned skills
+    fs.mkdirSync(path.join(sk, 'my-own'), { recursive: true }); fs.writeFileSync(f('my-own'), 'X');
+    ig('--uninstall');
+    check(!fs.existsSync(f('agent-setup-scaffold')) && !fs.existsSync(f('agent-update')) && txt('my-own') === 'X' && fs.existsSync(path.join(sk, 'agent-init', 'notes.md')) && txt('agent-init') === src('agent-init'), 'install-global F/G: --uninstall removes only managed skills; an adopted skill holding your own extra file is kept');
+    ig('--uninstall', '--force'); // everything is unmanaged now except what --force may remove (backed up)
+    fs.mkdirSync(path.join(sk, 'agent-update'), { recursive: true }); fs.writeFileSync(f('agent-update'), src('agent-update')); fs.writeFileSync(path.join(sk, 'agent-update', 'extra.md'), 'KEEP');
+    ig('--uninstall', '--force');
+    check(txt('agent-update') === src('agent-update') && fs.existsSync(path.join(sk, 'agent-update', 'extra.md')), 'install-global G: --uninstall --force never removes a skill it does not own, even an identical one');
+    // H: an interrupted install (leftover temp file in an empty folder) is recovered
+    fs.rmSync(path.join(sk, 'agent-setup-scaffold'), { recursive: true, force: true });
+    fs.mkdirSync(path.join(sk, 'agent-setup-scaffold'), { recursive: true }); fs.writeFileSync(sc + '.tmp-1', 'partial');
+    ig();
+    check(txt('agent-setup-scaffold') === src('agent-setup-scaffold') && man()['agent-setup-scaffold'], 'install-global H: an interrupted install is completed on the next run');
     fs.rmSync(home, { recursive: true, force: true });
   }
 
@@ -276,6 +307,18 @@ console.log('\n[orchestrate]');
   check(!bu.authorize({ ...bu.newBudget('tiny'), calls: 1 }).ok, 'call cap stops dispatch');
   const unk = bu.record(bu.newBudget('small'), { cost: null });
   check(unk.spent === 0 && unk.unknownCostCalls === 1, 'a call with no reported cost is counted as unavailable, never estimated');
+  {
+    // budget policy when a call reports no cost (partial or missing provider usage)
+    const run3 = (policy) => { let x = bu.newBudget('small', { policy }); const seen = []; for (let i = 0; i < 3; i++) { const a = bu.authorize(x); seen.push(a.ok ? 'ok' : a.reason); if (!a.ok) break; x = bu.record(x, { cost: null, cap: a.perCallUsd }); } return { x, seen }; };
+    const bal = run3(undefined);
+    check(bal.seen.join() === 'ok,ok,cost_cap' && bal.x.spent === 0 && bal.x.reserved > 0.7, 'balanced (default): unknown-cost calls reserve the per-call cap, so the cost cap still stops spending; spent stays provider-reported only');
+    check(run3('strict').seen.join() === 'ok,usage_unknown', 'strict: no new call once a call reported no cost');
+    check(run3('best-effort').seen.join() === 'ok,ok,ok', 'best-effort: unknown cost counts as 0 (the call-count cap still stops it)');
+    check(bu.record(bu.newBudget('small'), { cost: 0.9, cap: 0.4 }).overspend === 0.5, 'a reported cost above the per-call cap is recorded as overspend');
+    check(throws(() => bu.newBudget('small', { policy: 'yolo' })), 'an unknown budget policy is rejected');
+    const legacy = { ...bu.newBudget('small') }; delete legacy.policy; delete legacy.reserved; delete legacy.overspend;
+    check(bu.authorize(legacy).ok && bu.record(legacy, { cost: 0.1, cap: 0.4 }).spent === 0.1, 'a ledger written before policies existed still works');
+  }
   check(throws(() => bu.raiseCap(bu.newBudget('small'), 0.5)) && bu.raiseCap(bu.newBudget('small'), 2).max_estimated_cost === 2, 'the cap can only be raised to a strictly larger value');
   check(Math.abs(bu.raiseCap(bu.newBudget('small'), 1.5).per_call_cap - 0.8) < 1e-6, 'raising the overall cap scales the per-call cap');
   check(pl.validatePlan({ summary: 's', acceptance_criteria: ['a'], steps: [{ title: 't' }] }).ok && !pl.validatePlan({ summary: 's', steps: [] }).ok && pl.extractJson('```json\n{"a":1}\n```').value.a === 1, 'plan schema and JSON extraction work');
@@ -349,6 +392,43 @@ console.log('\n[orchestrate]');
     check(o.r.status === 3 && o.ledger.state === 'budget_exhausted' && /step_cap/.test(o.ledger.stateReason) && Math.abs(o.ledger.budget.spent - 0.35) < 1e-9 && o.ledger.changedFiles.length === 1, 'a call that hits its per-call cap is a budget stop (not a plain failure), its real cost is recorded and partial edits are noted');
     const up = orch(repo, 'stepcap', steps, ['--resume', o.id, '--max-cost', '1.5']);
     check(up.r.status === 0 && up.ledger.state === 'completed' && up.calls.length === 3 && Number(up.calls[2].argv[up.calls[2].argv.indexOf('--max-budget-usd') + 1]) > 0.4, 'resume with a larger cap retries the step with a proportionally larger per-call cap');
+  }
+  { // model routing + complexity: deterministic, opt-in, explicit --model wins, one counted fallback
+    const rt = (name, cfgText) => { const d = mkRepo(name); if (cfgText) { fs.writeFileSync(path.join(d, 'project.config.yml'), cfgText); sh(d, 'git', ['add', '-A']); sh(d, 'git', ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'cfg']); } return d; };
+    const modelOf = (c) => c.argv[c.argv.indexOf('--model') + 1];
+    const ROUTE = 'name: R\ntype: cli\nmodel_routing:\n  enabled: true\n  simple: m-small\n  medium: m-mid\n  complex: m-big\n  fallback: m-fb\n';
+    const ok = [{ result: PLAN, cost: 0.05 }, { result: 'x', cost: 0.05, write: { 'a.txt': 'two\n' } }];
+    let o = orch(rt('route-c', ROUTE), 'route-c', ok, ['--goal', 'add oauth login with permission checks', '--profile', 'auto', ...T]);
+    check(o.ledger.level === 'complex' && o.ledger.profile === 'medium' && o.calls.every((c) => modelOf(c) === 'm-big') && o.ledger.agents.includes('security-reviewer'), 'routing: a security-sensitive goal is classified complex and runs on the configured complex model');
+    o = orch(rt('route-s', ROUTE), 'route-s', [{ result: 'x', cost: 0.05, write: { 'a.txt': 'two\n' } }], ['--goal', 'fix typo in readme', '--profile', 'auto', ...T]);
+    check(o.ledger.level === 'simple' && o.ledger.profile === 'tiny' && o.calls.length === 1 && modelOf(o.calls[0]) === 'm-small' && o.ledger.agents.length === 0, 'routing: a simple goal gets the tiny profile, one model call, the simple model and no agents');
+    o = orch(rt('route-x', ROUTE), 'route-x', ok, ['--goal', 'add oauth login', '--model', 'mine', ...T]);
+    check(o.calls.every((c) => modelOf(c) === 'mine') && o.ledger.modelSource === 'explicit --model', 'routing: an explicit --model is never overridden');
+    o = orch(rt('route-off', 'name: R\ntype: cli\nmodel_routing:\n  enabled: false\n  complex: m-big\n'), 'route-off', ok, ['--goal', 'add oauth login', ...T]);
+    check(o.calls.every((c) => modelOf(c) === 'sonnet') && o.ledger.modelSource === 'default', 'routing: disabled (or absent) routing keeps the default model');
+    o = orch(rt('route-fb', ROUTE), 'route-fb', [{ is_error: true, result: 'model not found: m-mid', exit: 1 }, { result: PLAN, cost: 0.05 }, { result: 'x', cost: 0.05, write: { 'a.txt': 'two\n' } }], ['--goal', 'add a button component', ...T]);
+    check(o.calls.length === 3 && modelOf(o.calls[0]) === 'm-mid' && modelOf(o.calls[1]) === 'm-fb' && o.ledger.budget.calls === 3 && /model_fallback/.test(o.events), 'routing: an unavailable model is retried once with the fallback and the retry is counted in the budget');
+    o = orch(rt('route-fb2', ROUTE), 'route-fb2', [{ is_error: true, result: 'something else broke', exit: 1 }], ['--goal', 'add a button component', ...T]);
+    check(o.calls.length > 0 && o.calls.every((c) => modelOf(c) === 'm-mid') && !/model_fallback/.test(o.events), 'routing: an error that is not about the model does not trigger a fallback call');
+    { // strict policy stop: a larger cap does not help, only a looser policy continues
+      const repo = mkRepo('strict-resume');
+      const steps = [{ result: PLAN }, { result: 'x', write: { 'a.txt': 'two\n' } }];
+      const o1 = orch(repo, 'strict-resume', steps, ['--goal', 'g', '--budget-policy', 'strict', ...T]);
+      check(o1.r.status === 3 && /usage_unknown/.test(o1.ledger.stateReason) && o1.calls.length === 1, 'strict: the run stops after the first call that reported no cost');
+      const o2 = orch(repo, 'strict-resume', steps, ['--resume', o1.id, '--max-cost', '5']);
+      check(o2.r.status === 2 && /--budget-policy/.test(o2.r.stderr) && /does not help/.test(o2.r.stderr) && o2.calls.length === 1, 'strict: --resume with a larger --max-cost explains that it does not help and calls nothing');
+      const o3 = orch(repo, 'strict-resume', steps, ['--resume', o1.id, '--budget-policy', 'balanced']);
+      check(o3.r.status === 0 && o3.ledger.state === 'completed' && o3.ledger.budget.policy === 'balanced', 'strict: --resume --budget-policy balanced continues without repeating the plan');
+    }
+    const rtm = await import(pathToFileURL(path.join(HERE, 'lib', 'routing-tasks.mjs')).href);
+    const lv = (g, f) => rtm.classifyTask(g, { files: f }).level;
+    check(lv('fix a typo in the README') === 'simple' && lv('explain what this function does') === 'simple' && lv('add an endpoint to list invoices') === 'medium' && lv('rotate the payment webhook secret') === 'complex' && lv('rename a variable', 9) === 'complex' && lv('tidy two modules', 2) === 'medium', 'classifier: simple / medium / complex goals');
+    check(JSON.stringify(rtm.selectAgents('fix typo', 'simple')) === '[]' && rtm.selectAgents('redesign the architecture of billing', 'complex').join() === 'planner,architect,security-reviewer,code-reviewer' && rtm.selectAgents('add an endpoint', 'medium').length === 0, 'agent selection: none for simple/medium work; planner, architect, security and review only when the goal justifies them');
+    check(rtm.routingProblems({ enabled: true, simple: 'a b' }).length === 1 && rtm.routingProblems({ typo: 1 }).length === 1 && rtm.routingProblems(ROUTE && { enabled: true, simple: 'x', fallback: 'y' }).length === 0, 'model_routing validation rejects bad ids and unknown keys');
+    const rc = JSON.parse(fs.readFileSync(path.join(HERE, 'evals', 'routing-cases.json'), 'utf8'));
+    check(rc.length >= 12 && rc.every((c) => rtm.classifyTask(c.goal).level === c.level), 'classifier: every labeled case in evals/routing-cases.json gets its expected level');
+    const bad = fs.mkdtempSync(path.join(os.tmpdir(), 'mr-')); fs.writeFileSync(path.join(bad, 'project.config.yml'), 'name: S\ntype: web\nbranches: {working: x, production: main}\nmodel_routing:\n  complex: "a;b"\n');
+    check(run(bad).status === 1 && !fs.existsSync(path.join(bad, 'AGENTS.md')), 'init rejects an invalid model_routing before writing anything'); fs.rmSync(bad, { recursive: true, force: true });
   }
   { // stale evidence after a user edit, no model call needed
     const repo = mkRepo('stale');

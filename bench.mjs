@@ -55,4 +55,13 @@ console.log('project'.padEnd(30) + 'skills'.padStart(7) + 'unoptimized'.padStart
 for (const r of rows) console.log(r.project.padEnd(30) + String(r.skills).padStart(7) + String(r.unoptimized).padStart(13) + String(r.optimized).padStart(11) + `${r.saved} (${r.pct}%)`.padStart(14));
 console.log('\nWhere the generated context goes (est. tokens)\n');
 for (const r of rows) console.log(r.project.padEnd(30) + Object.entries(r.parts).map(([k, v]) => `${k} ${v}`).join('  ·  '));
+// Agent invocations per task under the delegation policy, offline and deterministic: counts agents the policy would run, not tokens or cost.
+// Baseline = a planner, architect, security reviewer and code reviewer on every task (4). This is a policy count; it says nothing about real spend.
+{
+  const { classifyTask, selectAgents } = await import('./lib/routing-tasks.mjs');
+  const cases = JSON.parse(fs.readFileSync(path.join(HERE, 'evals', 'routing-cases.json'), 'utf8'));
+  const hit = cases.filter((c) => classifyTask(c.goal).level === c.level).length;
+  const picked = cases.reduce((n, c) => n + selectAgents(c.goal, classifyTask(c.goal).level).length, 0);
+  console.log(`\nAgent selection over ${cases.length} labeled goals (evals/routing-cases.json): classifier ${hit}/${cases.length} correct; agents invoked ${picked} vs ${cases.length * 4} when all four run every time (policy count, not measured cost).`);
+}
 console.log('\nStatic context only; real cost also depends on model, conversation length and prompt caching.');

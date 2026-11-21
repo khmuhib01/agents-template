@@ -41,6 +41,7 @@ import { parseYaml } from './lib/yaml.mjs';
 import { render, missing, truthy } from './lib/render.mjs';
 import { scaffold } from './lib/scaffold.mjs';
 import { commandProblems, dockerProblems } from './lib/validate.mjs';
+import { routingProblems } from './lib/routing-tasks.mjs';
 import { focusSkills, shipsWithSkill } from './lib/routing.mjs';
 
 // ---------------------------------------------------------------- context
@@ -321,7 +322,7 @@ function main() {
   for (const n of ['.claude', '.agents', '.codex', '.vscode', '.gitignore', 'AGENTS.md', 'CLAUDE.md']) {
     try { if (fs.lstatSync(path.join(TARGET, n)).isSymbolicLink()) errors.push(`${n} is a symlink; init will not write through it. Replace it with a real file or folder.`); } catch { /* does not exist */ }
   }
-  errors.push(...commandProblems('test_command', cfg.test_command), ...commandProblems('format_command', cfg.format_command), ...dockerProblems(cfg.docker));
+  errors.push(...commandProblems('test_command', cfg.test_command), ...commandProblems('format_command', cfg.format_command), ...dockerProblems(cfg.docker), ...routingProblems(cfg.model_routing));
   if (errors.length) { console.error('✖ Config problems:\n' + errors.map((e) => '  - ' + e).join('\n')); process.exit(1); }
 
   const unknownKeys = warnUnknownKeys(cfg);
