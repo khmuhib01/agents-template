@@ -14,7 +14,14 @@ import { execSync } from 'node:child_process';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
 const has = (n) => args.includes(n);
-const opt = (n, d) => { const i = args.indexOf(n); return i >= 0 && args[i + 1] ? args[i + 1] : d; };
+// A value-taking flag must be followed by a value, not by another flag (`--target --dry-run` used to treat "--dry-run" as the path).
+const opt = (n, d) => {
+  const i = args.indexOf(n);
+  if (i < 0) return d;
+  const v = args[i + 1];
+  if (!v || v.startsWith('--')) { console.error(`✖ ${n} needs a value, e.g. ${n} <path>`); process.exit(1); }
+  return v;
+};
 
 if (has('--help') || has('-h')) {
   console.log(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(1, 6).map((l) => l.replace(/^\/\/ ?/, '')).join('\n'));
