@@ -61,3 +61,23 @@ Proposed paid run (needs approval, not started). The grader `test-file-added` wa
 - `node evals/scenarios.mjs --scenario payments-webhook-refund,tenant-invoice-isolation,migration-lock-safety --arms baseline,skills,orchestrated --runs 3 --max-runs 27 --keep --out evals/results/<file>.json` (27 runs; `--keep` leaves the work directories in the temp folder so the test files can be inspected).
 - Cost, **estimate only**: baseline about $0.08 and skills about $0.10 per run (measured earlier), orchestrated about $0.15 to $0.30 per run (the S3 task cost $0.108 for two calls; these tasks are larger). Expected total about $3 to $5. The per-run ceiling is $1, so the hard worst case is $27; the driver's own call cap (3 calls) makes an orchestrated run above about $1.2 impossible by construction, apart from one turn of overshoot per call.
 - Decision rule, fixed in advance: keep the driver only if it improves reliability or recoverability at acceptable cost. If orchestrated passes no more graders than baseline and costs more per passing run, the result is "no gain on small tasks": keep it opt-in for larger tasks, say so in the README, and do not widen the claim.
+
+## 6. S4 result: three arms, 3 scenarios, 3 runs each (2026-11-21, Sonnet, 27 runs)
+Recorded in `evals/results/scenarios-2026-11-21-sonnet-n3-3arms.json` and `evals/REPORT.md`. Actual total cost **$2.87** (estimate was $3 to $5). All 9 orchestrated tasks ended `completed` with 0 repairs and 2 calls each.
+
+| Arm | Runs | Passed all graders | Mean cost | Cost per passing run | Mean turns | Mean seconds |
+|---|---|---|---|---|---|---|
+| baseline | 9 | 8/9 | $0.080 | $0.090 | 9.0 | 16.6 |
+| skills | 9 | 9/9 | $0.108 | $0.108 | 8.6 | 19.0 |
+| orchestrated | 9 | 7/9 | $0.131 | $0.169 | 10.9 | 27.9 |
+
+By scenario (passes out of 3): migration-lock-safety 3/3/3 in all arms; tenant-invoice-isolation 3/3/3; payments-webhook-refund baseline 2, skills 3, orchestrated 1. Every failure was the same grader, `refund-idempotent-on-redelivery`. Security, test-quality, docs and performance graders passed in every run of every arm.
+
+What this does and does not show:
+- **Orchestrated did not beat baseline**: 7 of 9 vs 8 of 9 passes, at about 1.6 times the mean cost, 1.9 times the cost per passing run and 1.7 times the wall-clock time. By the decision rule written before the run, the outcome is "no gain on small tasks".
+- **Sample size is tiny.** 9 runs per arm, 3 per cell; the differences between 7, 8 and 9 passes are well within noise, and the single scenario where arms differ (payments) has 3 runs per arm. Do not read "skills 9/9" as a benefit; it is a hint at most, and it would still cost about 35 percent more than baseline.
+- **Why orchestrated failed, from the kept work directories:** in 2 of 3 payments runs the planner's acceptance criteria did not mention redelivery, so the implementer did not use the existing `hasSeen`/`markSeen`; in the run whose plan did list it, the task passed. The driver ran the model's own tests (`node --test`), which passed, so it never repaired. The driver verifies only what the visible tests cover; it cannot see a hidden requirement. Planning added cost but did not reliably surface the trap.
+- **The earlier `test-file-added` failures were a grader defect:** the kept directories show tests placed in `src/webhook.test.mjs` (some runs) or `test/webhook.test.mjs` (others); with the replacement grader `tests-added` all 12 test-quality graders passed in every arm.
+- Model, 3 scenarios, small single-file tasks only. Nothing here speaks to large or multi-step tasks, long sessions, interruptions, or what a hard cap is worth to a user.
+
+Decision applied (rule fixed in section 5): keep `orchestrate.mjs` default-off and documented as a prototype for larger or budget-sensitive work; do not recommend it for small tasks; do not claim a quality gain. The value that remains is the enforced cap, resume and audit trail, which these scenarios did not exercise.
