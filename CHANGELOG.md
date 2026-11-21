@@ -2,6 +2,11 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.17.2 - 2026-11-21
+
+- README: `protect_secrets` now states what it covers. It blocks the Read tool and writes, but not shell commands: in a real run `node -e` printed a fake `.env` when `Bash(node *)` was allowed; with the template's own narrow allow list the command waited for approval. Advice added not to grant broad Bash rules in projects that hold secrets.
+- `core/rules/SECURITY.md`: one sentence telling the model not to read secret files through shell commands. This is guidance, not enforcement (adds about 20 tokens to the always-loaded rules, estimated as characters divided by 4).
+
 ## 1.17.1 - 2026-11-21
 
 - routing fixes found by the P7 audit (`docs/ROUTING-DESIGN.md`): stack spellings `tailwindcss`, `nodejs`, `springboot`, `jetpack-compose`, `expo-router`, `aspnet`, `.NET`, `ts` now route to the same skills as their short forms; existing projects that wrote one of these get the matching skill on the next `init.mjs` run (it was silently unmatched before)
