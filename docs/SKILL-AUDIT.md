@@ -111,7 +111,8 @@ Columns: lines = SKILL.md length; desc = description chars; man = manual-only (`
 - Only 5 task scenarios exist (mobile token storage, React 18 APIs, SEO noindex, structured data, WordPress plugin security). All were run once per arm.
 
 ### 2.5 Source verification [E]
-All 31 `references/SOURCES.md` files have an empty table and a "Pending verification" list with names but no URLs. **No skill guidance is verified against official docs.** Version-sensitive claims in references (Flutter, Expo, Next.js, Android, Play/App Store rules, Search Central) are therefore [U]. `docs/SKILL-AUTHORING.md` forbids filling a URL from memory, so this needs fetching in dedicated PRs.
+Started on the 6 SEO skills (branch `docs/p7-sources-seo`, 2026-11-21): 17 official pages fetched and recorded in their `SOURCES.md` (Google Search Central, web.dev, Chrome CrUX, RFC 9309, schema.org). The Core Web Vitals thresholds, INP replacing FID, JSON-LD recommendation, hreflang self-reference/reciprocity and "blocked URLs can still appear" claims matched the fetched pages. Not confirmed: the "dynamic rendering is a workaround" wording in `rendering-js.md` (the JS SEO page does not mention it), sitemap size limits, Bing guidelines (page returned no content), Change of Address tool (wrong page fetched, not recorded).
+The other 25 `SOURCES.md` files (mobile, framework, full-stack and product skills) still have an empty table: **their guidance is not verified against official docs**. `docs/SKILL-AUTHORING.md` forbids filling a URL from memory, so each needs fetching.
 
 ### 2.6 Routing and dependencies [E]
 - `skill-map.json`: 7 types, 48 stack tokens, 7 domains, 12 deps entries. Full matrix and defects: `docs/ROUTING-DESIGN.md`.
