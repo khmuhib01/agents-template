@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Installs the global slash-skills (/agent-setup-scaffold, /agent-init) on this PC.
+// Installs the global slash-skills (/agent-setup-scaffold, /agent-init, /agent-update) on this PC.
 // Usage: node install-global.mjs [--claude] [--codex] [--antigravity] [--all] [--dry-run]   (default: every agent found on this PC)
 import fs from 'node:fs';
 import os from 'node:os';

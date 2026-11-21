@@ -22,7 +22,7 @@ for (const name of fs.readdirSync(src)) {
 }
 outputs.set(path.join('.claude-plugin', 'plugin.json'), JSON.stringify({
   name: 'agents-template',
-  description: 'Generate AGENTS.md, CLAUDE.md and .claude/ (rules, skills, agents, hooks) for any project from one project.config.yml. Adds /agents-template:agent-setup-scaffold and /agents-template:agent-init.',
+  description: 'Generate AGENTS.md, CLAUDE.md and .claude/ (rules, skills, agents, hooks) for any project from one project.config.yml. Adds /agents-template:agent-setup-scaffold, /agents-template:agent-init and /agents-template:agent-update.',
   version,
   author: { name: 'khmuhib01' },
   repository: 'https://github.com/khmuhib01/agents-template',

@@ -2,6 +2,10 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.18.0 - 2026-11-21
+
+- new global command `/agent-update` (plugin: `/agents-template:agent-update`): pulls the template when it is a git clone, compares the project's `.claude/.template-version` with `VERSION`, lists the newer changelog entries, dry-runs, asks, then runs `init.mjs`. It never commits or pushes.
+
 ## 1.17.2 - 2026-11-21
 
 - README: `protect_secrets` now states what it covers. It blocks the Read tool and writes, but not shell commands: in a real run `node -e` printed a fake `.env` when `Bash(node *)` was allowed; with the template's own narrow allow list the command waited for approval. Advice added not to grant broad Bash rules in projects that hold secrets.
