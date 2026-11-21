@@ -1,6 +1,6 @@
 # Routing design and verification (P7, Phase 1)
 
-Status: **draft, audit only**. No code, map or test was changed. Verified on `dev` at `VERSION 1.17.0` by running `lib/routing.mjs` against `core/skill-map.json` and by running `init.mjs` into temporary directories (outside the repo). The probe lists below are my own sample, not an exhaustive test.
+Status: **draft**. Sections 2 and 3 describe the state *before* the fixes in 1.17.1 (the audit commit changed no code); section 3 now marks what the fix commit resolved. Verified on `dev` at `VERSION 1.17.0` by running `lib/routing.mjs` against `core/skill-map.json` and by running `init.mjs` into temporary directories (outside the repo). The probe lists below are my own sample, not an exhaustive test.
 
 ## 1. How routing works [E: lib/routing.mjs, init.mjs]
 1. Skills = `map.types[type]` + skills of every matching `stack` token + skills of every matching `domains` key, then `deps` expanded transitively (cycle-safe BFS), then filtered to skills that exist.
@@ -25,15 +25,15 @@ Status: **draft, audit only**. No code, map or test was changed. Verified on `de
 ## 3. Defects found [E, reproduced]
 | # | Input | Result | Impact | Proposed fix (not applied) |
 |---|---|---|---|---|
-| D1 | stack `tailwindcss` | unmatched | the key is `tailwind`; the skill is named `tailwindcss-development` and users naturally write the product name | add alias key `tailwindcss` |
-| D2 | stack `nodejs20` | unmatched, while `node20` and `node.js` match | `nodejs` has no key; the `node`+`js` suffix rule only matches the exact remainder `js` | add key `nodejs` (suffix rule then handles versions) |
-| D3 | stack `springboot`, `spring-boot` | unmatched, `spring` matches | very common spelling | add alias `springboot` |
-| D4 | `jetpack-compose`, `expo-router`, `aspnet`, `.NET`, `ts`, `c#` | unmatched | common spellings | add aliases where sensible (`jetpackcompose`, `exporouter`, `aspnet`, `net`, `ts`) |
-| D5 | stack `seo` | unmatched; warning says "check spelling, or map them in skill-map.json" | SEO is a *domain*, so the hint misleads | mention `domains` in the warning for tokens that equal a domain key |
-| D6 | `kotlin` only | routes `jvm-development` only | Android users must also add `android` or `compose` | documented ambiguity, add a negative/ambiguous test |
+| D1 (fixed 1.17.1) | stack `tailwindcss` | unmatched | the key is `tailwind`; the skill is named `tailwindcss-development` and users naturally write the product name | add alias key `tailwindcss` |
+| D2 (fixed 1.17.1) | stack `nodejs20` | unmatched, while `node20` and `node.js` match | `nodejs` has no key; the `node`+`js` suffix rule only matches the exact remainder `js` | add key `nodejs` (suffix rule then handles versions) |
+| D3 (fixed 1.17.1) | stack `springboot`, `spring-boot` | unmatched, `spring` matches | very common spelling | add alias `springboot` |
+| D4 (fixed 1.17.1 with aliases `jetpackcompose`, `exporouter`, `aspnet`, `net`, `ts`; `c#` is not alias-able because `#` is stripped to an empty token) | `jetpack-compose`, `expo-router`, `aspnet`, `.NET`, `ts`, `c#` | unmatched | common spellings | add aliases where sensible (`jetpackcompose`, `exporouter`, `aspnet`, `net`, `ts`) |
+| D5 (fixed 1.17.1) | stack `seo` | unmatched; warning says "check spelling, or map them in skill-map.json" | SEO is a *domain*, so the hint misleads | mention `domains` in the warning for tokens that equal a domain key |
+| D6 (pinned by test, behavior kept) | `kotlin` only | routes `jvm-development` only | Android users must also add `android` or `compose` | documented ambiguity, add a negative/ambiguous test |
 | D7 | `type: mobile` without a stack | routes `mobile-architecture` and `mobile-security` but not `mobile-release`/`mobile-quality` (those come via deps of a platform skill) | intended or oversight is unclear [U] | decide and document |
 | D8 | tokens `redis`, `graphql`, `firebase`, `supabase`, `kubernetes`/`k8s`, `terraform`, `angular`, `svelte`, `kmp`, `pg` | unmatched | no skill exists for them; not a routing bug, a coverage gap | see INDUSTRY-SKILL-COVERAGE |
-| D9 | README "saves" sentence | inaccurate | see section 2 | edit README |
+| D9 (fixed 1.17.1) | README "saves" sentence | inaccurate | see section 2 | edit README |
 
 Suffix-rule negatives that behave correctly: `gorm` and `kotlinx` do not match `go`/`kotlin`; `next` does not match `nextjs`; singular domain `payment` does not match `payments`.
 
@@ -200,7 +200,7 @@ Suffix-rule negatives that behave correctly: `gorm` and `kotlinx` do not match `
 | domain:mobile | UNMATCHED |
 
 ## 5. What is still not done
-- No automated test pins D1-D7. Suggested: a table-driven test in `test.mjs` with the probe set above (positive, negative, ambiguous) once the alias decision is made.
-- Domain probes and type routing have no negative tests either.
+- D1-D6 and D9 are now pinned by tests in `test.mjs` (`[routing lib]`, `[stack matrix]`). D7 (`type: mobile` and `mobile-release`/`mobile-quality`) is an open decision, not changed.
+- Type routing has no negative tests.
 - Live trigger accuracy (does a real model pick the right skill from the description) is unmeasured; only the offline lexical eval (149 cases) and a paid `evals/live.mjs` exist.
-- Whether a fix for D1-D4 needs a `VERSION` bump is the maintainer's call (it changes which skills existing projects get).
+- The fixes were released as `1.17.1` because they change which skills existing projects get; revert the bump if you disagree.

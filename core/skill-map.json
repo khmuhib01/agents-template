@@ -78,6 +78,9 @@
     "tailwind": [
       "tailwindcss-development"
     ],
+    "tailwindcss": [
+      "tailwindcss-development"
+    ],
     "react": [
       "react-development",
       "typescript-development"
@@ -96,7 +99,14 @@
     "typescript": [
       "typescript-development"
     ],
+    "ts": [
+      "typescript-development"
+    ],
     "node": [
+      "nodejs-development",
+      "typescript-development"
+    ],
+    "nodejs": [
       "nodejs-development",
       "typescript-development"
     ],
@@ -127,6 +137,10 @@
       "typescript-development"
     ],
     "expo": [
+      "react-native-development",
+      "typescript-development"
+    ],
+    "exporouter": [
       "react-native-development",
       "typescript-development"
     ],
@@ -186,7 +200,16 @@
     "spring": [
       "jvm-development"
     ],
+    "springboot": [
+      "jvm-development"
+    ],
     "csharp": [
+      "dotnet-development"
+    ],
+    "aspnet": [
+      "dotnet-development"
+    ],
+    "net": [
       "dotnet-development"
     ],
     "dart": [
@@ -205,6 +228,9 @@
       "android-kotlin-development"
     ],
     "jetpack": [
+      "android-kotlin-development"
+    ],
+    "jetpackcompose": [
       "android-kotlin-development"
     ],
     "swiftui": [

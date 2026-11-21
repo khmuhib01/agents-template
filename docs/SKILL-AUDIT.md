@@ -137,7 +137,7 @@ Pilot of 5 scenarios x 2 arms x 1 run (Sonnet): every scenario passed in both ar
 | Criterion | Status |
 |---|---|
 | Every skill has assessed purpose and trigger boundary | partly: inventory and boundary flags done, per-skill purpose review only for the overlap groups |
-| Every routing token has positive, negative, ambiguous tests | **audited, not yet tested**: all 48 tokens, 7 domains and 7 types resolved and probed (`docs/ROUTING-DESIGN.md`); defects D1-D7 found; no automated negative tests added |
+| Every routing token has positive, negative, ambiguous tests | **audited, not yet tested**: all 48 tokens, 7 domains and 7 types resolved and probed (`docs/ROUTING-DESIGN.md`); defects D1-D7 found; D1-D6 and D9 fixed in 1.17.1 with table-driven positive/negative/ambiguous tests |
 | Dependency resolution deterministic and cycle-safe | met: DFS shows no cycles, `expandDeps` terminates on cycles (existing test) |
 | Focused mode accurately described and tested | met with one README correction (D9): behavior verified on 3 configs; the "saves" line prints only in `all` mode |
 | Proposed vs implemented separated | met |
@@ -145,4 +145,4 @@ Pilot of 5 scenarios x 2 arms x 1 run (Sonnet): every scenario passed in both ar
 | No unsupported quality claims | met |
 
 ## 5. Next steps
-Decide and apply routing fixes D1-D4 and the README line (D9) with a table-driven negative test, then source verification PRs. See `docs/INDUSTRY-SKILL-COVERAGE.md` for coverage gaps.
+Routing fixes and tests are done (1.17.1). Open: D7 decision, then source verification PRs. See `docs/INDUSTRY-SKILL-COVERAGE.md` for coverage gaps.
