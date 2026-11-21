@@ -1,0 +1,37 @@
+{
+  "title": "Implement an arithmetic expression evaluator (hard on purpose: tests decide)",
+  "type": "cli",
+  "stack": [
+    "node"
+  ],
+  "tags": [
+    "feature",
+    "hard"
+  ],
+  "prompt": "Implement `evaluate(input)` in src/evaluate.js: an arithmetic expression evaluator for a string, supporting + - * / ^ , parentheses, decimals and unary minus, with standard math precedence and associativity. Throw a SyntaxError for malformed input and a RangeError for division by zero. Do not use eval or new Function. The tests are in test/evaluate.test.js; do not change them.",
+  "test_command": "node --test",
+  "graders": [
+    {
+      "id": "tests-pass",
+      "category": "correctness",
+      "type": "command",
+      "cmd": [
+        "node",
+        "--test"
+      ]
+    },
+    {
+      "id": "tests-untouched",
+      "category": "test_quality",
+      "type": "unchanged",
+      "path": "test/evaluate.test.js"
+    },
+    {
+      "id": "no-eval",
+      "category": "security",
+      "type": "not_contains",
+      "path": "src",
+      "pattern": "\\beval\\s*\\(|new\\s+Function"
+    }
+  ]
+}

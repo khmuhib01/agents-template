@@ -1,0 +1,30 @@
+{
+  "title": "Implement a cron next-run calculator (hard on purpose: tests decide)",
+  "type": "cli",
+  "stack": [
+    "node"
+  ],
+  "tags": [
+    "feature",
+    "hard"
+  ],
+  "prompt": "Implement `nextRun(expr, after)` in src/cron.js. `expr` is a standard 5-field cron expression (minute hour day-of-month month day-of-week) supporting `*`, lists (`1,15`), ranges (`1-5`) and steps (`*/15`, `10-20/5`); day-of-week is 0-6 with 0 and 7 both meaning Sunday. `after` is a Date; return the first matching Date strictly after it, in UTC, with seconds and milliseconds zero. When both day-of-month and day-of-week are restricted (neither is `*`), a day matches if either matches. Return null if nothing matches within 8 years. Throw a SyntaxError for an invalid expression (wrong field count, out of range, bad step). The tests are in test/cron.test.js; do not change them.",
+  "test_command": "node --test",
+  "graders": [
+    {
+      "id": "tests-pass",
+      "category": "correctness",
+      "type": "command",
+      "cmd": [
+        "node",
+        "--test"
+      ]
+    },
+    {
+      "id": "tests-untouched",
+      "category": "test_quality",
+      "type": "unchanged",
+      "path": "test/cron.test.js"
+    }
+  ]
+}
