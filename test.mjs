@@ -227,6 +227,143 @@ console.log('\n[skill routing eval]');
 
 }
 
+if (on('orchestrate')) {
+console.log('\n[orchestrate]');
+{
+  const U = (f) => import(pathToFileURL(path.join(HERE, 'lib', f)).href);
+  const st = await U('orch-state.mjs');
+  const bu = await U('orch-budget.mjs');
+  const pl = await U('orch-plan.mjs');
+  // --- pure modules
+  check(st.canTransition('queued', 'ready') && st.canTransition('validating', 'running') && st.canTransition('budget_exhausted', 'ready'), 'task state machine allows the documented transitions');
+  check(!st.canTransition('completed', 'running') && !st.canTransition('queued', 'completed') && !st.canTransition('running', 'completed') && !st.canTransition('failed', 'ready'), 'task state machine rejects illegal transitions');
+  const okLedger = { state: 'validating', profile: 'small', plan: { acceptance_criteria: ['x'] }, validation: { ran: true, exitCode: 0 } };
+  check(st.transition(okLedger, 'completed').state === 'completed', 'completed is allowed with criteria and a passing validation record');
+  const throws = (f) => { try { f(); return false; } catch { return true; } };
+  check(throws(() => st.transition({ ...okLedger, validation: { ran: true, exitCode: 1 } }, 'completed')) && throws(() => st.transition({ ...okLedger, validation: null }, 'completed')) && throws(() => st.transition({ ...okLedger, plan: null }, 'completed')), 'completed is refused without evidence, with failing validation or without criteria');
+  let b = bu.newBudget('small');
+  check(bu.authorize(b).ok && bu.authorize(b).perCallUsd === 0.4, 'small profile starts with a 0.40 per-call cap');
+  b = bu.record(b, { cost: 0.55 });
+  check(bu.authorize(b).ok && Math.abs(bu.authorize(b).perCallUsd - 0.2) < 1e-9 && b.warned, 'per-call cap shrinks to the remaining budget and the 70% warning fires once');
+  b = bu.record(b, { cost: 0.4 });
+  check(!bu.authorize(b).ok && bu.authorize(b).reason === 'cost_cap', 'no dispatch once the cost cap is reached (overshoot is recorded, not hidden)');
+  check(!bu.authorize({ ...bu.newBudget('tiny'), calls: 1 }).ok, 'call cap stops dispatch');
+  const unk = bu.record(bu.newBudget('small'), { cost: null });
+  check(unk.spent === 0 && unk.unknownCostCalls === 1, 'a call with no reported cost is counted as unavailable, never estimated');
+  check(throws(() => bu.raiseCap(bu.newBudget('small'), 0.5)) && bu.raiseCap(bu.newBudget('small'), 2).max_estimated_cost === 2, 'the cap can only be raised to a strictly larger value');
+  check(pl.validatePlan({ summary: 's', acceptance_criteria: ['a'], steps: [{ title: 't' }] }).ok && !pl.validatePlan({ summary: 's', steps: [] }).ok && pl.extractJson('```json\n{"a":1}\n```').value.a === 1, 'plan schema and JSON extraction work');
+  check(!/hunter2|AKIA[0-9A-Z]{16}/.test(pl.redact('password=hunter2value and AKIAABCDEFGHIJKLMNOP and Bearer abcdefghijklmnop12')), 'secret-looking strings are redacted');
+
+  // --- driver with a fake claude (no network, no cost)
+  const FAKE = path.join(HERE, 'test-helpers', 'fake-claude.mjs');
+  const sh = (cwd, cmd, a) => spawnSync(cmd, a, { cwd, encoding: 'utf8' });
+  const mkRepo = (name) => {
+    const d = path.join(base, 'orch', name); fs.mkdirSync(d, { recursive: true });
+    sh(d, 'git', ['init', '-q']);
+    fs.writeFileSync(path.join(d, 'a.txt'), 'one\n');
+    fs.writeFileSync(path.join(d, 'check.mjs'), "import fs from 'node:fs'; process.exit(fs.readFileSync('a.txt', 'utf8').includes('two') ? 0 : 1);\n");
+    sh(d, 'git', ['add', '-A']);
+    sh(d, 'git', ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'init']);
+    return d;
+  };
+  const PLAN = JSON.stringify({ summary: 'make a.txt say two', acceptance_criteria: ['a.txt contains two'], steps: [{ title: 'edit a.txt', files: ['a.txt'] }], risks: [] });
+  const orch = (repo, tag, steps, a, extraEnv = {}) => {
+    const script = path.join(base, 'orch', `${tag}.script.json`); fs.writeFileSync(script, JSON.stringify(steps));
+    const state = path.join(base, 'orch', `${tag}.state`); const log = path.join(base, 'orch', `${tag}.log`);
+    if (a.includes('--goal') && fs.existsSync(state)) fs.rmSync(state);
+    const r = spawnSync(process.execPath, [path.join(HERE, 'orchestrate.mjs'), '--target', repo, ...a], { encoding: 'utf8', env: { ...process.env, CLAUDE_BIN: FAKE, FAKE_SCRIPT: script, FAKE_STATE: state, FAKE_LOG: log, ...extraEnv } });
+    const calls = fs.existsSync(log) ? fs.readFileSync(log, 'utf8').trim().split('\n').filter(Boolean).map((x) => JSON.parse(x)) : [];
+    const od = path.join(repo, '.git', 'orchestrator');
+    const id = fs.existsSync(od) ? fs.readdirSync(od)[0] : null;
+    const ledger = id ? JSON.parse(fs.readFileSync(path.join(od, id, 'ledger.json'), 'utf8')) : null;
+    const events = id && fs.existsSync(path.join(od, id, 'events.jsonl')) ? fs.readFileSync(path.join(od, id, 'events.jsonl'), 'utf8') : '';
+    return { r, calls, ledger, events, id };
+  };
+  const T = ['--test-cmd', 'node check.mjs'];
+
+  { // happy path
+    const repo = mkRepo('happy');
+    const o = orch(repo, 'happy', [{ result: PLAN, cost: 0.05 }, { result: 'done', cost: 0.1, write: { 'a.txt': 'two\n' } }], ['--goal', 'make a.txt say two', ...T]);
+    check(o.r.status === 0 && o.ledger.state === 'completed' && o.ledger.validation.exitCode === 0 && o.calls.length === 2, `happy path completes with 2 model calls and a recorded test exit code${o.r.status ? '\n' + o.r.stdout + o.r.stderr : ''}`);
+    check(/Efficiency report/.test(o.r.stdout) && /Validation: `node check.mjs` exited 0/.test(o.r.stdout) && Math.abs(o.ledger.budget.spent - 0.15) < 1e-9, 'report shows the real test result and actual cost');
+    check(o.ledger.changedFiles.length === 1 && o.ledger.changedFiles[0].path === 'a.txt', 'changed files are recorded with their full path');
+    check(o.calls.every((c) => !c.argv.includes('Bash')) && o.calls[1].argv.includes('Edit') && !o.calls[0].argv.includes('Edit'), 'no model step gets Bash; the planner cannot edit');
+    check(o.calls.every((c) => Number(c.argv[c.argv.indexOf('--max-budget-usd') + 1]) <= 0.4), 'every call carries a per-call budget cap of at most 0.40');
+    check(sh(repo, 'git', ['rev-parse', '--abbrev-ref', 'HEAD']).stdout.trim() === o.ledger.branch && /^orch\//.test(o.ledger.branch) && sh(repo, 'git', ['status', '--porcelain']).stdout.includes('a.txt'), 'work happens on a dedicated local branch and the ledger lives in .git, not the working tree');
+  }
+  { // one repair, then success
+    const repo = mkRepo('repair');
+    const o = orch(repo, 'repair', [{ result: PLAN, cost: 0.05 }, { result: 'done', cost: 0.05, write: { 'a.txt': 'wrong\n' } }, { result: 'fixed', cost: 0.05, write: { 'a.txt': 'two\n' } }], ['--goal', 'g', ...T]);
+    check(o.r.status === 0 && o.ledger.budget.repairs === 1 && o.calls.length === 3 && o.ledger.validation.attempts === 2, 'a failing test triggers exactly one repair and a re-run');
+  }
+  { // repair fails: stop, no further calls
+    const repo = mkRepo('repairfail');
+    const o = orch(repo, 'repairfail', [{ result: PLAN, cost: 0.05 }, { result: 'x', cost: 0.05, write: { 'a.txt': 'wrong\n' } }, { result: 'y', cost: 0.05, write: { 'a.txt': 'still wrong\n' } }, { result: 'z', cost: 0.05, write: { 'a.txt': 'two\n' } }], ['--goal', 'g', ...T]);
+    check(o.r.status === 1 && o.ledger.state === 'failed' && o.calls.length === 3 && /not verified/.test(o.r.stdout), 'a failed repair ends the task; there is no fourth call and the report says it is not verified');
+  }
+  { // hard stop on cost, then explicit resume
+    const repo = mkRepo('hardstop');
+    const steps = [{ result: PLAN, cost: 0.5 }, { result: 'x', cost: 0.9, write: { 'a.txt': 'wrong\n' } }, { result: 'fixed', cost: 0.1, write: { 'a.txt': 'two\n' } }];
+    const o = orch(repo, 'hardstop', steps, ['--goal', 'g', ...T]);
+    check(o.r.status === 3 && o.ledger.state === 'budget_exhausted' && o.calls.length === 2 && /cost_cap/.test(o.ledger.stateReason), 'stops with exit 3 at the cost cap, makes no further call, state is saved');
+    check(Number(o.calls[1].argv[o.calls[1].argv.indexOf('--max-budget-usd') + 1]) <= 0.25 + 1e-9, 'the second call was capped at the remaining budget');
+    const id = o.id;
+    const noCap = orch(repo, 'hardstop', steps, ['--resume', id, ...T]);
+    check(noCap.r.status === 2 && /explicit larger cap/.test(noCap.r.stderr) && noCap.calls.length === 2, 'resume without a larger --max-cost is refused');
+    const lowCap = orch(repo, 'hardstop', steps, ['--resume', id, '--max-cost', '0.7']);
+    check(lowCap.r.status === 2 && noCap.calls.length === 2, 'a cap that is not larger is refused');
+    const up = orch(repo, 'hardstop', steps, ['--resume', id, '--max-cost', '3']);
+    check(up.r.status === 0 && up.ledger.state === 'completed' && up.calls.length === 3, 'resume with a larger cap continues at the repair; plan and implement are not repeated');
+  }
+  { // stale evidence after a user edit, no model call needed
+    const repo = mkRepo('stale');
+    const steps = [{ result: PLAN, cost: 0.5 }, { result: 'x', cost: 0.9, write: { 'a.txt': 'wrong\n' } }];
+    const o = orch(repo, 'stale', steps, ['--goal', 'g', ...T]);
+    fs.writeFileSync(path.join(repo, 'a.txt'), 'two\n');
+    const up = orch(repo, 'stale', steps, ['--resume', o.id, '--max-cost', '3']);
+    check(up.r.status === 0 && up.calls.length === 2 && /resume_stale/.test(up.events), 'a file edited after the stop invalidates the old test evidence; tests re-run without any new model call');
+  }
+  { // tiny profile: one call, no repair
+    const repo = mkRepo('tiny');
+    const o = orch(repo, 'tiny', [{ result: 'x', cost: 0.05, write: { 'a.txt': 'wrong\n' } }], ['--goal', 'g', '--profile', 'tiny', ...T]);
+    check(o.r.status === 1 && o.calls.length === 1 && o.ledger.budget.repairs === 0, 'tiny profile makes one call and never repairs');
+  }
+  { // unknown cost
+    const repo = mkRepo('unknown');
+    const o = orch(repo, 'unknown', [{ result: PLAN, cost: null }, { result: 'x', cost: null, write: { 'a.txt': 'two\n' } }], ['--goal', 'g', ...T]);
+    check(o.r.status === 0 && o.ledger.budget.spent === 0 && o.ledger.budget.unknownCostCalls === 2 && /Cost: unavailable/.test(o.r.stdout), 'missing cost is reported as unavailable, never invented');
+  }
+  { // bad plan twice
+    const repo = mkRepo('badplan');
+    const o = orch(repo, 'badplan', [{ result: 'not json', cost: 0.01 }, { result: '{"summary":"x"}', cost: 0.01 }, { result: 'x', cost: 0.01, write: { 'a.txt': 'two\n' } }], ['--goal', 'g', ...T]);
+    check(o.r.status === 1 && o.calls.length === 2 && o.ledger.state === 'failed' && !o.ledger.implemented, 'an invalid plan gets one correction attempt, then the task fails before any edit');
+  }
+  { // dirty tree
+    const repo = mkRepo('dirty'); fs.writeFileSync(path.join(repo, 'mine.txt'), 'my work\n');
+    const o = orch(repo, 'dirty', [{ result: PLAN }], ['--goal', 'g', ...T]);
+    check(o.r.status === 2 && /uncommitted changes/.test(o.r.stderr) && o.calls.length === 0 && sh(repo, 'git', ['branch', '--list', 'orch/*']).stdout.trim() === '' && fs.readFileSync(path.join(repo, 'mine.txt'), 'utf8') === 'my work\n', 'a dirty working tree is refused and left untouched');
+  }
+  { // implementer changes nothing
+    const repo = mkRepo('nochange');
+    const o = orch(repo, 'nochange', [{ result: PLAN, cost: 0.01 }, { result: 'nothing to do', cost: 0.01 }], ['--goal', 'g', '--test-cmd', 'node -e "process.exit(0)"']);
+    check(o.r.status === 1 && o.ledger.state === 'failed' && /no changes/.test(o.ledger.stateReason), 'a task with no changes is never marked completed, even when the tests already pass');
+  }
+  { // no test command
+    const repo = mkRepo('notest');
+    const o = orch(repo, 'notest', [{ result: PLAN, cost: 0.01 }, { result: 'x', cost: 0.01, write: { 'a.txt': 'two\n' } }], ['--goal', 'g']);
+    check(o.r.status === 1 && o.ledger.state === 'blocked' && /NOT RUN/.test(o.r.stdout), 'without a test command the task is blocked and the report says nothing was verified');
+  }
+  { // secrets
+    const repo = mkRepo('secrets');
+    fs.writeFileSync(path.join(repo, 'noisy.mjs'), "console.log('password=hunter2value'); process.exit(1);\n");
+    sh(repo, 'git', ['add', '-A']); sh(repo, 'git', ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'noisy']);
+    const o = orch(repo, 'secrets', [{ result: 'x', cost: 0.01, write: { 'a.txt': 'wrong\n' } }], ['--goal', 'use token=ABCDEF123456SECRET', '--profile', 'tiny', '--test-cmd', 'node noisy.mjs']);
+    const dump = JSON.stringify(o.ledger) + o.events + o.r.stdout;
+    check(!/ABCDEF123456SECRET|hunter2value/.test(dump) && /\[redacted\]/.test(dump), 'secret-looking strings from the goal and test output are redacted from the ledger, events and report');
+  }
+}
+}
+
 if (on('context tool')) {
 console.log('\n[context tool]');
 {

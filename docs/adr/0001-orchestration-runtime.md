@@ -1,6 +1,6 @@
 # ADR 0001: Runtime boundary and persistence for budget-enforced orchestration
 
-Status: **Proposed** (no code exists). Date: 2026-11-21. Baseline: `dev` at 1.17.1.
+Status: **Proposed**; S1 and S2 of the proposal are implemented as a prototype on branch `feat/orchestrate-s1-s2`. Date: 2026-11-21. Baseline: `dev` at 1.17.1.
 Detail and phasing: `docs/AUTONOMOUS-ORCHESTRATION.md`.
 
 ## Context
@@ -18,7 +18,7 @@ A zero-dependency Node tool (working name `orchestrate.mjs`, next to `bench-cost
 - The tool is **not** generated into target projects in the first version, and nothing about generated output changes.
 
 ## Decision 2: persistence is a JSON ledger plus an append-only JSONL event log
-`.claude/orchestrator/<task-id>/ledger.json` (state, plan, budget, evidence, repo identity) and `events.jsonl` (one telemetry event per line). Writes use a temporary file and rename. Rejected: SQLite (`node:sqlite` is not available on the Node 18 in CI, and a native dependency breaks the zero-dependency rule) and a database service (no requirement justifies it).
+`<git-dir>/orchestrator/<task-id>/ledger.json` (state, plan, budget, evidence, repo identity) and `events.jsonl` (one telemetry event per line). Inside `.git` on purpose (changed from the first draft, which used `.claude/`): the files never dirty the working tree, are never committed by accident, and do not break the clean-tree check on resume. Writes use a temporary file and rename. Rejected: SQLite (`node:sqlite` is not available on the Node 18 in CI, and a native dependency breaks the zero-dependency rule) and a database service (no requirement justifies it).
 
 ## Decision 3: opt-in, sequential, local-only first
 Off unless the tool is invoked. Steps run one after another on a dedicated local branch with a clean-tree check. No push, merge, deploy or Bash git access is granted to any step. Parallel workers, worktree fan-out and approval workflows wait for evidence from the sequential slice.

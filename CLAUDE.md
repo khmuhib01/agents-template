@@ -18,6 +18,7 @@ node bench.mjs                                    # static-context benchmark (ge
 node bench-cost.mjs                              # real-cost A/B with `claude -p` (SPENDS MONEY; set CLAUDE_BIN if claude is not on PATH)
 node evals/run.mjs                               # offline skill-routing eval (70 prompts)
 node install-global.mjs [--antigravity|--all] [--dry-run]  # install global-skills/ into ~/.claude/skills
+node orchestrate.mjs --goal "..." [--profile tiny|small|medium]   # prototype budget-enforced task driver (spends money with a real claude; tests use test-helpers/fake-claude.mjs)
 ```
 
 `node test.mjs --list` prints the section/case names; `node test.mjs --only <text>[,<text>]` runs only those whose name contains the text (e.g. `--only vscode`, `--only laravel-docker`).
