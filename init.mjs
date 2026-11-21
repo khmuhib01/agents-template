@@ -311,7 +311,11 @@ function main() {
   const focused = cfg.skills_mode !== 'all';
   const profile = String(cfg.model_profile || 'balanced');
   const wanted = (rel) => !focused || ctx.routed_set.has(rel.split(path.sep)[0]);
-  if (ctx.unmatched_stack.length) console.warn(`⚠ stack token(s) matched no skill: ${ctx.unmatched_stack.join(', ')} (check spelling, or map them in core/skill-map.json)`);
+  if (ctx.unmatched_stack.length) {
+    const doms = Object.keys(JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8')).domains || {});
+    const asDomain = ctx.unmatched_stack.filter((x) => doms.includes(x));
+    console.warn(`⚠ stack token(s) matched no skill: ${ctx.unmatched_stack.join(', ')} (check spelling, or map them in core/skill-map.json)${asDomain.length ? `; ${asDomain.join(', ')} ${asDomain.length > 1 ? 'are' : 'is a'} domain${asDomain.length > 1 ? 's' : ''}: put ${asDomain.length > 1 ? 'them' : 'it'} under \`domains\` instead of \`stack\`` : ''}`);
+  }
   if (ctx.unmatched_domains.length) console.warn(`⚠ domain(s) matched no skill: ${ctx.unmatched_domains.join(', ')} (see "domains" in core/skill-map.json)`);
   for (const sub of ['skills', 'agents', 'rules']) {
     const base = path.join(HERE, 'core', sub);

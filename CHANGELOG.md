@@ -2,6 +2,13 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.17.1 - 2026-11-21
+
+- routing fixes found by the P7 audit (`docs/ROUTING-DESIGN.md`): stack spellings `tailwindcss`, `nodejs`, `springboot`, `jetpack-compose`, `expo-router`, `aspnet`, `.NET`, `ts` now route to the same skills as their short forms; existing projects that wrote one of these get the matching skill on the next `init.mjs` run (it was silently unmatched before)
+- the unmatched-token warning now says when a token is a domain (for example `seo`) and should go under `domains`
+- README: the focused-saving line is printed only in `skills_mode: all`
+- docs: `docs/SKILL-AUDIT.md`, `docs/INDUSTRY-SKILL-COVERAGE.md`, `docs/ROUTING-DESIGN.md`; table-driven routing tests (positive, negative, ambiguous)
+
 ## 1.17.0 - 2026-11-21
 
 - full-stack and product skills (phase P6), all opt-in through `domains`, no change for existing projects: `saas-multitenancy`, `payments-billing`, `realtime-systems`, `event-driven-architecture`, `search-engineering`, `product-discovery`, `prd-requirements`, `product-delivery`, `production-readiness` (each with references and SOURCES.md; payments never uses live credentials, product stages wait for approval)

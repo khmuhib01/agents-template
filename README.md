@@ -118,7 +118,7 @@ The links are git-ignored and recreated by every init run (junctions on Windows,
 | `deny_heavy` | true | also denies Read on `vendor/`, `node_modules/`, `dist/`, `build/`, logs, `*.min.js`, `*.map` (stack-aware) |
 | `allow_safe_commands` | true | `git status/diff/log` and the project test command run without a permission prompt (fewer turns) |
 | `domains` | `[]` | Optional concerns (not tech stacks) that add skills on top of `type` and `stack`, `seo` (six SEO skills), `saas`, `payments`, `realtime`, `events`, `search`, `product` (discovery, PRD, delivery planning, production readiness). Names come from `domains` in `core/skill-map.json`. Unknown names warn. Skills can also declare dependencies in `core/skill-map.json` (`deps`), which are expanded automatically |
-| `skills_mode` | focused | `focused` installs only skills routed for this type/stack (init never deletes skills already installed). Every run prints the skill-description token overhead and what `focused` would save |
+| `skills_mode` | focused | `focused` installs only skills routed for this type/stack (init never deletes skills already installed). Every run prints the skill-description token overhead; in `all` mode it also prints what `focused` would save |
 | `model` | sonnet | default model written to `settings.json` if none is set (overrides `model_profile`) |
 | `model_profile` | balanced | `economy`: sonnet for every agent, haiku for `git-manager`. `quality`: opus for architect/planner/debugger/security-reviewer and the main model. `balanced` keeps the agent files as written |
 | `token_budget` | 0 (off) | init warns when the always-loaded context is over this many tokens |

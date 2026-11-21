@@ -259,6 +259,9 @@ console.log('\n[stack matrix]');
   fs.writeFileSync(path.join(unk, 'project.config.yml'), 'name: U\ntype: other\nstack: [cobol]\nskills_mode: all\nbranches: {working: a, production: main}\n');
   const ur = run(unk);
   check(ur.status === 0 && /matched no skill: cobol/.test(ur.stderr), 'unknown stack token warns but still generates');
+  const sw = path.join(mdir, 'seo-as-stack'); fs.mkdirSync(sw, { recursive: true });
+  fs.writeFileSync(path.join(sw, 'project.config.yml'), 'name: S\ntype: other\nstack: [seo]\nbranches: {working: a, production: main}\n');
+  check(/seo is a domain: put it under `domains`/.test(run(sw).stderr), 'a domain name used as a stack token gets a hint to use `domains`');
   check(/Skills: \d+ installed, \d+ model-invocable \(~\d+ tokens/.test(ur.stdout) && /skills_mode: focused would install/.test(ur.stdout), 'init reports skill token overhead and the focused saving');
   // Default is focused: an unset skills_mode installs fewer skills than skills_mode: all, and routing says so.
   const def = path.join(mdir, 'default-focused'); fs.mkdirSync(def, { recursive: true });
@@ -628,6 +631,17 @@ console.log('\n[routing lib]');
   check(expandDeps(map.deps, ['m-arch']).size === 3, 'dependency cycles terminate');
   check(!focusSkills(map, new Set(['ui']), 'mobile', ['flutter']).focus.has('flutter-dev'), 'skills that are not installed are filtered out');
   check(focusSkills({ types: { web: [] }, stack: {} }, new Set(), 'web', []).focus.size === 0, 'map without deps/domains keys still works');
+  {
+    // routing probes against the real map: spellings users write, plus negatives that must stay unmatched
+    const real = JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8'));
+    const all = new Set(fs.readdirSync(path.join(HERE, 'core', 'skills')));
+    const route = (tok) => focusSkills(real, all, 'library', [tok]);
+    const positive = { tailwindcss: 'tailwindcss-development', tailwindcss3: 'tailwindcss-development', nodejs: 'nodejs-development', nodejs20: 'nodejs-development', 'node.js': 'nodejs-development', springboot: 'jvm-development', 'spring-boot': 'jvm-development', 'jetpack-compose': 'android-kotlin-development', 'expo-router': 'react-native-development', aspnet: 'dotnet-development', '.NET': 'dotnet-development', net8: 'dotnet-development', ts: 'typescript-development' };
+    for (const [tok, skill] of Object.entries(positive)) check(route(tok).focus.has(skill) && route(tok).unmatched.length === 0, `stack token "${tok}" routes ${skill}`);
+    for (const tok of ['gorm', 'kotlinx', 'next', 'network', 'seo', 'payments', 'cobol']) check(route(tok).unmatched.length === 1, `stack token "${tok}" stays unmatched`);
+    check(!route('kotlin').focus.has('android-kotlin-development') && route('kotlin').focus.has('jvm-development'), 'ambiguous "kotlin" routes the JVM skill only; Android needs an android/compose token');
+    check(focusSkills(real, all, 'library', [], ['payment']).unmatchedDomains.join() === 'payment' && focusSkills(real, all, 'library', [], ['SEO']).unmatchedDomains.length === 0, 'domain matching is case-insensitive but exact (singular "payment" is unmatched)');
+  }
   check(shipsWithSkill('x/SKILL.md') && shipsWithSkill('x/references/a.md') && !shipsWithSkill('x/evals/a.json') && !shipsWithSkill('x\\examples\\a.md'), 'evals/ and examples/ inside a skill are not installed');
   check(claimViolations('We guarantee first page rankings').length === 1 && claimViolations('Never promise or guarantee rankings').length === 0, 'SEO overclaim detector flags promises, allows negations');
 }
