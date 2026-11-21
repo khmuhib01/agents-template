@@ -44,4 +44,4 @@ run(() => {
       if (re.test(text)) block(`content looks like it contains a secret (${name}). Use an environment variable or the project's secret store instead.`);
     }
   }
-});
+}, { guard: true });

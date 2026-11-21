@@ -27,6 +27,7 @@ Type: `{{type}}` · Stack: {{stack_list}}{{#if package_manager}} · Package mana
 5. **Attribution:** {{attribution_text}}
 6. **Branch model:** `{{branch_flow}}`. `{{branches.production}}` is protected: never commit or push to it directly.
 7. **Never** force-push, use `--no-verify`, or stage secrets (`.env`, credentials, dumps).
+8. **Delegation (cost):** do small, single-file or well-understood work directly; no planner, architect or reviewer for it. Use `planner` only for multi-file or unclear work, `architect` only for a real design decision, `security-reviewer` only when auth, input, secrets, permissions or dependencies change, `code-reviewer` only on request or for a large diff. One agent per question; never repeat an analysis another agent already did.
 
 {{#if notes_list}}### Project-specific rules
 

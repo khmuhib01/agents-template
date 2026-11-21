@@ -129,7 +129,32 @@ ${extra}`;
   const fr = hook('format', { tool_name: 'Write', tool_input: { file_path: target } });
   check(fr.status === 0 && /formatted/.test(fs.readFileSync(target, 'utf8')), 'format: runs format_command on the edited file');
 
-  check(spawnSync(process.execPath, [path.join(hp, '.claude', 'hooks', 'guard-bash.mjs')], { input: 'not json', encoding: 'utf8' }).status === 1, 'hooks: invalid input reports an error (exit 1) instead of passing silently');
+  const badIn = (h, env = {}) => spawnSync(process.execPath, [path.join(hp, '.claude', 'hooks', `${h}.mjs`)], { input: 'not json', encoding: 'utf8', env: { ...process.env, ...env } });
+  check(['guard-bash', 'guard-secrets', 'guard-read'].every((h) => badIn(h).status === 2), 'hooks: a guard that cannot read its input fails closed (exit 2)');
+  check(['guard-bash', 'guard-secrets', 'guard-read'].every((h) => badIn(h, { HOOK_FAIL_OPEN: '1' }).status === 1), 'hooks: HOOK_FAIL_OPEN=1 downgrades a guard error to exit 1');
+  check(badIn('format').status === 1, 'hooks: a non-guard hook error stays non-blocking (exit 1)');
+
+  // install-global: never overwrites a skill it did not install; backs up before overwriting; --uninstall only removes its own
+  {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ig-'));
+    const ig = (...a) => spawnSync(process.execPath, [path.join(HERE, 'install-global.mjs'), '--claude', ...a], { encoding: 'utf8', env: { ...process.env, HOME: home, USERPROFILE: home } });
+    const sk = path.join(home, '.claude', 'skills');
+    fs.mkdirSync(path.join(sk, 'agent-init'), { recursive: true });
+    fs.writeFileSync(path.join(sk, 'agent-init', 'SKILL.md'), 'MINE');
+    const d = ig('--dry-run');
+    check(d.status === 0 && fs.readFileSync(path.join(sk, 'agent-init', 'SKILL.md'), 'utf8') === 'MINE' && !fs.existsSync(path.join(sk, 'agent-setup-scaffold')), 'install-global: --dry-run writes nothing');
+    ig();
+    check(fs.readFileSync(path.join(sk, 'agent-init', 'SKILL.md'), 'utf8') === 'MINE', 'install-global: a same-named skill it did not install is not overwritten');
+    check(fs.existsSync(path.join(sk, 'agent-setup-scaffold', '.agent-template')), 'install-global: new skills are installed and marked');
+    fs.writeFileSync(path.join(sk, 'agent-setup-scaffold', 'SKILL.md'), 'old');
+    ig();
+    check(/agent-setup-scaffold/.test(fs.readFileSync(path.join(sk, 'agent-setup-scaffold', 'SKILL.md'), 'utf8')) && fs.existsSync(path.join(sk, '.agent-template-backup')), 'install-global: a managed skill is updated and the old one is backed up');
+    ig('--uninstall');
+    check(!fs.existsSync(path.join(sk, 'agent-setup-scaffold')) && fs.readFileSync(path.join(sk, 'agent-init', 'SKILL.md'), 'utf8') === 'MINE', 'install-global: --uninstall removes only what it installed');
+    ig('--force');
+    check(fs.readFileSync(path.join(sk, 'agent-init', 'SKILL.md'), 'utf8') !== 'MINE' && fs.readdirSync(path.join(sk, '.agent-template-backup')).length > 0, 'install-global: --force overwrites after a backup');
+    fs.rmSync(home, { recursive: true, force: true });
+  }
 
   // hooks: false removes ours and keeps foreign hooks
   const sp = path.join(hp, '.claude', 'settings.json');
@@ -573,6 +598,19 @@ console.log('\n[safe upgrades]');
   check(tmpl.length === 1 && /brand new note/.test(fs.readFileSync(tmpl[0], 'utf8')), 'the new template version is saved as <file>.template for merging');
   check(run(e, ['--check']).status === 0, '--check does not fail because of an intentionally edited file');
   const fr = run(e, ['--force']);
+  {
+    const sd = fs.mkdtempSync(path.join(os.tmpdir(), 'strict-'));
+    fs.writeFileSync(path.join(sd, 'project.config.yml'), 'name: S\ntype: web\nbranches: {working: x, production: main}\nstack: [laravel, nonexistentstack]\n');
+    const bad = run(sd, ['--strict']);
+    check(bad.status === 1 && /--strict/.test(bad.stderr) && !fs.existsSync(path.join(sd, 'AGENTS.md')), '--strict: an unmatched stack token is an error and nothing is written');
+    check(run(sd).status === 0, 'without --strict the same config only warns');
+    fs.writeFileSync(path.join(sd, 'project.config.yml'), 'name: S\ntype: web\nbranches: {working: x, production: main}\nstack: [laravel]\nbogus_key: 1\n');
+    check(run(sd, ['--strict']).status === 1, '--strict: an unknown config key is an error');
+    fs.writeFileSync(path.join(sd, 'project.config.yml'), 'name: S\ntype: web\nbranches: {working: x, production: main}\nstack: [laravel]\n');
+    check(run(sd, ['--strict']).status === 0, '--strict: a clean config passes');
+    fs.rmSync(sd, { recursive: true, force: true });
+  }
+  check(/Delegation \(cost\)/.test(rd(e, 'AGENTS.md')), 'AGENTS.md carries the delegation rule');
   check(fr.status === 0 && /brand new note/.test(rd(e, 'AGENTS.md')) && !/MY HAND EDIT/.test(rd(e, 'AGENTS.md')), '--force overwrites the hand-edited file');
   check(walk(path.join(e, '.claude/.init-backup')).some((f) => f.endsWith('AGENTS.md') && /MY HAND EDIT/.test(fs.readFileSync(f, 'utf8'))), '--force keeps a backup of the hand edit');
   check(/0 created, 0 updated/.test(run(e).stdout), 'safe upgrades: re-run after --force changes nothing');
