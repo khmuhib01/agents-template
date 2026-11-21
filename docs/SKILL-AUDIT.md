@@ -148,4 +148,4 @@ Pilot of 5 scenarios x 2 arms x 1 run (Sonnet): every scenario passed in both ar
 | No unsupported quality claims | met |
 
 ## 5. Next steps
-Routing fixes and tests are done (1.17.1). Open: D7 decision, then source verification PRs. See `docs/INDUSTRY-SKILL-COVERAGE.md` for coverage gaps.
+Routing fixes and tests are done (1.17.1). D7 decided (no routing change, init warning). Open: remaining source gaps. See `docs/INDUSTRY-SKILL-COVERAGE.md` for coverage gaps.

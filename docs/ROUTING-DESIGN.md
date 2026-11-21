@@ -31,7 +31,7 @@ Status: **draft**. Sections 2 and 3 describe the state *before* the fixes in 1.1
 | D4 (fixed 1.17.1 with aliases `jetpackcompose`, `exporouter`, `aspnet`, `net`, `ts`; `c#` is not alias-able because `#` is stripped to an empty token) | `jetpack-compose`, `expo-router`, `aspnet`, `.NET`, `ts`, `c#` | unmatched | common spellings | add aliases where sensible (`jetpackcompose`, `exporouter`, `aspnet`, `net`, `ts`) |
 | D5 (fixed 1.17.1) | stack `seo` | unmatched; warning says "check spelling, or map them in skill-map.json" | SEO is a *domain*, so the hint misleads | mention `domains` in the warning for tokens that equal a domain key |
 | D6 (pinned by test, behavior kept) | `kotlin` only | routes `jvm-development` only | Android users must also add `android` or `compose` | documented ambiguity, add a negative/ambiguous test |
-| D7 | `type: mobile` without a stack | routes `mobile-architecture` and `mobile-security` but not `mobile-release`/`mobile-quality` (those come via deps of a platform skill) | intended or oversight is unclear [U] | decide and document |
+| D7 (decided: no routing change; warning added) | `type: mobile` without a platform token | routes `mobile-architecture` and `mobile-security` but not `mobile-release`/`mobile-quality` (those come via deps of a platform skill) | measured: adding both to `type: mobile` costs 126 description tokens (67 + 59), about +3.9 percent of a project's always-loaded context (3,190 to 3,316 for `capacitor`, 3,253 to 3,379 for `kotlin`), and changes nothing for projects with a platform token (3,456 for `expo`, all four already installed). Not done because no skill benefit has been shown (`docs/EVALUATION-PLAN.md`) | init now warns in focused mode when `type: mobile` has no platform token, naming the two skills that are not installed and what to add |
 | D8 | tokens `redis`, `graphql`, `firebase`, `supabase`, `kubernetes`/`k8s`, `terraform`, `angular`, `svelte`, `kmp`, `pg` | unmatched | no skill exists for them; not a routing bug, a coverage gap | see INDUSTRY-SKILL-COVERAGE |
 | D9 (fixed 1.17.1) | README "saves" sentence | inaccurate | see section 2 | edit README |
 
@@ -200,7 +200,7 @@ Suffix-rule negatives that behave correctly: `gorm` and `kotlinx` do not match `
 | domain:mobile | UNMATCHED |
 
 ## 5. What is still not done
-- D1-D6 and D9 are now pinned by tests in `test.mjs` (`[routing lib]`, `[stack matrix]`). D7 (`type: mobile` and `mobile-release`/`mobile-quality`) is an open decision, not changed.
+- D1-D6 and D9 are now pinned by tests in `test.mjs` (`[routing lib]`, `[stack matrix]`). D7 is decided: routing unchanged, init warns (pinned by 4 checks in `[mobile routing]`).
 - Type routing has no negative tests.
 - Live trigger accuracy (does a real model pick the right skill from the description) is unmeasured; only the offline lexical eval (149 cases) and a paid `evals/live.mjs` exist.
 - The fixes were released as `1.17.1` because they change which skills existing projects get; revert the bump if you disagree.

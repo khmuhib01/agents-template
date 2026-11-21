@@ -876,6 +876,12 @@ console.log('\n[mobile routing]');
   const bare = mk('bare', 'type: mobile\nstack: [cobol]'); run(bare);
   const hb = new Set(fs.readdirSync(path.join(bare, '.claude/skills')));
   check(hb.has('mobile-architecture') && hb.has('mobile-security') && !hb.has('mobile-release'), 'mobile type with unmapped stack still gets architecture + security guidance');
+  // D7: type alone does not install mobile-release/mobile-quality; init says so instead of adding the skills
+  const warnFor = (name, body) => run(mk(name, body)).stderr;
+  check(/no platform stack token matched[\s\S]*mobile-release and mobile-quality are not installed/.test(warnFor('w-bare2', 'type: mobile\nstack: [capacitor]')), 'mobile type with no platform token warns that mobile-release and mobile-quality are not installed');
+  check(/no platform stack token matched/.test(warnFor('w-kotlin', 'type: mobile\nstack: [kotlin]')), 'kotlin without an android token gets the same warning');
+  check(!/no platform stack token/.test(warnFor('w-expo', 'type: mobile\nstack: [expo, typescript]')) && !/no platform stack token/.test(warnFor('w-android', 'type: mobile\nstack: [android]')), 'a platform token silences the warning');
+  check(!/no platform stack token/.test(warnFor('w-web', 'type: web\nstack: [laravel]')) && !/no platform stack token/.test(warnFor('w-all', 'type: mobile\nstack: [capacitor]\nskills_mode: all')), 'no warning for non-mobile types or when every skill is installed');
 }
 
 }
