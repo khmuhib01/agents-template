@@ -241,7 +241,7 @@ function skillRouting(d, focused) {
 }
 
 // ---------------------------------------------------------------- file ops
-const stats = { created: 0, updated: 0, same: 0 };
+const stats = { created: 0, updated: 0, same: 0, removed: 0 };
 const ts = new Date().toISOString().replace(/[:.]/g, '-');
 const rendered = [];
 // Hand-edit protection: init records a hash of every generated file in HASH_FILE. If a file no longer matches the hash
@@ -383,9 +383,16 @@ function main() {
     ...fs.readdirSync(path.join(tbase, '.claude', 'skills')).filter((n) => ctx.branches.integration || !noIntegration.includes(n)),
   ])].sort();
   const agentNames = fs.readdirSync(path.join(HERE, 'core', 'agents')).map((f) => f.replace(/\.md$/i, '')).sort();
+  // Permission rules init wrote, remembered in the manifest so a rule it stops generating (test_command changed,
+  // protect_secrets turned off) is removed next run while rules the user added are left alone.
+  let prevManaged = {};
+  try { prevManaged = JSON.parse(fs.readFileSync(path.join(TARGET, '.claude', 'CONFIGURATION.MANIFEST.JSON'), 'utf8')).managedPermissions || {}; } catch { /* first run or unreadable */ }
+  const denyNow = denyRules(cfg, ctx);
+  const allowNow = cfg.allow_safe_commands !== false ? allowRules(ctx) : [];
   put(path.join(TARGET, '.claude', 'CONFIGURATION.MANIFEST.JSON'), JSON.stringify({
     name: cfg.name, generatedBy: 'claude-template', templateVersion: TEMPLATE_VERSION, skillsMode: focused ? 'focused' : 'all', type: cfg.type, stack: ctx.stack, branches: ctx.branches,
     runInDocker: Boolean(cfg.run_in_docker), testCommand: ctx.test_cmd_full, skills: skillNames, agents: agentNames, hooks: hookList.map((h) => h.script), packages: ctx.packages.map((p) => p.path),
+    managedPermissions: { deny: denyNow, allow: allowNow },
   }, null, 2) + '\n');
 
   const stampPath = path.join(TARGET, '.claude', '.template-version');
@@ -400,9 +407,12 @@ function main() {
     settings.$schema = settings.$schema || 'https://json.schemastore.org/claude-code-settings.json';
     settings.model = settings.model || cfg.model || MODEL_PROFILES[profile].main;
     settings.permissions = settings.permissions || {};
-    const deny = denyRules(cfg, ctx);
-    if (deny.length) settings.permissions.deny = [...new Set([...(settings.permissions.deny || []), ...deny])];
-    if (cfg.allow_safe_commands !== false) settings.permissions.allow = [...new Set([...(settings.permissions.allow || []), ...allowRules(ctx)])];
+    // Keep what the user wrote, drop what init wrote before and no longer generates, add what it generates now.
+    const merged = (cur, prev, now) => [...new Set([...(cur || []).filter((r) => !(prev || []).includes(r) || now.includes(r)), ...now])];
+    for (const [k, now] of [['deny', denyNow], ['allow', allowNow]]) {
+      const list = merged(settings.permissions[k], prevManaged[k], now);
+      if (list.length) settings.permissions[k] = list; else delete settings.permissions[k];
+    }
     mergeHooks(settings, hookList);
     mergeStatusLine(settings, cfg.statusline === true);
     mergeMcp(settings, cfg);
@@ -549,6 +559,26 @@ function main() {
       }
     } catch { /* no .gitignore */ }
   }
+  // 4. stale files: written by init last time (recorded in HASH_FILE) but not generated now (skills_mode changed, a skill was
+  //    renamed, a package or hook was removed). They would keep costing context every session. Untouched ones are removed
+  //    (a copy goes to .init-backup); ones you edited are kept and reported. Never touches a file init did not write.
+  const generatedKey = (k) => !path.isAbsolute(k) && !/^[a-zA-Z]:/.test(k) && !k.split('/').includes('..') && !k.startsWith('.claude/.init-backup/') && (k.startsWith('.claude/') || path.posix.basename(k) === 'CLAUDE.md');
+  const staleKept = [];
+  for (const key of Object.keys(prevHashes)) {
+    if (key in newHashes || !generatedKey(key)) continue;
+    const abs = path.join(TARGET, ...key.split('/'));
+    let cur;
+    try { if (fs.lstatSync(abs).isSymbolicLink()) continue; cur = fs.readFileSync(abs); } catch { continue; }
+    if (digest(cur) !== prevHashes[key]) { staleKept.push(key); continue; }
+    stats.removed++;
+    if (DRY) { console.log(`  removed ${key}`); continue; }
+    const bk = path.join(TARGET, '.claude', '.init-backup', ts, ...key.split('/'));
+    fs.mkdirSync(path.dirname(bk), { recursive: true }); fs.copyFileSync(abs, bk); fs.unlinkSync(abs);
+    // Remove folders it leaves empty, but only below .claude/<skills|agents|rules|hooks>: never a package or other project folder.
+    const floor = path.join(TARGET, '.claude');
+    for (let d = path.dirname(abs); d.startsWith(floor + path.sep) && path.dirname(d) !== floor; d = path.dirname(d)) { try { fs.rmdirSync(d); } catch { break; } }
+  }
+  if (staleKept.length) console.warn(`⚠ ${staleKept.length} generated file(s) are no longer part of the template output but you edited them, so they were kept: ${staleKept.join(', ')}\n  Delete them yourself if you do not need them.`);
   // Hashes describe what init already wrote above, so save them before the checks can exit; otherwise a failed check
   // leaves stale hashes and the next run mistakes untouched files for hand edits.
   if (!DRY) {
@@ -560,12 +590,13 @@ function main() {
   if (missing.size) problems.push(`template uses undefined keys: ${[...missing].join(', ')}`);
 
   console.log(`${stats.created} created, ${stats.updated} updated, ${stats.same} unchanged.`);
+  if (stats.removed) console.log(`${stats.removed} stale generated file(s) ${DRY ? 'would be removed' : `removed (copies in .claude/.init-backup/${ts}/)`}.`);
   console.log('"@" only mentions files. To run an agent, name it in chat or use /agents.');
   if (stats.updated && !DRY) console.log(`Previous versions of updated files were saved in .claude/.init-backup/${ts}/ (add it to .gitignore).`);
   if (kept.length) console.log(`Kept ${kept.length} file(s) you edited by hand (the template version differs): ${kept.join(', ')}\n  Merge from .claude/.init-backup/${ts}/<file>.template, or re-run with --force to overwrite them (a backup is made).`);
   if (problems.length) { console.error('✖ Checks failed:\n' + problems.map((p) => '  - ' + p).join('\n')); process.exit(1); }
   if (CHECK) {
-    if (stats.created || stats.updated) { console.error(`✖ ${stats.created + stats.updated} generated file(s) are out of date. Run: node ${path.join(HERE, 'init.mjs')} --target "${TARGET}"`); process.exit(1); }
+    if (stats.created || stats.updated || stats.removed) { console.error(`✖ ${stats.created + stats.updated + stats.removed} generated file(s) are out of date. Run: node ${path.join(HERE, 'init.mjs')} --target "${TARGET}"`); process.exit(1); }
     console.log('✔ Generated files are in sync with project.config.yml and the template.');
     return;
   }

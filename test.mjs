@@ -2,6 +2,7 @@
 // Smoke test for init.mjs: node test.mjs
 // Runs init against several sample configs in a temp dir and checks the output.
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -1075,6 +1076,150 @@ check(drr.status === 0 && !fs.existsSync(path.join(dr, '.claude')) && !fs.exists
 check(!/artauk|\bARTA\b|working: muhib/i.test(fs.readFileSync(path.join(HERE, 'project.config.example.yml'), 'utf8')), 'the public example config holds no real project data');
 const wf = fs.readFileSync(path.join(HERE, '.github/workflows/test.yml'), 'utf8');
 check(/^permissions:\s*\n\s+contents: read/m.test(wf), 'test workflow declares least-privilege permissions');
+}
+
+if (on('orch-report')) {
+console.log('\n[orch-report]');
+{
+  // The report text is what a user reads after an orchestrated run, so it must never claim more than the ledger records.
+  const { efficiencyReport, completionReport } = await import(pathToFileURL(path.join(HERE, 'lib', 'orch-report.mjs')).href);
+  const { newBudget, record, noteRepair } = await import(pathToFileURL(path.join(HERE, 'lib', 'orch-budget.mjs')).href);
+  const led = (over = {}) => ({ id: 'T-1', state: 'completed', goal: 'fix the bug', profile: 'small', branch: 'feat/x', budget: newBudget('small'), steps: [], ...over });
+
+  // --- efficiencyReport: cost and counts
+  let b2 = record(record(newBudget('small'), { cost: 0.1 }), { cost: 0.0234 });
+  const eff = efficiencyReport(led({ budget: b2, steps: [{ model: 'sonnet' }, { model: 'sonnet' }, { model: 'haiku' }, {}] }));
+  check(/^Efficiency report/.test(eff) && /Cost: \$0\.123 actual$/m.test(eff) && !/lower bound/.test(eff), 'efficiency: a fully known cost is shown as an actual amount');
+  check(/Model calls: 2 of 3/.test(eff) && /Agent dispatches: 2/.test(eff) && /Budget used: \$0\.123 of \$0\.75 \(calls 2\/3\)/.test(eff), 'efficiency: calls and budget are taken from the budget record');
+  check(/Models used: sonnet, haiku$/m.test(eff), 'efficiency: models are listed once each, steps without a model are ignored');
+  check(/Models used: none$/m.test(efficiencyReport(led())), 'efficiency: no recorded model is reported as "none"');
+  check(/Tool calls: not reported by the CLI/.test(eff) && /context the CLI loads by itself is not measured/.test(eff), 'efficiency: unmeasured figures are stated as not measured, never invented');
+
+  const allUnknown = efficiencyReport(led({ budget: record(newBudget('small'), { cost: null }) }));
+  check(/Cost: unavailable \(the CLI reported no cost\)/.test(allUnknown) && !/actual/.test(allUnknown), 'efficiency: when no call reported a cost, the cost is "unavailable", not $0.000');
+  const someUnknown = efficiencyReport(led({ budget: record(record(newBudget('small'), { cost: 0.2 }), { cost: undefined }) }));
+  check(/\$0\.200 actual \(1 call\(s\) reported no cost, so this is a lower bound\)/.test(someUnknown), 'efficiency: a partly unknown cost is marked as a lower bound');
+  check(/Cost: \$0\.000 actual/.test(efficiencyReport(led())), 'efficiency: zero calls is a known zero cost, not "unavailable"');
+
+  // --- efficiencyReport: avoided work
+  const tiny = efficiencyReport(led({ budget: newBudget('tiny') }));
+  check(/planner \(tiny profile\)/.test(tiny) && /repair call/.test(tiny), 'efficiency: tiny profile and no repairs list the planner and the repair call as avoided');
+  const repaired = efficiencyReport(led({ budget: noteRepair(newBudget('small')) }));
+  check(!/repair call/.test(repaired) && /Repair iterations: 1 of 1/.test(repaired) && !/planner \(tiny profile\)/.test(repaired), 'efficiency: a used repair is not listed as avoided, and a planned profile does not avoid the planner');
+  check(/outside this slice/.test(eff), 'efficiency: out-of-scope work is always flagged as outside this slice');
+
+  // --- completionReport
+  const plan = { summary: 'Guard the null case', acceptance_criteria: ['null input returns 0', 'tests pass'] };
+  const done = completionReport(led({ plan, changedFiles: [{ path: 'src/a.js' }, { path: 'src/b.js' }], validation: { ran: true, command: 'npm test', exitCode: 0, attempts: 1 } }));
+  check(/^Task T-1: completed$/m.test(done) && /^Goal: fix the bug$/m.test(done) && /^Profile: small, branch feat\/x$/m.test(done), 'completion: header shows id, state, goal, profile and branch');
+  check(/^Plan: Guard the null case$/m.test(done) && /^  - null input returns 0$/m.test(done) && /^  - tests pass$/m.test(done), 'completion: plan summary and each acceptance criterion are listed');
+  check(/Changed files \(2\): src\/a\.js, src\/b\.js/.test(done) && /Validation: `npm test` exited 0\./.test(done) && !/after \d+ attempts/.test(done), 'completion: changed files and a first-attempt validation are reported plainly');
+  check(done.includes('\n\nEfficiency report\n'), 'completion: the efficiency report follows after a blank line');
+  check(/exited 0 after 2 attempts\./.test(completionReport(led({ plan, validation: { ran: true, command: 'npm test', exitCode: 0, attempts: 2 } }))), 'completion: more than one validation attempt is stated');
+  check(/^Changed files: none recorded$/m.test(completionReport(led({ plan }))) && /^Changed files: none recorded$/m.test(completionReport(led({ plan, changedFiles: [] }))), 'completion: no recorded change is stated, not assumed');
+  check(!/^Plan:/m.test(completionReport(led({ plan: null }))) && !/Acceptance criteria/.test(completionReport(led({ plan: null }))), 'completion: a ledger without a plan prints no plan section');
+
+  // --- completionReport: never claims what was not verified
+  const notRun = completionReport(led({ state: 'failed', plan, validation: { ran: false, note: 'no test command' } }));
+  check(/Validation: NOT RUN \(no test command\)\. Nothing is verified; review the diff yourself\./.test(notRun) && !/exited/.test(notRun), 'completion: validation that did not run says NOT RUN with the note and claims no exit code');
+  check(/Validation: NOT RUN\. Nothing is verified/.test(completionReport(led({ state: 'failed', plan, validation: null }))), 'completion: a missing validation record is also NOT RUN');
+  const failed = completionReport(led({ state: 'failed', stateReason: 'tests failed', plan, validation: { ran: true, command: 'npm test', exitCode: 1, attempts: 2 } }));
+  check(/^Task T-1: failed \(tests failed\)$/m.test(failed) && /exited 1 after 2 attempts/.test(failed) && /Risk: the change is on branch feat\/x and is not verified\./.test(failed), 'completion: a failed task shows its reason, the failing exit code and the unverified-branch risk');
+  check(/Risk: the change is on branch/.test(completionReport(led({ state: 'blocked', plan, validation: null }))), 'completion: a blocked task also carries the risk line');
+  check(!/Risk:/.test(done), 'completion: a completed, validated task carries no risk line');
+
+  const exhausted = completionReport(led({ state: 'budget_exhausted', stateReason: 'cost_cap', plan, remaining: ['write tests', 'update docs'], validation: { ran: false } }));
+  check(/Stopped: cost_cap\. Remaining work: write tests, update docs\. Continue only by raising the cap explicitly: --resume T-1 --max-cost <larger USD>\./.test(exhausted), 'completion: budget exhaustion lists the remaining work and the explicit resume command');
+  check(/Remaining work: see ledger\./.test(completionReport(led({ state: 'budget_exhausted', stateReason: 'call_cap', plan, validation: { ran: false } }))), 'completion: budget exhaustion without a remaining list points to the ledger');
+}
+}
+
+if (on('stale cleanup')) {
+console.log('\n[stale cleanup]');
+{
+  const BASE = 'name: S\ntype: web\nstack: [node]\nbranches: {working: dev1, integration: develop, production: main}\n';
+  const mk = (name, extra = '') => { const d = path.join(base, name); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'project.config.yml'), BASE + extra); return d; };
+  const setCfg = (d, extra = '') => fs.writeFileSync(path.join(d, 'project.config.yml'), BASE + extra);
+  const ls = (d, sub) => (fs.existsSync(path.join(d, '.claude', sub)) ? fs.readdirSync(path.join(d, '.claude', sub)).sort() : []);
+  const settings = (d) => JSON.parse(fs.readFileSync(path.join(d, '.claude/settings.json'), 'utf8'));
+  const editSettings = (d, f) => { const st = settings(d); f(st); fs.writeFileSync(path.join(d, '.claude/settings.json'), JSON.stringify(st, null, 2) + '\n'); };
+
+  // --- stale skills: skills_mode all -> focused
+  const fresh = mk('stale-fresh'); run(fresh);
+  const focusedSet = ls(fresh, 'skills');
+  const sd = mk('stale-skills', 'skills_mode: all\n'); run(sd);
+  const allSet = ls(sd, 'skills');
+  const gone = allSet.filter((n) => !focusedSet.includes(n));
+  check(gone.length > 0, 'setup: skills_mode all installs skills that focused does not');
+  fs.mkdirSync(path.join(sd, '.claude/skills/my-own-skill'), { recursive: true });
+  fs.writeFileSync(path.join(sd, '.claude/skills/my-own-skill/SKILL.md'), '---\nname: my-own-skill\ndescription: mine\n---\n');
+  setCfg(sd, 'skills_mode: focused\n');
+  const dry = run(sd, ['--dry-run']);
+  check(dry.status === 0 && /would be removed/.test(dry.stdout) && ls(sd, 'skills').includes(gone[0]), '--dry-run lists stale skills as "would be removed" and deletes nothing');
+  check(run(sd, ['--check']).status === 1, '--check reports stale generated files as out of date');
+  const r = run(sd);
+  check(r.status === 0 && /stale generated file\(s\) removed/.test(r.stdout), 'init removes skills it generated earlier and no longer generates');
+  check(gone.every((n) => !fs.existsSync(path.join(sd, '.claude/skills', n))), 'the stale skill folders are gone, not left empty');
+  check(JSON.stringify(ls(sd, 'skills').filter((n) => n !== 'my-own-skill')) === JSON.stringify(focusedSet), 'what remains matches a fresh focused project');
+  check(fs.existsSync(path.join(sd, '.claude/skills/my-own-skill/SKILL.md')), 'a skill the user created is never touched');
+  const bk = fs.readdirSync(path.join(sd, '.claude/.init-backup'));
+  check(bk.length === 1 && fs.existsSync(path.join(sd, '.claude/.init-backup', bk[0], '.claude/skills', gone[0], 'SKILL.md')), 'a copy of each removed file is kept in .init-backup');
+  check(fs.existsSync(path.join(sd, '.claude/skills')) && ['.agents', '.codex'].every((m) => !fs.existsSync(path.join(sd, m, 'skills')) || fs.readdirSync(path.join(sd, m, 'skills')).length > 0), '.claude/skills itself and the mirror links survive');
+  const again = run(sd);
+  check(/0 created, 0 updated/.test(again.stdout) && !/stale generated file/.test(again.stdout) && run(sd, ['--check']).status === 0, 'the run after the cleanup changes nothing and --check passes');
+
+  // --- a stale skill the user edited is kept and reported once
+  const ed = mk('stale-edited', 'skills_mode: all\n'); run(ed);
+  fs.appendFileSync(path.join(ed, '.claude/skills', gone[0], 'SKILL.md'), '\nmy note\n');
+  setCfg(ed, 'skills_mode: focused\n');
+  const er = run(ed);
+  check(er.status === 0 && fs.existsSync(path.join(ed, '.claude/skills', gone[0], 'SKILL.md')) && new RegExp(`you edited them, so they were kept:.*${gone[0]}`).test(er.stderr), 'a stale skill you edited is kept and named in a warning');
+  check(!/you edited them/.test(run(ed).stderr), 'that warning is shown once, not on every run');
+
+  // --- hostile hash file: a hash entry must never delete anything outside the generated files
+  const hs = mk('stale-hostile'); run(hs);
+  const victim = path.join(base, 'stale-victim.txt'); fs.writeFileSync(victim, 'keep me\n');
+  fs.mkdirSync(path.join(base, 'stale-victim'), { recursive: true }); fs.writeFileSync(path.join(base, 'stale-victim/CLAUDE.md'), 'keep me\n');
+  fs.writeFileSync(path.join(hs, 'src.txt'), 'keep me too\n');
+  const sha = (t) => crypto.createHash('sha256').update(t).digest('hex');
+  const hp = path.join(hs, '.claude/.template-hashes.json');
+  const hh = JSON.parse(fs.readFileSync(hp, 'utf8'));
+  hh['../stale-victim.txt'] = sha('keep me\n'); hh['../stale-victim/CLAUDE.md'] = sha('keep me\n'); hh['src.txt'] = sha('keep me too\n'); hh[victim] = sha('keep me\n');
+  fs.writeFileSync(hp, JSON.stringify(hh));
+  const hr = run(hs);
+  check(hr.status === 0 && fs.existsSync(victim) && fs.existsSync(path.join(base, 'stale-victim/CLAUDE.md')) && fs.existsSync(path.join(hs, 'src.txt')), 'forged hash entries (.., absolute, a non-generated file) never delete anything');
+
+  // --- a removed package: its CLAUDE.md goes, the folder and the user's files stay
+  const pk = mk('stale-pkg', 'packages:\n  web:\n    path: apps/web\n');
+  fs.mkdirSync(path.join(pk, 'apps/web'), { recursive: true }); fs.writeFileSync(path.join(pk, 'apps/web/index.js'), '//\n');
+  run(pk);
+  check(fs.existsSync(path.join(pk, 'apps/web/CLAUDE.md')), 'setup: a package CLAUDE.md is generated');
+  setCfg(pk); run(pk);
+  check(!fs.existsSync(path.join(pk, 'apps/web/CLAUDE.md')) && fs.existsSync(path.join(pk, 'apps/web/index.js')), 'a removed package loses its generated CLAUDE.md but keeps the folder and the code in it');
+
+  // --- stale permission rules
+  const pm = mk('stale-perm', 'test_command: "pnpm test"\nlocal_only: ["dumps/"]\n'); run(pm);
+  check(settings(pm).permissions.allow.includes('Bash(pnpm test:*)') && settings(pm).permissions.deny.includes('Read(./dumps/**)'), 'setup: test_command and local_only become permission rules');
+  editSettings(pm, (st) => { st.permissions.allow.push('Bash(echo mine:*)'); st.permissions.deny.push('Read(./my-secret.txt)'); });
+  setCfg(pm, 'test_command: "npm test"\n'); run(pm);
+  const a1 = settings(pm).permissions;
+  check(!a1.allow.includes('Bash(pnpm test:*)') && a1.allow.includes('Bash(npm test:*)'), 'changing test_command removes the old auto-approved rule and adds the new one');
+  check(!a1.deny.includes('Read(./dumps/**)'), 'removing a local_only entry removes its deny rule');
+  check(a1.allow.includes('Bash(echo mine:*)') && a1.deny.includes('Read(./my-secret.txt)'), 'rules the user added are preserved');
+  setCfg(pm, 'test_command: "npm test"\nprotect_secrets: false\nallow_safe_commands: false\n'); run(pm);
+  const a2 = settings(pm).permissions;
+  check(!(a2.deny || []).includes('Read(./.env)') && (a2.deny || []).includes('Read(./my-secret.txt)'), 'protect_secrets: false removes only the rules init wrote');
+  check(!(a2.allow || []).includes('Bash(npm test:*)') && !(a2.allow || []).includes('Bash(git status:*)') && a2.allow.includes('Bash(echo mine:*)'), 'allow_safe_commands: false removes the safe-command rules but not the user ones');
+  const idem = run(pm);
+  check(/0 created, 0 updated/.test(idem.stdout) && run(pm, ['--check']).status === 0, 'permission cleanup is idempotent');
+
+  // --- the first run after upgrading has no record of managed rules, so it must not remove anything
+  const up = mk('stale-upgrade', 'test_command: "pnpm test"\n'); run(up);
+  const mp = path.join(up, '.claude/CONFIGURATION.MANIFEST.JSON');
+  const mj = JSON.parse(fs.readFileSync(mp, 'utf8')); delete mj.managedPermissions; fs.writeFileSync(mp, JSON.stringify(mj));
+  setCfg(up, 'test_command: "npm test"\n'); run(up);
+  check(settings(up).permissions.allow.includes('Bash(pnpm test:*)') && settings(up).permissions.allow.includes('Bash(npm test:*)'), 'without a managed-rules record (older manifest) nothing is removed, only added');
+}
 }
 
 if (on('invalid config')) {
