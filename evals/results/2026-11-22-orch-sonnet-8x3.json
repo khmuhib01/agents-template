@@ -1,0 +1,1533 @@
+{
+  "kind": "scenarios",
+  "date": "2026-11-22",
+  "model": "sonnet",
+  "runsPerCell": 3,
+  "budgetPerRunUsd": 0.4,
+  "runs": [
+    {
+      "scenario": "migration-lock-safety",
+      "arm": "orchestrated",
+      "run": 1,
+      "pass": true,
+      "cost": 0.130544,
+      "turns": 11,
+      "seconds": 28.1,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "new-migration-added",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "adds-status-column",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "column-not-null-default-pending",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "index-built-concurrently",
+          "category": "performance",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "runner-transaction-rules",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "down-migrations-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0001-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0002-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "mobile-token-storage",
+      "arm": "orchestrated",
+      "run": 1,
+      "pass": true,
+      "cost": 0.11489,
+      "turns": 7,
+      "seconds": 25.2,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "uses-secure-store",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "writes-secure",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-asyncstorage-writes",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-copies-removed",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "migrates-on-read",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "api-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-token-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-dependencies",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "payments-webhook-refund",
+      "arm": "orchestrated",
+      "run": 1,
+      "pass": false,
+      "cost": 0.137539,
+      "turns": 13,
+      "seconds": 27.9,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "refund-applied",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-idempotent-on-redelivery",
+          "category": "correctness",
+          "pass": false,
+          "detail": "exit 1: refund applied more than once, balance 100\n"
+        },
+        {
+          "id": "refund-rejects-bad-signature",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "paid-and-unknown-events-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-added",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "exports-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-secret-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "react18-no-react19-apis",
+      "arm": "orchestrated",
+      "run": 1,
+      "pass": true,
+      "cost": 0.108544,
+      "turns": 6,
+      "seconds": 21.3,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "no-react19-apis",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-use-hook",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "react-not-upgraded",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "pending-state",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "error-handled",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rollback",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "seo-noindex-regression",
+      "arm": "orchestrated",
+      "run": 1,
+      "pass": true,
+      "cost": 0.15703,
+      "turns": 11,
+      "seconds": 34.1,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "prod-build-indexable",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "staging-still-blocked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "regression-test-exists",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-catches-original-bug",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "structured-data-product",
+      "arm": "orchestrated",
+      "run": 1,
+      "pass": true,
+      "cost": 0.151049,
+      "turns": 14,
+      "seconds": 32.8,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "jsonld-valid-and-matches-data",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-fabricated-reviews",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "script-breakout-escaped",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-exist",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "tenant-invoice-isolation",
+      "arm": "orchestrated",
+      "run": 1,
+      "pass": true,
+      "cost": 0.134648,
+      "turns": 13,
+      "seconds": 29.2,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "own-invoices-work",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-read",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-write",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "csv-only-own-tenant",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "list-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-added",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "db-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "wordpress-plugin-security",
+      "arm": "orchestrated",
+      "run": 1,
+      "pass": true,
+      "cost": 0.138281,
+      "turns": 10,
+      "seconds": 30.1,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "output-escaped",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "sql-prepared",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-interpolated-sql",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "nonce-checked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "capability-checked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-permission-real",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "ids-cast",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "php-lint",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "migration-lock-safety",
+      "arm": "orchestrated",
+      "run": 2,
+      "pass": true,
+      "cost": 0.13104,
+      "turns": 11,
+      "seconds": 27.6,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "new-migration-added",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "adds-status-column",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "column-not-null-default-pending",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "index-built-concurrently",
+          "category": "performance",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "runner-transaction-rules",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "down-migrations-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0001-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0002-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "mobile-token-storage",
+      "arm": "orchestrated",
+      "run": 2,
+      "pass": true,
+      "cost": 0.114735,
+      "turns": 7,
+      "seconds": 23.6,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "uses-secure-store",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "writes-secure",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-asyncstorage-writes",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-copies-removed",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "migrates-on-read",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "api-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-token-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-dependencies",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "payments-webhook-refund",
+      "arm": "orchestrated",
+      "run": 2,
+      "pass": false,
+      "cost": 0.12881,
+      "turns": 13,
+      "seconds": 26.1,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "refund-applied",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-idempotent-on-redelivery",
+          "category": "correctness",
+          "pass": false,
+          "detail": "exit 1: refund applied more than once, balance 100\n"
+        },
+        {
+          "id": "refund-rejects-bad-signature",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "paid-and-unknown-events-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-added",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "exports-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-secret-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "react18-no-react19-apis",
+      "arm": "orchestrated",
+      "run": 2,
+      "pass": true,
+      "cost": 0.11457,
+      "turns": 8,
+      "seconds": 23.6,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "no-react19-apis",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-use-hook",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "react-not-upgraded",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "pending-state",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "error-handled",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rollback",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "seo-noindex-regression",
+      "arm": "orchestrated",
+      "run": 2,
+      "pass": true,
+      "cost": 0.166971,
+      "turns": 11,
+      "seconds": 40.4,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "prod-build-indexable",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "staging-still-blocked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "regression-test-exists",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-catches-original-bug",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "structured-data-product",
+      "arm": "orchestrated",
+      "run": 2,
+      "pass": false,
+      "cost": 0.211361,
+      "turns": 19,
+      "seconds": 42.5,
+      "calls": 3,
+      "models": "sonnet",
+      "level": "medium",
+      "repairs": 1,
+      "orchState": "failed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "jsonld-valid-and-matches-data",
+          "category": "correctness",
+          "pass": false,
+          "detail": "exit 1:  at afterResolve (node:internal/modules/esm/loader:611:52)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)\n    at ModuleJob.link (node:internal/modules/esm/module_job:381:17)\n\nNode.js v24.22.1\n"
+        },
+        {
+          "id": "no-fabricated-reviews",
+          "category": "docs",
+          "pass": false,
+          "detail": "exit 1:  at afterResolve (node:internal/modules/esm/loader:611:52)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)\n    at ModuleJob.link (node:internal/modules/esm/module_job:381:17)\n\nNode.js v24.22.1\n"
+        },
+        {
+          "id": "script-breakout-escaped",
+          "category": "security",
+          "pass": false,
+          "detail": "exit 1:  at afterResolve (node:internal/modules/esm/loader:611:52)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)\n    at ModuleJob.link (node:internal/modules/esm/module_job:381:17)\n\nNode.js v24.22.1\n"
+        },
+        {
+          "id": "tests-exist",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": false,
+          "detail": "exit 1: e:internal/modules/esm/module_job:381:17)\n\nNode.js v24.22.1\n✖ test/render.test.mjs (41.930881ms)\nℹ tests 1\nℹ suites 0\nℹ pass 0\nℹ fail 1\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 55.418695\n\n✖ failing tests:\n\ntest at test/render.test.mjs:1:1\n✖ test/render.test.mjs (41.930881ms)\n  'test failed'\n"
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "tenant-invoice-isolation",
+      "arm": "orchestrated",
+      "run": 2,
+      "pass": true,
+      "cost": 0.140611,
+      "turns": 14,
+      "seconds": 30.4,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "own-invoices-work",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-read",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-write",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "csv-only-own-tenant",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "list-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-added",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "db-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "wordpress-plugin-security",
+      "arm": "orchestrated",
+      "run": 2,
+      "pass": true,
+      "cost": 0.140763,
+      "turns": 10,
+      "seconds": 32.9,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "output-escaped",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "sql-prepared",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-interpolated-sql",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "nonce-checked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "capability-checked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-permission-real",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "ids-cast",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "php-lint",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "migration-lock-safety",
+      "arm": "orchestrated",
+      "run": 3,
+      "pass": true,
+      "cost": 0.135637,
+      "turns": 11,
+      "seconds": 29.5,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "new-migration-added",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "adds-status-column",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "column-not-null-default-pending",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "index-built-concurrently",
+          "category": "performance",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "runner-transaction-rules",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "down-migrations-present",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0001-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-0002-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "mobile-token-storage",
+      "arm": "orchestrated",
+      "run": 3,
+      "pass": true,
+      "cost": 0.11733,
+      "turns": 7,
+      "seconds": 24.8,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "uses-secure-store",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "writes-secure",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-asyncstorage-writes",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "old-copies-removed",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "migrates-on-read",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "api-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-token-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-new-dependencies",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "payments-webhook-refund",
+      "arm": "orchestrated",
+      "run": 3,
+      "pass": false,
+      "cost": 0.13606,
+      "turns": 13,
+      "seconds": 27.4,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "refund-applied",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-idempotent-on-redelivery",
+          "category": "correctness",
+          "pass": false,
+          "detail": "exit 1: refund applied more than once, balance 100\n"
+        },
+        {
+          "id": "refund-rejects-bad-signature",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "paid-and-unknown-events-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-added",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "exports-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-secret-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "react18-no-react19-apis",
+      "arm": "orchestrated",
+      "run": 3,
+      "pass": true,
+      "cost": 0.11148,
+      "turns": 7,
+      "seconds": 22.4,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "no-react19-apis",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-use-hook",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "react-not-upgraded",
+          "category": "version",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "pending-state",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "error-handled",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rollback",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "seo-noindex-regression",
+      "arm": "orchestrated",
+      "run": 3,
+      "pass": false,
+      "cost": 0.139656,
+      "turns": 11,
+      "seconds": 29.7,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "prod-build-indexable",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "staging-still-blocked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "regression-test-exists",
+          "category": "test_quality",
+          "pass": false,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-catches-original-bug",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "structured-data-product",
+      "arm": "orchestrated",
+      "run": 3,
+      "pass": false,
+      "cost": 0.249339,
+      "turns": 21,
+      "seconds": 53.1,
+      "calls": 3,
+      "models": "sonnet",
+      "level": "medium",
+      "repairs": 1,
+      "orchState": "failed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "jsonld-valid-and-matches-data",
+          "category": "correctness",
+          "pass": false,
+          "detail": "exit 1:  at afterResolve (node:internal/modules/esm/loader:611:52)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)\n    at ModuleJob.link (node:internal/modules/esm/module_job:381:17)\n\nNode.js v24.22.1\n"
+        },
+        {
+          "id": "no-fabricated-reviews",
+          "category": "docs",
+          "pass": false,
+          "detail": "exit 1:  at afterResolve (node:internal/modules/esm/loader:611:52)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)\n    at ModuleJob.link (node:internal/modules/esm/module_job:381:17)\n\nNode.js v24.22.1\n"
+        },
+        {
+          "id": "script-breakout-escaped",
+          "category": "security",
+          "pass": false,
+          "detail": "exit 1:  at afterResolve (node:internal/modules/esm/loader:611:52)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)\n    at ModuleJob.link (node:internal/modules/esm/module_job:381:17)\n\nNode.js v24.22.1\n"
+        },
+        {
+          "id": "tests-exist",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": false,
+          "detail": "exit 1: ode:internal/modules/esm/module_job:381:17)\n\nNode.js v24.22.1\n✖ test/render.test.mjs (40.00116ms)\nℹ tests 1\nℹ suites 0\nℹ pass 0\nℹ fail 1\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 53.205336\n\n✖ failing tests:\n\ntest at test/render.test.mjs:1:1\n✖ test/render.test.mjs (40.00116ms)\n  'test failed'\n"
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "tenant-invoice-isolation",
+      "arm": "orchestrated",
+      "run": 3,
+      "pass": true,
+      "cost": 0.124213,
+      "turns": 10,
+      "seconds": 26.2,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "own-invoices-work",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-read",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-cross-tenant-write",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "csv-only-own-tenant",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "list-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-added",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "db-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "wordpress-plugin-security",
+      "arm": "orchestrated",
+      "run": 3,
+      "pass": true,
+      "cost": 0.142444,
+      "turns": 10,
+      "seconds": 33.6,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "output-escaped",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "sql-prepared",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-interpolated-sql",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "nonce-checked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "capability-checked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "rest-permission-real",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "ids-cast",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "php-lint",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    }
+  ]
+}
