@@ -1,0 +1,558 @@
+{
+  "kind": "scenarios",
+  "date": "2026-11-22",
+  "model": "sonnet",
+  "runsPerCell": 3,
+  "budgetPerRunUsd": 0.4,
+  "runs": [
+    {
+      "scenario": "payments-webhook-refund",
+      "arm": "routed",
+      "run": 1,
+      "pass": false,
+      "cost": 0.122404,
+      "turns": 10,
+      "seconds": 24.5,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "refund-applied",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-idempotent-on-redelivery",
+          "category": "correctness",
+          "pass": false,
+          "detail": "exit 1: refund applied more than once, balance 100\n"
+        },
+        {
+          "id": "refund-rejects-bad-signature",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "paid-and-unknown-events-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-added",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "exports-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-secret-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "structured-data-product",
+      "arm": "routed",
+      "run": 1,
+      "pass": false,
+      "cost": 0.103523,
+      "turns": 17,
+      "seconds": 64,
+      "calls": 3,
+      "models": "haiku+sonnet",
+      "level": "medium",
+      "repairs": 1,
+      "orchState": "failed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "jsonld-valid-and-matches-data",
+          "category": "correctness",
+          "pass": false,
+          "detail": "exit 1:  at afterResolve (node:internal/modules/esm/loader:611:52)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)\n    at ModuleJob.link (node:internal/modules/esm/module_job:381:17)\n\nNode.js v24.22.1\n"
+        },
+        {
+          "id": "no-fabricated-reviews",
+          "category": "docs",
+          "pass": false,
+          "detail": "exit 1:  at afterResolve (node:internal/modules/esm/loader:611:52)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)\n    at ModuleJob.link (node:internal/modules/esm/module_job:381:17)\n\nNode.js v24.22.1\n"
+        },
+        {
+          "id": "script-breakout-escaped",
+          "category": "security",
+          "pass": false,
+          "detail": "exit 1:  at afterResolve (node:internal/modules/esm/loader:611:52)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:617:12)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)\n    at ModuleJob.link (node:internal/modules/esm/module_job:381:17)\n\nNode.js v24.22.1\n"
+        },
+        {
+          "id": "tests-exist",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": false,
+          "detail": "exit 1: e:internal/modules/esm/module_job:381:17)\n\nNode.js v24.22.1\n✖ test/render.test.mjs (45.201153ms)\nℹ tests 1\nℹ suites 0\nℹ pass 0\nℹ fail 1\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 60.644091\n\n✖ failing tests:\n\ntest at test/render.test.mjs:1:1\n✖ test/render.test.mjs (45.201153ms)\n  'test failed'\n"
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "seo-noindex-regression",
+      "arm": "routed",
+      "run": 1,
+      "pass": true,
+      "cost": 0.140572,
+      "turns": 12,
+      "seconds": 32.6,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "prod-build-indexable",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "staging-still-blocked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "regression-test-exists",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-catches-original-bug",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "payments-webhook-refund",
+      "arm": "routed",
+      "run": 2,
+      "pass": false,
+      "cost": 0.133764,
+      "turns": 13,
+      "seconds": 28.1,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "refund-applied",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-idempotent-on-redelivery",
+          "category": "correctness",
+          "pass": false,
+          "detail": "exit 1: refund applied more than once, balance 100\n"
+        },
+        {
+          "id": "refund-rejects-bad-signature",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "paid-and-unknown-events-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-added",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "exports-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-secret-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "structured-data-product",
+      "arm": "routed",
+      "run": 2,
+      "pass": true,
+      "cost": 0.013111,
+      "turns": 16,
+      "seconds": 48.3,
+      "calls": 2,
+      "models": "haiku",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "jsonld-valid-and-matches-data",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-fabricated-reviews",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "script-breakout-escaped",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-exist",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "seo-noindex-regression",
+      "arm": "routed",
+      "run": 2,
+      "pass": true,
+      "cost": 0.159192,
+      "turns": 11,
+      "seconds": 35.2,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "prod-build-indexable",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "staging-still-blocked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "regression-test-exists",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-catches-original-bug",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "payments-webhook-refund",
+      "arm": "routed",
+      "run": 3,
+      "pass": true,
+      "cost": 0.146908,
+      "turns": 13,
+      "seconds": 31.6,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "refund-applied",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-idempotent-on-redelivery",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "refund-rejects-bad-signature",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "paid-and-unknown-events-unchanged",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-added",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "exports-preserved",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-secret-logging",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "structured-data-product",
+      "arm": "routed",
+      "run": 3,
+      "pass": true,
+      "cost": 0.014028,
+      "turns": 13,
+      "seconds": 49.6,
+      "calls": 2,
+      "models": "haiku",
+      "level": "medium",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "jsonld-valid-and-matches-data",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-fabricated-reviews",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "script-breakout-escaped",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-exist",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "scenario": "seo-noindex-regression",
+      "arm": "routed",
+      "run": 3,
+      "pass": true,
+      "cost": 0.150317,
+      "turns": 11,
+      "seconds": 33.7,
+      "calls": 2,
+      "models": "sonnet",
+      "level": "complex",
+      "repairs": 0,
+      "orchState": "completed",
+      "unknownCostCalls": 0,
+      "graders": [
+        {
+          "id": "prod-build-indexable",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "staging-still-blocked",
+          "category": "security",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "regression-test-exists",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "tests-pass",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "test-catches-original-bug",
+          "category": "test_quality",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "package-untouched",
+          "category": "correctness",
+          "pass": true,
+          "detail": ""
+        },
+        {
+          "id": "no-invented-urls",
+          "category": "docs",
+          "pass": true,
+          "detail": ""
+        }
+      ]
+    }
+  ]
+}

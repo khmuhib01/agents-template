@@ -2,6 +2,15 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.22.4 - 2026-11-22
+
+Eval results only; generated projects and routing behavior are unchanged.
+
+- Measured 8 medium/hard scenarios (migration, payments, tenant isolation, security, seo, react, mobile, structured data) x 3 runs through `orchestrated` on `sonnet`: 18 of 24 passed (75%), about $0.14 per run, $3.38 total. `payments-webhook-refund` failed 3 of 3 (always the `refund-idempotent-on-redelivery` grader), `structured-data-product` passed 1 of 3 (the repair step did not fix the 2 failures), `seo-noindex-regression` 2 of 3 (one run fixed the code but wrote no regression test). So "same success rate as the strong model" is shown only for simple tasks, not for harder ones: the strong model itself does not reach 100% here.
+- Re-ran the 3 failing scenarios through `routed` (3 runs each, $0.98): 6 of 9 passed. The router sent `seo-noindex-regression` and `payments-webhook-refund` to `sonnet` (complex), so the difference from `orchestrated` there (2/3 to 3/3, 0/3 to 1/3) is the same model and is noise, not a routing effect. Only `structured-data-product` went to `haiku` (medium): 2 of 3 passed at about $0.013 per run against about $0.20 on `sonnet` (about 93% lower), the one real saving in this set.
+- First escalation on a real model: one `structured-data-product` run failed on `haiku`, was repaired on `sonnet` (`haiku+sonnet`, 1 repair) and still failed ($0.104). The path works end to end; it did not rescue that run.
+- Caveats: 3 runs per cell, scenarios written by me (not tasks from a real project), and the two arms ran at different times, not as a controlled pair. `payments-webhook-refund` passed only 1 of 6 on `sonnet` although its reference solution passes the graders (`--check`), so it is hard or its goal is under-specified; this is not a routing issue. Total spend $4.36.
+
 ## 1.22.3 - 2026-11-22
 
 Cheap-first routing with escalation (orchestrate.mjs, opt-in).
