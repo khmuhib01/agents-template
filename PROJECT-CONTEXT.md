@@ -1,6 +1,6 @@
 # Project Context: agents-template
 
-Snapshot of v1.22.3 (2026-11-22), built from repository inspection. Facts below were read from files; the Unknowns section lists what was not verified.
+Snapshot of v1.22.4 (2026-11-22), built from repository inspection. Facts below were read from files; the Unknowns section lists what was not verified.
 
 ## What it is
 A generator, not an app. `init.mjs` reads a target project's `project.config.yml` and writes `AGENTS.md`, `CLAUDE.md` and `.claude/` into it. This repo's own `.claude/` is generated output; do not edit it by hand.
@@ -45,7 +45,7 @@ A generator, not an app. `init.mjs` reads a target project's `project.config.yml
 - No deploy; pushing does not deploy.
 
 ## Recent work (1.22.x)
-Cheap-first model routing with escalation on failed tests (`model_routing.escalate`), classifier fixes, extra eval scenarios, `EVAL_SCENARIOS_DIR`. The escalation path has only been exercised with the fake CLI, not a real model (per CHANGELOG).
+Cheap-first model routing with escalation on failed tests (`model_routing.escalate`), classifier fixes, extra eval scenarios, `EVAL_SCENARIOS_DIR`. 1.22.4 recorded the first real-model measurements on 8 medium/hard scenarios: `sonnet` passed 18 of 24 (75%), and one real escalation (haiku to sonnet) ran but did not rescue its run. Savings from routing are shown only where the router picked `haiku`; n=3 per cell, own scenarios (per CHANGELOG).
 
 ## Risks
 - Stale generated plugin files break CI.
