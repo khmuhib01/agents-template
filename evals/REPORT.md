@@ -265,3 +265,28 @@ With 5 run(s) per cell, small differences between arms are noise; a skill earns 
 
 With 2 run(s) per cell, small differences between arms are noise; a skill earns the label "evaluated" only with repeated runs recorded here.
 
+
+### 2026-11-22, sonnet, 3 run(s) per scenario, arm orchestrated, cap $0.4/run
+
+| Scenario | Arm | Runs | Passed all graders | Mean cost |
+|---|---|---|---|---|
+| migration-lock-safety | orchestrated | 3 | 3/3 (100%) | $0.133 |
+| mobile-token-storage | orchestrated | 3 | 3/3 (100%) | $0.116 |
+| payments-webhook-refund | orchestrated | 3 | 0/3 (0%) | $0.134 |
+| react18-no-react19-apis | orchestrated | 3 | 3/3 (100%) | $0.112 |
+| seo-noindex-regression | orchestrated | 3 | 2/3 (67%) | $0.155 |
+| structured-data-product | orchestrated | 3 | 1/3 (33%) | $0.204 |
+| tenant-invoice-isolation | orchestrated | 3 | 3/3 (100%) | $0.133 |
+| wordpress-plugin-security | orchestrated | 3 | 3/3 (100%) | $0.140 |
+
+Raw runs: `evals/results/2026-11-22-orch-sonnet-8x3.json` (18 of 24 passed, $3.38).
+
+### 2026-11-22, routed (haiku for simple/medium, sonnet for complex/escalate), 3 run(s) per scenario, cap $0.4/run
+
+| Scenario | Routed to | Runs | Passed all graders | Mean cost |
+|---|---|---|---|---|
+| payments-webhook-refund | sonnet (complex) | 3 | 1/3 (33%) | $0.134 |
+| seo-noindex-regression | sonnet (complex) | 3 | 3/3 (100%) | $0.150 |
+| structured-data-product | haiku (medium), 1 run escalated to sonnet | 3 | 2/3 (67%) | $0.044 |
+
+Raw runs: `evals/results/2026-11-22-routed-3x3.json` (6 of 9 passed, $0.98). Only `structured-data-product` was routed to the cheap model; the other two use the same model as the orchestrated arm, so their differences are noise. With 3 runs per cell, small differences are not significant.
