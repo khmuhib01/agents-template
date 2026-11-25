@@ -57,6 +57,8 @@ allow_safe_commands: true       # true: git status/diff/log and the test command
 domains: []                     # optional concerns that add skills beyond type/stack (names come from "domains" in core/skill-map.json); empty by default
 skills_mode: focused            # focused: install only skills routed for this type/stack (default, saves context) | all: install every skill
 protect_secrets: true         # true: settings.json denies Read on .env and every local_only path (also keeps big dumps out of context)
+secrets_access: ask           # ask: reading/editing .env and secret files shows a permission prompt, yes lets it through (default) | deny: always refused
+protected_push: ask           # ask: commit/push on the dev/main branches shows a permission prompt (default) | block: always refused. Force-push and --no-verify are always blocked
 forbid: []                    # words that must NOT appear in generated files (e.g. another project's name)
 agents_mirror: true             # default true: .agents/{rules,skills,agents} link to .claude/ (Antigravity/Gemini, Codex); false disables
 codex_mirror: true              # default true: .codex/{rules,skills,agents} link to .claude/ (Codex); false disables

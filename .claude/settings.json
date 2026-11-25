@@ -3,18 +3,28 @@
   "model": "sonnet",
   "permissions": {
     "deny": [
-      "Read(./.env)",
-      "Read(./**/.env)",
-      "Read(./**/.env.local)",
-      "Read(./**/.env.production)",
       "Read(./**/*.min.js)",
       "Read(./**/*.map)",
       "Read(./**/node_modules/**)",
       "Read(./**/dist/**)",
       "Read(./**/build/**)",
-      "Read(./**/.next/**)",
+      "Read(./**/.next/**)"
+    ],
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git remote -v)",
+      "Bash(git branch --show-current)",
+      "Bash(node test.mjs:*)"
+    ],
+    "ask": [
+      "Read(./.env)",
+      "Read(./**/.env)",
       "Read(./.env.local)",
+      "Read(./**/.env.local)",
       "Read(./.env.production)",
+      "Read(./**/.env.production)",
       "Read(./.env.development)",
       "Read(./**/.env.development)",
       "Read(./.env.staging)",
@@ -35,14 +45,6 @@
       "Read(./**/.netrc)",
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)"
-    ],
-    "allow": [
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)",
-      "Bash(git remote -v)",
-      "Bash(git branch --show-current)",
-      "Bash(node test.mjs:*)"
     ]
   },
   "hooks": {

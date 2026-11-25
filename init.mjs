@@ -94,9 +94,13 @@ function buildContext(c) {
   return d;
 }
 
-// Read-deny rules: secrets, local-only paths (dumps) and heavy generated folders are never opened (also saves tokens).
-function denyRules(cfg, ctx) {
+// Secret and heavy-folder Read rules. Secrets/local-only paths ask for permission by default (secrets_access: deny never opens them);
+// heavy generated folders are always denied (they only burn tokens).
+const secretsMode = (cfg) => (String(cfg.secrets_access || '').toLowerCase() === 'deny' ? 'deny' : 'ask');
+const protectedPushMode = (cfg) => (String(cfg.protected_push || '').toLowerCase() === 'block' ? 'block' : 'ask');
+function permissionRules(cfg, ctx) {
   const rules = [];
+  const heavy = [];
   if (cfg.protect_secrets !== false) {
     // Explicit variants rather than .env.*: .env.example stays readable, it documents the variables a project needs.
     for (const v of ['', '.local', '.production', '.development', '.staging', '.test', '.production.local', '.development.local', '.test.local']) rules.push(`Read(./.env${v})`, `Read(./**/.env${v})`);
@@ -113,12 +117,12 @@ function denyRules(cfg, ctx) {
     const t = ctx.stack.map(norm).join(' ');
     const has = (...ks) => ks.some((k) => t.includes(k));
     const pm = String(cfg.package_manager || '');
-    rules.push('Read(./**/*.min.js)', 'Read(./**/*.map)');
-    if (has('laravel', 'php') || pm === 'composer') rules.push('Read(./**/vendor/**)', 'Read(./**/storage/logs/**)');
-    if (has('node', 'react', 'next', 'vue', 'nuxt', 'expo', 'nest', 'express', 'typescript') || ['npm', 'pnpm', 'yarn'].includes(pm)) rules.push('Read(./**/node_modules/**)', 'Read(./**/dist/**)', 'Read(./**/build/**)', 'Read(./**/.next/**)');
-    if (has('python', 'django', 'fastapi', 'flask') || ['pip', 'uv', 'poetry'].includes(pm)) rules.push('Read(./**/.venv/**)', 'Read(./**/__pycache__/**)');
+    heavy.push('Read(./**/*.min.js)', 'Read(./**/*.map)');
+    if (has('laravel', 'php') || pm === 'composer') heavy.push('Read(./**/vendor/**)', 'Read(./**/storage/logs/**)');
+    if (has('node', 'react', 'next', 'vue', 'nuxt', 'expo', 'nest', 'express', 'typescript') || ['npm', 'pnpm', 'yarn'].includes(pm)) heavy.push('Read(./**/node_modules/**)', 'Read(./**/dist/**)', 'Read(./**/build/**)', 'Read(./**/.next/**)');
+    if (has('python', 'django', 'fastapi', 'flask') || ['pip', 'uv', 'poetry'].includes(pm)) heavy.push('Read(./**/.venv/**)', 'Read(./**/__pycache__/**)');
   }
-  return rules;
+  return secretsMode(cfg) === 'deny' ? { deny: [...rules, ...heavy], ask: [] } : { deny: heavy, ask: rules };
 }
 
 // Safe read-only commands (and the test command) run without a permission prompt: fewer turns, fewer tokens.
@@ -151,6 +155,8 @@ function hooksConfig(cfg) {
   return {
     protectedBranches: [...new Set([b.production, b.integration].filter(Boolean).map(String))],
     blockAttribution: !cfg.commit_attribution,
+    secretsAccess: secretsMode(cfg),
+    protectedPush: protectedPushMode(cfg),
     localOnly: toArr(cfg.local_only).map(String),
     formatCommand: truthy(cfg.format_command) ? String(cfg.format_command) : '',
     bigFileKb: numOpt(cfg.big_file_kb, 100),
@@ -307,6 +313,7 @@ function main() {
   const TYPES = Object.keys(JSON.parse(fs.readFileSync(path.join(HERE, 'core', 'skill-map.json'), 'utf8')).types);
   if (cfg.type && !TYPES.includes(cfg.type)) errors.push(`type must be ${TYPES.join(' | ')} (got "${cfg.type}")`);
   if (cfg.model_profile !== undefined && !Object.keys(MODEL_PROFILES).includes(String(cfg.model_profile))) errors.push(`model_profile must be ${Object.keys(MODEL_PROFILES).join(' | ')} (got "${cfg.model_profile}")`);
+  for (const [k, ok] of [['secrets_access', ['ask', 'deny']], ['protected_push', ['ask', 'block']]]) if (cfg[k] !== undefined && cfg[k] !== '' && !ok.includes(String(cfg[k]).toLowerCase())) errors.push(`${k} must be ${ok.join(' | ')} (got "${cfg[k]}")`);
   for (const k of ['mcp_allow', 'mcp_deny']) for (const n of toArr(cfg[k])) if (!/^[\w.-]+$/.test(String(n))) errors.push(`${k}: "${n}" is not a valid MCP server name (letters, digits, _ . -)`);
   for (const k of ['token_budget', 'big_file_kb', 'context_nudge_kb']) if (cfg[k] !== undefined && cfg[k] !== '' && !(Number.isFinite(Number(cfg[k])) && Number(cfg[k]) >= 0)) errors.push(`${k} must be a number >= 0 (got "${cfg[k]}")`);
   if (cfg.packages !== undefined && cfg.packages !== '' && (typeof cfg.packages !== 'object' || Array.isArray(cfg.packages))) errors.push('packages must be a map of name -> {path, stack, ...} (see project.config.example.yml)');
@@ -403,14 +410,16 @@ function main() {
   // protect_secrets turned off) is removed next run while rules the user added are left alone.
   let prevManaged = {};
   try { prevManaged = JSON.parse(fs.readFileSync(path.join(TARGET, '.claude', 'CONFIGURATION.MANIFEST.JSON'), 'utf8')).managedPermissions || {}; } catch { /* first run or unreadable */ }
-  const denyNow = [...new Set([...denyRules(cfg, ctx), ...toArr(cfg.mcp_deny).map((n) => `mcp__${n}`)])];
+  const rulesNow = permissionRules(cfg, ctx);
+  const denyNow = [...new Set([...rulesNow.deny, ...toArr(cfg.mcp_deny).map((n) => `mcp__${n}`)])];
+  const askNow = [...new Set(rulesNow.ask)];
   const allowNow = cfg.allow_safe_commands !== false ? allowRules(ctx) : [];
 
   const manifestPath = path.join(TARGET, '.claude', 'CONFIGURATION.MANIFEST.JSON');
   const manifest = {
     name: cfg.name, generatedBy: 'claude-template', templateVersion: TEMPLATE_VERSION, skillsMode: focused ? 'focused' : 'all', type: cfg.type, stack: ctx.stack, branches: ctx.branches,
     runInDocker: Boolean(cfg.run_in_docker), testCommand: ctx.test_cmd_full, skills: skillNames, agents: agentNames, hooks: hookList.map((h) => h.script), packages: ctx.packages.map((p) => p.path),
-    managedPermissions: { deny: denyNow, allow: allowNow },
+    managedPermissions: { deny: denyNow, ask: askNow, allow: allowNow },
   };
   let prevMcp = {};
   try { prevMcp = JSON.parse(fs.readFileSync(manifestPath, 'utf8')).managedMcp || {}; } catch { /* first run or unreadable */ }
@@ -430,7 +439,7 @@ function main() {
     settings.permissions = settings.permissions || {};
     // Keep what the user wrote, drop what init wrote before and no longer generates, add what it generates now.
     const merged = (cur, prev, now) => [...new Set([...(cur || []).filter((r) => !(prev || []).includes(r) || now.includes(r)), ...now])];
-    for (const [k, now] of [['deny', denyNow], ['allow', allowNow]]) {
+    for (const [k, now] of [['deny', denyNow], ['ask', askNow], ['allow', allowNow]]) {
       const list = merged(settings.permissions[k], prevManaged[k], now);
       if (list.length) settings.permissions[k] = list; else delete settings.permissions[k];
     }

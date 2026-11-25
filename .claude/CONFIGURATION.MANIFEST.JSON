@@ -1,7 +1,7 @@
 {
   "name": "agents-template",
   "generatedBy": "claude-template",
-  "templateVersion": "1.22.4",
+  "templateVersion": "1.23.0",
   "skillsMode": "focused",
   "type": "cli",
   "stack": [
@@ -69,6 +69,14 @@
   "packages": [],
   "managedPermissions": {
     "deny": [
+      "Read(./**/*.min.js)",
+      "Read(./**/*.map)",
+      "Read(./**/node_modules/**)",
+      "Read(./**/dist/**)",
+      "Read(./**/build/**)",
+      "Read(./**/.next/**)"
+    ],
+    "ask": [
       "Read(./.env)",
       "Read(./**/.env)",
       "Read(./.env.local)",
@@ -94,13 +102,7 @@
       "Read(./**/.npmrc)",
       "Read(./**/.netrc)",
       "Read(~/.ssh/**)",
-      "Read(~/.aws/**)",
-      "Read(./**/*.min.js)",
-      "Read(./**/*.map)",
-      "Read(./**/node_modules/**)",
-      "Read(./**/dist/**)",
-      "Read(./**/build/**)",
-      "Read(./**/.next/**)"
+      "Read(~/.aws/**)"
     ],
     "allow": [
       "Bash(git status:*)",
