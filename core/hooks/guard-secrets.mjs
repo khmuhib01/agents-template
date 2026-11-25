@@ -1,7 +1,7 @@
-// PreToolUse(Write|Edit|MultiEdit|NotebookEdit): blocks writes to .env / local-only paths and obvious secrets in content.
+// PreToolUse(Write|Edit|MultiEdit|NotebookEdit): asks before writes to .env / local-only paths (secrets_access: deny blocks them) and blocks obvious secrets in content.
 import fs from 'node:fs';
 import path from 'node:path';
-import { readInput, loadConfig, block, run } from './lib.mjs';
+import { readInput, loadConfig, block, ask, run } from './lib.mjs';
 
 const SECRET_PATTERNS = [
   ['AWS access key', /\bAKIA[0-9A-Z]{16}\b/],
@@ -32,10 +32,12 @@ run(() => {
   // Judge both the path as written and where it really points (a symlink notes.txt -> .env), compared case-insensitively.
   const rels = [...new Set([path.relative(root, abs), path.relative(real(root), real(abs))])].map((r) => r.split(path.sep).join('/').toLowerCase());
 
+  // secrets_access "ask" (default): the user is prompted and can approve the edit; "deny": always refused.
+  const guard = (message) => (cfg.secretsAccess === 'deny' ? block(message) : ask(message));
   for (const rel of rels.filter((r) => !r.startsWith('..'))) {
     const base = path.posix.basename(rel);
-    if (/^\.env(\..+)?$/.test(base) && !/\.(example|sample|template|dist)$/.test(base)) block(`${rel} holds secrets; edit it yourself, not through Claude.`);
-    if ((cfg.localOnly || []).some((p) => matchesLocalOnly(rel, p))) block(`${rel} is a local-only path (git-ignored, may hold credentials or dumps).`);
+    if (/^\.env(\..+)?$/.test(base) && !/\.(example|sample|template|dist)$/.test(base)) guard(`${rel} holds secrets. Approve only if Claude should edit it.`);
+    if ((cfg.localOnly || []).some((p) => matchesLocalOnly(rel, p))) guard(`${rel} is a local-only path (git-ignored, may hold credentials or dumps). Approve only if Claude should edit it.`);
   }
 
   const texts = [ti.content, ti.new_string, ti.new_source, ...(Array.isArray(ti.edits) ? ti.edits.map((e) => e && e.new_string) : [])].filter((t) => typeof t === 'string');

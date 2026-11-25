@@ -194,6 +194,16 @@
       "type": "boolean",
       "description": "Deny Read on .env and local_only paths; installs the guard-secrets hook."
     },
+    "secrets_access": {
+      "type": "string",
+      "enum": ["ask", "deny"],
+      "description": "ask (default): reading or editing .env and other secret files asks the user for permission. deny: always refused."
+    },
+    "protected_push": {
+      "type": "string",
+      "enum": ["ask", "block"],
+      "description": "ask (default): committing or pushing on a protected branch (production/integration) asks the user for permission. block: always refused. Force-push and --no-verify are always blocked."
+    },
     "domains": {
       "anyOf": [
         {

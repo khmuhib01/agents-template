@@ -4,6 +4,8 @@
     "dev"
   ],
   "blockAttribution": true,
+  "secretsAccess": "ask",
+  "protectedPush": "ask",
   "localOnly": [
     ".env"
   ],
