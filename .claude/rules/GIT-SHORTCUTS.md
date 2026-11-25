@@ -2,7 +2,7 @@
 
 **NO AUTO-COMMIT OR AUTO-PUSH.** Never run `git commit` or `git push` on your own initiative; changes stay uncommitted until the user runs a shortcut below or asks in chat.
 
-Branch model: `feat/example → dev → main`. `main` is protected. Do not add `Co-Authored-By` or "Generated with" lines to commits or PRs.
+Branch model: `muhib → dev → main`. `main` is protected. Do not add `Co-Authored-By` or "Generated with" lines to commits or PRs.
 
 Deployment is manual; pushing does not deploy. Never deploy without explicit approval.
 
