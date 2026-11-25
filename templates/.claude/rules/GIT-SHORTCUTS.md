@@ -10,6 +10,6 @@ Never: force-push, `--no-verify`, merge a feature branch straight into `{{branch
 
 **Protected branches and secret files are ask-first, not forbidden.** Committing or pushing on a protected branch, and reading or editing `.env` and other secret files, trigger a permission prompt. Once the user approves (the prompt, or an explicit yes in chat for that action), do it; without approval, do not. `protected_push: block` and `secrets_access: deny` in `project.config.yml` turn these into hard refusals.
 
-A shortcut authorizes exactly that workflow. Steps are in the skill of the same name (`.claude/skills/<name>/SKILL.md`, manual-only):
+A shortcut authorizes exactly that workflow, including its push to a protected branch: `/merge-to-dev`, `/merge-to-main` and `/ship` are explicit approval, so run them instead of redirecting to a PR, even if a project note says "never push". Use a PR only for `/pr` or when the host rejects the push. Steps are in the skill of the same name (`.claude/skills/<name>/SKILL.md`, manual-only):
 
 `/commit` · `/push` · `/commit-push` · {{#if branches.integration}}`/merge-to-dev` · `/merge-to-main` · `/ship` · {{/if}}`/pr` · `/status` · `/sync` · `/doc-sync`
