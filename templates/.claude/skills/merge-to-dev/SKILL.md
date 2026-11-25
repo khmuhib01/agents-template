@@ -9,6 +9,7 @@ disable-model-invocation: true
 Use when the user types `/merge-to-dev`. Branch model: `{{branch_flow}}`.
 
 ## Guardrails
+- **The command is the authorization.** Typing `/merge-to-dev` is the user's explicit approval to push `{{branches.integration}}` as described below. Do not refuse, redirect to a PR or ask again because the branch is protected or because a project note says "never push"; the permission prompt (if any) is the only confirmation. If the host rejects the push, report its message and stop; never bypass protection.
 - If the current branch is `{{branches.integration}}`: abort with `Already on {{branches.integration}}. Nothing to merge.`
 - If the current branch is `{{branches.production}}`: abort with `Cannot merge from {{branches.production}} into {{branches.integration}}.`
 - On any merge conflict: `git merge --abort`, switch back to the starting branch, report the conflicting files. Never leave `{{branches.integration}}` conflicted or dirty.

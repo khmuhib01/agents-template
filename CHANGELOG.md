@@ -2,6 +2,15 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.23.1 - 2026-11-25
+
+Shortcuts are authorization, not suggestions.
+
+- `/merge-to-dev`, `/merge-to-main` and `/ship` now state that typing the command is the user's explicit approval to push the protected branch. An agent no longer refuses and sends you to a PR because of "protected" wording or a project note saying "never push"; it runs the flow and stops only if the host rejects the push.
+- `/merge-to-main` and `/ship` no longer ask "Push these commits?" a second time; the command and the push permission prompt are the confirmation.
+- `AGENTS.md` and `GIT-SHORTCUTS` wording: no push to a protected branch on your own initiative, but the shortcuts are explicit authorization.
+- Wrapped projects: a line in your own `project.config.yml` `notes` such as "Never push to dev/main" is still read by the agent. Reword it (for example "pushes go through /merge-to-dev and /merge-to-main") or the agent may follow it over the skill.
+
 ## 1.23.0 - 2026-11-25
 
 Secret files and protected branches are ask-first instead of hard-blocked (new defaults; upgrading projects change behavior).
