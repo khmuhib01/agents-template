@@ -2,6 +2,13 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.23.2 - 2026-11-25
+
+Hook false positives that blocked normal work.
+
+- `guard-bash` no longer reads heredoc bodies as commands: a script or commit message containing text like `git push origin main` is data, so `python3 <<EOF ... EOF` is not blocked on a protected branch. A real `git push` after the heredoc is still judged, and the attribution check still reads the whole command.
+- The attribution check matches the whole phrase `generated with` only, so a message like "Regenerated with init" is no longer rejected as a "Generated with" line.
+
 ## 1.23.1 - 2026-11-25
 
 Shortcuts are authorization, not suggestions.

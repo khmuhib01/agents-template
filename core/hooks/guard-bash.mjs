@@ -2,6 +2,12 @@
 import { spawnSync } from 'node:child_process';
 import { readInput, loadConfig, block, ask, run } from './lib.mjs';
 
+// Heredoc bodies (<<EOF ... EOF) are data, not commands: text such as "git push origin main" inside a script or a
+// commit message must not be judged as a command. The attribution check still reads the full command.
+function stripHeredocs(cmd) {
+  return cmd.replace(/<<-?[ \t]*(['"]?)([A-Za-z_]\w*)\1[^\n]*\n[\s\S]*?\n[ \t]*\2[ \t]*(?=\n|$)/g, (m) => m.slice(0, m.indexOf('\n')));
+}
+
 // Splits on ; | & and newlines that are outside quotes.
 function splitSegments(cmd) {
   const out = []; let cur = ''; let q = '';
@@ -128,9 +134,9 @@ run(() => {
     if (g.sub === 'branch' && (flags.includes('-D') || (flags.includes('-d') && (flags.includes('-f') || flags.includes('--force'))))) asks.push('git branch -D force-deletes a branch.');
   }
   };
-  inspect(cmd, 0);
+  inspect(stripHeredocs(cmd), 0);
 
-  if (sawCommit && cfg.blockAttribution && /co-authored-by:|generated with/i.test(cmd)) {
+  if (sawCommit && cfg.blockAttribution && /co-authored-by:|\bgenerated with\b/i.test(cmd)) {
     block('this project forbids "Co-Authored-By" / "Generated with" attribution lines in commits and PRs. Remove them and retry.');
   }
   if (asks.length) ask(asks.join(' '));
