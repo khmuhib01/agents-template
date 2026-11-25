@@ -11,7 +11,7 @@
   ".claude/agents/qa-engineer.md": "90ce7c1e7627765299f049dc9aec51501d4204430c0a0c08acaea2022868b00c",
   ".claude/agents/security-reviewer.md": "d697f354b5b4f3f2c88c12c4da8939be266e078086cd6ec69921f0ccef37ef98",
   ".claude/hooks/context-nudge.mjs": "c985e594042af97bd8f967604748819a35273cf4f16324e36c7088f4c0682ddf",
-  ".claude/hooks/guard-bash.mjs": "1a77eeb06972604f074fecb63d4a1192826123850465eb55dffce5bb0d2a7178",
+  ".claude/hooks/guard-bash.mjs": "a2a53ea30e22c2179df16ad301b36213fdaebf751fc0d1497dfb48b0a8ba37a3",
   ".claude/hooks/guard-read.mjs": "e72ac9c77fa2e62f0ddc0b3be8fb67ffc0e63957b045f6acb79d46a39c15acf0",
   ".claude/hooks/guard-secrets.mjs": "9dcf9cc1157437ffeed66bb420cb2c8514c893403daf0f77c13ea1998a76dfb2",
   ".claude/hooks/lib.mjs": "258b614ca016f2ac53211c2763473327f679de2b3acfff77e48cddb35a5a2212",

@@ -1202,6 +1202,11 @@ const bash = (command) => hook('guard-bash', { tool_name: 'Bash', tool_input: { 
 const write = (file_path) => hook('guard-secrets', { tool_name: 'Write', tool_input: { file_path, content: 'x' } });
 check(['env git push origin main', 'command git push origin main', 'sudo git push origin main', 'bash -c "git push origin main"', 'sh -c \'git push origin main\'', 'eval "git push origin main"', 'echo $(git push origin main)', 'echo `git push origin main`', 'FOO=1 env -i git push --force'].every((c) => bash(c).status === 2), 'guard-bash: push to a protected branch is still blocked behind env/command/sudo/bash -c/eval/$()/backticks');
 check(bash('git push --mirror').status === 2 && bash('git push --all origin').status === 2, 'guard-bash: push --mirror/--all is blocked');
+const heredoc = (body) => `python3 - <<'EOF'\n${body}\nEOF`;
+check(bash(heredoc('print("git push origin main")\ntext = "git commit -m x"')).status === 0, 'guard-bash: git commands written inside a heredoc body are data, not commands');
+check(bash(heredoc('x = 1') + ' && git push origin main').status === 2, 'guard-bash: a real push after a heredoc is still blocked');
+check(bash('git commit -m "$(cat <<\'EOF\'\nfix\n\nCo-Authored-By: X <x@y.z>\nEOF\n)"').status === 2, 'guard-bash: an attribution line inside a commit-message heredoc is still blocked');
+check(bash('git commit -m "chore: Regenerated with init"').status === 0, 'guard-bash: the word Regenerated is not an attribution line');
 check(bash('env git status').status === 0 && bash('bash -c "git push origin dev1"').status === 0, 'guard-bash: wrapped harmless commands are still allowed');
 check(/"permissionDecision":"ask"/.test(bash('git config core.hooksPath /dev/null').stdout) && /"permissionDecision":"ask"/.test(bash('git -c core.hooksPath=/dev/null commit -m x').stdout), 'guard-bash: changing core.hooksPath asks the user');
 
