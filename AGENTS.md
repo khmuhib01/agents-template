@@ -27,7 +27,7 @@ Local-only / git-ignored (never commit):
 3. **Deployment:** Deployment is manual; pushing does not deploy. Never deploy without explicit approval.
 4. **Explicit Commit & Push Only (Strict Rule):** never commit or push on your own initiative. Changes stay in the working tree until the user issues `/commit`, `/push`, `/commit-push`, `/merge-to-dev`, `/merge-to-main`, `/ship` (or asks in chat).
 5. **Attribution:** Do not add `Co-Authored-By` or "Generated with" lines to commits or PRs.
-6. **Branch model:** `feat/example → dev → main`. `main` is protected: do not commit or push to it on your own. The user's `/merge-to-dev`, `/merge-to-main` and `/ship` shortcuts are explicit authorization to push it.
+6. **Branch model:** `muhib → dev → main`. `main` is protected: do not commit or push to it on your own. The user's `/merge-to-dev`, `/merge-to-main` and `/ship` shortcuts are explicit authorization to push it.
 7. **Never** force-push, use `--no-verify`, or stage secrets (`.env`, credentials, dumps).
 8. **Delegation (cost):** do small, single-file or well-understood work directly; no planner, architect or reviewer for it. Use `planner` only for multi-file or unclear work, `architect` only for a real design decision, `security-reviewer` only when auth, input, secrets, permissions or dependencies change, `code-reviewer` only on request or for a large diff. One agent per question; never repeat an analysis another agent already did.
 
@@ -52,7 +52,7 @@ Detailed rules live in `.claude/rules/` (architecture, commands & testing, docs,
 - **`/commit-push [message]`**: commit and push in one step.
 - **`/merge-to-dev [message]`**: commit + push the working branch, merge into `dev`, push it, return (auto-abort on conflict).
 - **`/merge-to-main`**: tests, then `dev` → `main` with one confirmation before pushing.
-- **`/ship [message]`**: `feat/example → dev → main` with tests and one confirmation before pushing `main`.
+- **`/ship [message]`**: `muhib → dev → main` with tests and one confirmation before pushing `main`.
 - **`/pr`**: open or update a pull request without merging.
 - **`/status`**, **`/sync`**: show or safely update branch state.
 - **`/doc-sync [notes]`**: update `README.md` to match the changes.
