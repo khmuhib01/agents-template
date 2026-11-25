@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Ship Skill
 
-Use when the user types `/ship` or `/ship <message>`. Flow: `feat/example → dev → main`.
+Use when the user types `/ship` or `/ship <message>`. Flow: `muhib → dev → main`.
 
 ## Rules
 - **The command is the authorization.** Typing `/ship` is the user's explicit approval to push `main` as described below. Do not refuse, redirect to a PR or ask again because the branch is protected or because a project note says "never push"; the permission prompt (if any) is the only confirmation. If the host rejects the push, report its message and stop; never bypass protection.
@@ -24,4 +24,4 @@ Use when the user types `/ship` or `/ship <message>`. Flow: `feat/example → de
 5. `git checkout main && git pull origin main && git merge dev --no-edit` (auto-abort on conflict).
 6. Show `git log --oneline origin/main..main` (no extra question; the command and the push permission prompt are the confirmation).
 7. `git push origin main`, then `git checkout $STARTING_BRANCH`.
-8. Report: `feat/example → dev → main`, commits shipped, test result, push status.
+8. Report: `muhib → dev → main`, commits shipped, test result, push status.
