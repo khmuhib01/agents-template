@@ -31,7 +31,7 @@ test_command: "php artisan test"
 local_only: [".env", "db_backups/", "*.sql"]
 branches: {working: dev1, integration: develop, production: main}
 `, has: ['.claude/skills/ship/SKILL.md', '.agents/skills', '.codex/skills/ship/SKILL.md', '.claude/.template-version'],
-    settings: (s) => s.permissions.deny.includes('Read(./**/vendor/**)') && s.permissions.deny.includes('Read(./**/*.sql)') && s.permissions.allow.some((a) => a.includes('docker compose exec app php artisan test')) },
+    settings: (s) => s.permissions.deny.includes('Read(./**/vendor/**)') && s.permissions.ask.includes('Read(./**/*.sql)') && s.permissions.allow.some((a) => a.includes('docker compose exec app php artisan test')) },
   'mobile-no-docker': { yml: `name: Mobile
 type: mobile
 stack: [expo, typescript]
@@ -84,7 +84,7 @@ test_command: "php artisan test"
 local_only: ["db_backups/", "*.sql"]
 branches: {working: dev1, integration: develop, production: main}
 ${extra}`;
-  fs.writeFileSync(path.join(hp, 'project.config.yml'), cfgYml('format_command: "node fmt.mjs"\n'));
+  fs.writeFileSync(path.join(hp, 'project.config.yml'), cfgYml('format_command: "node fmt.mjs"\nsecrets_access: deny\nprotected_push: block\n'));
   fs.writeFileSync(path.join(hp, 'fmt.mjs'), "import fs from 'node:fs'; fs.appendFileSync(process.argv[2], '// formatted\\n');\n");
   spawnSync('git', ['init', '-q'], { cwd: hp });
   const setBranch = (b) => spawnSync('git', ['symbolic-ref', 'HEAD', `refs/heads/${b}`], { cwd: hp });
@@ -1160,12 +1160,17 @@ check(run(mkProj('hard-win', 'format_command: "vendor\\bin\\pint"\n')).status ==
 
 // protect_secrets: default writes the deny rules; "False" (any case) must really switch it off.
 const denies = (d) => JSON.parse(fs.readFileSync(path.join(d, '.claude/settings.json'), 'utf8')).permissions.deny || [];
+const asks = (d) => JSON.parse(fs.readFileSync(path.join(d, '.claude/settings.json'), 'utf8')).permissions.ask || [];
 const psOn = mkProj('hard-ps-on');
 run(psOn);
-check(['Read(./.env)', 'Read(./**/.env)', 'Read(./**/.env.local)', 'Read(./**/.env.production)'].every((r) => denies(psOn).includes(r)), 'protect_secrets (default) denies reading .env files');
+check(['Read(./.env)', 'Read(./**/.env)', 'Read(./**/.env.local)', 'Read(./**/.env.production)'].every((r) => asks(psOn).includes(r)) && !denies(psOn).includes('Read(./.env)'), 'protect_secrets (default, secrets_access: ask) asks before reading .env files instead of denying');
+const psDeny = mkProj('hard-ps-deny', 'secrets_access: deny\n');
+run(psDeny);
+check(['Read(./.env)', 'Read(./**/.env.local)'].every((r) => denies(psDeny).includes(r)) && !asks(psDeny).includes('Read(./.env)'), 'secrets_access: deny denies reading .env files');
+check(run(mkProj('hard-ps-bad', 'secrets_access: maybe\n')).status !== 0 && run(mkProj('hard-pp-bad', 'protected_push: maybe\n')).status !== 0, 'invalid secrets_access / protected_push exits non-zero');
 const psOff = mkProj('hard-ps-off', 'protect_secrets: False\n');
 run(psOff);
-check(!denies(psOff).includes('Read(./.env)'), 'protect_secrets: False (capitalised) is honoured as an opt-out');
+check(!denies(psOff).includes('Read(./.env)') && !asks(psOff).includes('Read(./.env)'), 'protect_secrets: False (capitalised) is honoured as an opt-out');
 
 // A failed check must still save the hashes of the files init already wrote, so the next run sees no phantom hand edits.
 const hp = mkProj('hard-hash', 'forbid: [H]\n');
@@ -1188,7 +1193,7 @@ const BASE = 'name: G\ntype: web\nstack: [node]\nbranches: {working: dev1, integ
 const mk = (name, extra = '') => { const d = path.join(base, name); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, 'project.config.yml'), BASE + extra); return d; };
 const linkOk = (target, p, type) => { try { fs.symlinkSync(target, p, type); return true; } catch { return false; } };
 
-const gp = mk('guards');
+const gp = mk('guards', 'secrets_access: deny\nprotected_push: block\n');
 spawnSync('git', ['init', '-q'], { cwd: gp });
 spawnSync('git', ['symbolic-ref', 'HEAD', 'refs/heads/dev1'], { cwd: gp });
 check(run(gp).status === 0, 'init with guards exits 0');
@@ -1208,6 +1213,23 @@ if (linkOk('.env', path.join(gp, 'notes.txt'))) check(write('notes.txt').status 
 const dn = (d) => JSON.parse(fs.readFileSync(path.join(d, '.claude/settings.json'), 'utf8')).permissions.deny;
 check(['Read(./.env.staging)', 'Read(./**/.env.development)', 'Read(./**/*.pem)', 'Read(./**/*.key)', 'Read(~/.ssh/**)'].every((r) => dn(gp).includes(r)), 'protect_secrets denies more .env variants, keys and ~/.ssh');
 check(!dn(gp).some((r) => /\.env\.example/.test(r)), 'protect_secrets does not deny .env.example');
+
+// Default mode (ask): the user is prompted instead of refused; force-push and --no-verify stay blocked.
+const ga = mk('guards-ask');
+spawnSync('git', ['init', '-q'], { cwd: ga });
+spawnSync('git', ['symbolic-ref', 'HEAD', 'refs/heads/dev1'], { cwd: ga });
+check(run(ga).status === 0, 'init with default (ask) guards exits 0');
+const hookA = (name, input) => spawnSync(process.execPath, [path.join(ga, '.claude', 'hooks', `${name}.mjs`)], { input: JSON.stringify({ cwd: ga, ...input }), encoding: 'utf8', env: { ...process.env, CLAUDE_PROJECT_DIR: ga } });
+const bashA = (command) => hookA('guard-bash', { tool_name: 'Bash', tool_input: { command } });
+const isAsk = (r) => r.status === 0 && /"permissionDecision":"ask"/.test(r.stdout);
+check(isAsk(bashA('git push origin main')) && isAsk(bashA('git push origin HEAD:develop')) && isAsk(bashA('bash -c "git push origin main"')), 'protected_push: ask (default) asks before pushing to a protected branch');
+check(bashA('git push origin dev1').status === 0 && !/permissionDecision/.test(bashA('git push origin dev1').stdout), 'protected_push: ask still lets a working-branch push through silently');
+spawnSync('git', ['symbolic-ref', 'HEAD', 'refs/heads/develop'], { cwd: ga });
+check(isAsk(bashA('git commit -m x')) && isAsk(bashA('git push')), 'protected_push: ask asks before commit/push while on a protected branch');
+spawnSync('git', ['symbolic-ref', 'HEAD', 'refs/heads/dev1'], { cwd: ga });
+check(bashA('git push --force origin main').status === 2 && bashA('git push --no-verify').status === 2 && bashA('git push --mirror').status === 2, 'protected_push: ask still blocks force-push, --no-verify and --mirror');
+check(isAsk(hookA('guard-secrets', { tool_name: 'Write', tool_input: { file_path: '.env', content: 'A=1' } })), 'secrets_access: ask (default) asks before writing .env');
+check(hookA('guard-secrets', { tool_name: 'Write', tool_input: { file_path: 'a.js', content: ['AK', 'IA', 'ABCDEFGHIJKLMNOP'].join('') } }).status === 2, 'secrets_access: ask still blocks content that looks like a secret');
 
 const sl = mk('guards-symlink');
 const outside = path.join(base, 'guards-outside'); fs.mkdirSync(outside, { recursive: true });
@@ -1356,20 +1378,32 @@ console.log('\n[stale cleanup]');
   check(!fs.existsSync(path.join(pk, 'apps/web/CLAUDE.md')) && fs.existsSync(path.join(pk, 'apps/web/index.js')), 'a removed package loses its generated CLAUDE.md but keeps the folder and the code in it');
 
   // --- stale permission rules
-  const pm = mk('stale-perm', 'test_command: "pnpm test"\nlocal_only: ["dumps/"]\n'); run(pm);
+  const pm = mk('stale-perm', 'test_command: "pnpm test"\nlocal_only: ["dumps/"]\nsecrets_access: deny\n'); run(pm);
   check(settings(pm).permissions.allow.includes('Bash(pnpm test:*)') && settings(pm).permissions.deny.includes('Read(./dumps/**)'), 'setup: test_command and local_only become permission rules');
   editSettings(pm, (st) => { st.permissions.allow.push('Bash(echo mine:*)'); st.permissions.deny.push('Read(./my-secret.txt)'); });
-  setCfg(pm, 'test_command: "npm test"\n'); run(pm);
+  setCfg(pm, 'test_command: "npm test"\nsecrets_access: deny\n'); run(pm);
   const a1 = settings(pm).permissions;
   check(!a1.allow.includes('Bash(pnpm test:*)') && a1.allow.includes('Bash(npm test:*)'), 'changing test_command removes the old auto-approved rule and adds the new one');
   check(!a1.deny.includes('Read(./dumps/**)'), 'removing a local_only entry removes its deny rule');
   check(a1.allow.includes('Bash(echo mine:*)') && a1.deny.includes('Read(./my-secret.txt)'), 'rules the user added are preserved');
-  setCfg(pm, 'test_command: "npm test"\nprotect_secrets: false\nallow_safe_commands: false\n'); run(pm);
+  setCfg(pm, 'test_command: "npm test"\nprotect_secrets: false\nallow_safe_commands: false\nsecrets_access: deny\n'); run(pm);
   const a2 = settings(pm).permissions;
   check(!(a2.deny || []).includes('Read(./.env)') && (a2.deny || []).includes('Read(./my-secret.txt)'), 'protect_secrets: false removes only the rules init wrote');
   check(!(a2.allow || []).includes('Bash(npm test:*)') && !(a2.allow || []).includes('Bash(git status:*)') && a2.allow.includes('Bash(echo mine:*)'), 'allow_safe_commands: false removes the safe-command rules but not the user ones');
   const idem = run(pm);
   check(/0 created, 0 updated/.test(idem.stdout) && run(pm, ['--check']).status === 0, 'permission cleanup is idempotent');
+
+  // --- switching secrets_access from deny to ask moves the rules (and back) without leaving duplicates; user rules stay
+  const sa = mk('stale-ask', 'local_only: ["dumps/"]\nsecrets_access: deny\n'); run(sa);
+  check(settings(sa).permissions.deny.includes('Read(./.env)') && !(settings(sa).permissions.ask || []).includes('Read(./.env)'), 'setup: secrets_access deny writes deny rules');
+  editSettings(sa, (st) => { st.permissions.deny.push('Read(./my-secret.txt)'); });
+  setCfg(sa, 'local_only: ["dumps/"]\n'); run(sa);
+  const sa1 = settings(sa).permissions;
+  check(sa1.ask.includes('Read(./.env)') && sa1.ask.includes('Read(./dumps/**)') && !sa1.deny.includes('Read(./.env)') && !sa1.deny.includes('Read(./dumps/**)'), 'secrets_access deny -> ask moves the managed rules from deny to ask');
+  check(sa1.deny.includes('Read(./my-secret.txt)'), 'a deny rule the user added survives the switch to ask');
+  setCfg(sa, 'local_only: ["dumps/"]\nsecrets_access: deny\n'); run(sa);
+  const sa2 = settings(sa).permissions;
+  check(sa2.deny.includes('Read(./.env)') && !(sa2.ask || []).includes('Read(./.env)'), 'secrets_access ask -> deny moves them back');
 
   // --- the first run after upgrading has no record of managed rules, so it must not remove anything
   const up = mk('stale-upgrade', 'test_command: "pnpm test"\n'); run(up);

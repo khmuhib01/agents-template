@@ -2,6 +2,14 @@
 
 Generated from the version-tagged commits. Newest first. Bumping `VERSION` shows up as an upgrade (`old → new`) in projects that re-run `init.mjs`.
 
+## 1.23.0 - 2026-11-25
+
+Secret files and protected branches are ask-first instead of hard-blocked (new defaults; upgrading projects change behavior).
+
+- New `secrets_access` (`ask` default, `deny`): `.env` variants, keys, `~/.ssh`, `~/.aws` and `local_only` paths move from `permissions.deny` to `permissions.ask`, so Claude Code shows a prompt and reads the file when you approve. `guard-secrets` asks before editing `.env*` and local-only paths; content that looks like a secret is still blocked. `deny` keeps the old behavior.
+- New `protected_push` (`ask` default, `block`): `guard-bash` asks before a commit or push on the production/integration branches instead of refusing, so `/merge-to-dev`, `/merge-to-main` and `/ship` work once you approve. Force-push, `--no-verify` and `push --all/--mirror` are always blocked.
+- Rules (`GIT-SHORTCUTS`, `SECURITY`, `git-manager`) now say: ask first, act after approval. Re-running init moves old managed deny rules to ask; `settings.json` rules you wrote stay.
+
 ## 1.22.4 - 2026-11-22
 
 Eval results only; generated projects and routing behavior are unchanged.

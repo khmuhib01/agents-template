@@ -86,6 +86,9 @@ run(() => {
     return branchCache.get(key);
   };
   const isProtected = (b) => Boolean(b) && protectedBranches.includes(b);
+  // protected_push "ask" (default): the user is prompted and can approve; "block": always refused.
+  const askOnly = cfg.protectedPush !== 'block';
+  const protect = (message) => (askOnly ? asks.push(message) : block(message));
 
   const asks = [];
   let sawCommit = false;
@@ -109,16 +112,16 @@ run(() => {
     if (g.sub === 'commit') {
       sawCommit = true;
       if (flags.includes('--no-verify') || flags.some((f) => /^-[a-zA-Z]*n[a-zA-Z]*$/.test(f))) block('git commit --no-verify (skipping hooks) is not allowed.');
-      if (isProtected(branch)) block(`direct commits to protected branch "${branch}" are not allowed. Switch to your working branch.`);
+      if (isProtected(branch)) protect(`direct commit to protected branch "${branch}". Approve only if you want this on ${branch}.`);
     }
     if (g.sub === 'push') {
       if (flags.includes('--no-verify')) block('git push --no-verify (skipping hooks) is not allowed.');
-      if (flags.includes('--mirror') || flags.includes('--all')) block('git push --mirror/--all would also push protected branches.');
+      if (flags.includes('--mirror') || flags.includes('--all')) block('git push --mirror/--all would also push protected branches; name the branch instead.');
       if (flags.some((f) => f === '--force' || f.startsWith('--force-with-lease') || f === '--force-if-includes' || /^-[a-zA-Z]*f[a-zA-Z]*$/.test(f)) || positional.slice(1).some((r) => r.startsWith('+'))) block('force-push is not allowed.');
       const refspecs = positional.slice(1);
       const targets = refspecs.map((r) => r.replace(/^\+/, '').split(':').pop().replace(/^refs\/heads\//, '')).map((t) => (t === 'HEAD' ? branch : t));
-      if (targets.some(isProtected)) block(`pushing to a protected branch (${protectedBranches.join(', ')}) is not allowed. Push your working branch and open a PR.`);
-      if (!refspecs.length && isProtected(branch)) block(`the current branch "${branch}" is protected; do not push it directly.`);
+      if (targets.some(isProtected)) protect(`push to a protected branch (${protectedBranches.join(', ')}). Approve only if you want this push.`);
+      if (!refspecs.length && isProtected(branch)) protect(`push of the protected branch "${branch}". Approve only if you want this push.`);
     }
     if (g.sub === 'config' && g.args.some((a) => /^core\.hookspath$/i.test(a))) asks.push('changing core.hooksPath can disable the git hooks.');
     if (g.sub === 'reset' && flags.includes('--hard')) asks.push('git reset --hard discards uncommitted work.');

@@ -36,7 +36,7 @@ Manage Git using the current repository's actual conventions. Never assume a spe
 ## Branch rules
 
 - Discover the branch model; do not assume `main`, `develop`, `feature/*`, or `bug/*`.
-- Never commit or push directly to a protected branch.
+- Never commit or push directly to a protected branch on your own. Do it only when the user explicitly approves that exact action (the hook shows a permission prompt); then proceed without further argument.
 - Do not create an issue automatically unless the user requests issue creation or the repository's task workflow explicitly requires it.
 - Never invent issue numbers or assign users by guessed username.
 
