@@ -1,9 +1,7 @@
 name: test
-# Tests run on pull requests into dev (feature -> dev). dev -> main is the same code, so main runs nothing here:
-# the only check on a main PR is guard-main (source must be dev). Keep the smoke checks out of main's required checks.
+# Manual only: no automatic runs on push or pull request. Start it from the Actions tab (Run workflow) when you want the smoke suite.
 on:
-  pull_request:
-    branches: [dev]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
